@@ -1,0 +1,10 @@
+<svg viewBox="0 0 168.373 181.89" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="168.373047" height="181.889526" fill="none" customFrame="#000000">
+	<defs>
+		<linearGradient id="paint_linear_2" x1="1.01074219" x2="1.01074219" y1="1.14257812" y2="180.742569" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(0,212,170)" offset="0" stop-opacity="0.349999994" />
+			<stop stop-color="rgb(0,212,170)" offset="1" stop-opacity="0.0799999982" />
+		</linearGradient>
+	</defs>
+	<path id="矢量 958" d="M80.7107 1.14258L158.111 42.9426L167.311 135.143L80.7107 180.743L1.01074 132.943L2.61074 45.3426L80.7107 1.14258Z" fill="url(#paint_linear_2)" fill-rule="nonzero" />
+	<path id="矢量 958" d="M158.111 42.9426L167.311 135.143L80.7107 180.743L1.01074 132.943L2.61074 45.3426L80.7107 1.14258L158.111 42.9426Z" fill-rule="nonzero" stroke="rgb(0,212,170)" stroke-width="2.000000" />
+</svg>

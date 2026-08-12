@@ -1,0 +1,5 @@
+<svg viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="15.000000" height="15.000000" fill="none" customFrame="#000000">
+	<rect id="clock" width="15.000000" height="15.000000" x="0.000000" y="0.000000" />
+	<circle id="椭圆 145" cx="7.5" cy="7.5" r="6.25" stroke="rgb(148,163,184)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.250000" />
+	<path id="矢量 696" d="M7.5 3.75L7.5 7.5L10 8.75" fill-rule="nonzero" stroke="rgb(148,163,184)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.250000" />
+</svg>

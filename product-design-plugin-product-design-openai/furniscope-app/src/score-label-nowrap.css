@@ -1,0 +1,14 @@
+.insight-score span{
+  min-width:126px;
+  justify-content:center;
+  white-space:nowrap;
+}
+
+.insight-score b{
+  flex:0 0 auto;
+}
+
+.report-scores>span{
+  min-width:112px;
+  white-space:nowrap;
+}

@@ -11,8 +11,6 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 backups/*.dump
-Docs/参赛提交/*.zip
-Docs/参赛提交/FurniScope_Full_UI_Design_V1.pdf
 node_modules/
 dist/
 build/
@@ -29,6 +27,4 @@ tmp/
 *.p12
 *.crt
 
-# Historical/duplicate frontend exports kept locally, not in the active source baseline.
-/UI_Desgin/UI_V1/
-/product-design-plugin-product-design-openai/
+# Historical UI iterations are intentionally versioned to preserve product evolution.
