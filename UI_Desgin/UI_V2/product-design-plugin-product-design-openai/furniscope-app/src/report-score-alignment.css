@@ -1,0 +1,21 @@
+.report-scores>span{
+  position:relative;
+  height:86px;
+  grid-template-rows:18px 48px;
+  align-content:center;
+  padding:8px 10px;
+}
+
+.report-scores b{
+  display:block;
+  height:48px;
+  line-height:48px;
+}
+
+.report-scores small{
+  position:absolute;
+  left:calc(50% + 24px);
+  bottom:16px;
+  color:#617087;
+  line-height:1;
+}

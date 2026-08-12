@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic-settings
+langgraph
+langgraph-checkpoint-postgres
+psycopg[binary,pool]
+python-multipart
+httpx
+PyJWT[crypto]
+pytest
+pytest-asyncio
+pwdlib[argon2]
