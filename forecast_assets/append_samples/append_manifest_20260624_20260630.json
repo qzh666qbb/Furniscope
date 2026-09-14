@@ -1,0 +1,11 @@
+{
+  "cutoff": "2026-06-23",
+  "original_last_date": "2026-06-30",
+  "removed_daily_rows": 2376,
+  "daily_rows_before": 1056314,
+  "daily_rows_after": 1053938,
+  "weekly_rows_before": 152984,
+  "weekly_rows_after": 152721,
+  "append_orders_file": "/data/projects/sales_forecast/update/append_test/append_orders_20260624_20260630.xlsx",
+  "append_inventory_file": "/data/projects/sales_forecast/update/append_test/append_inventory_20260624_20260630.xlsx"
+}

@@ -1,0 +1,23 @@
+{
+  "authorization_reference": "HeFeng-AUTH-AMZ-US-SOFA-2026Q3",
+  "data_class": "authorized_market_data",
+  "listings": [
+    {
+      "platform_listing_id": "SYN-HF-001",
+      "title": "带脚凳休闲椅 HF-A0393",
+      "currency": "USD",
+      "sale_price": 129.0,
+      "list_price": 149.0,
+      "captured_at": "2026-09-15T00:00:00+00:00"
+    }
+  ],
+  "reviews": [
+    {
+      "external_id": "SYN-REV-R10-001",
+      "asin": "SYN-HF-001",
+      "platform_listing_id": "SYN-HF-001",
+      "rating": 4,
+      "content_original": "The fabric color matches the photos and is easy to clean. Pack refresh 2026-09-15."
+    }
+  ]
+}

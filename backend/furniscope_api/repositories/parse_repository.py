@@ -38,34 +38,42 @@ class ParseRepository:
 
     async def get_job(self, session: AsyncSession, *, tenant_id: int, parse_job_id: str) -> dict[str, Any] | None:
         result = await session.execute(text("""
-            SELECT id,parse_job_id::text,product_id,status,progress_percent,current_stage,file_count,
-                   succeeded_file_count,failed_file_count,retryable,failure_code,failure_message
-              FROM product_parse_jobs WHERE tenant_id=:tenant AND parse_job_id=:job
+            SELECT j.id,j.parse_job_id::text,j.product_id,j.status,j.progress_percent,j.current_stage,j.file_count,
+                   j.succeeded_file_count,j.failed_file_count,j.retryable,j.failure_code,j.failure_message,
+                   p.sku AS product_sku,p.name AS product_name
+              FROM product_parse_jobs j JOIN products p ON p.id=j.product_id AND p.tenant_id=j.tenant_id
+             WHERE j.tenant_id=:tenant AND j.parse_job_id=:job
         """), {"tenant":tenant_id,"job":parse_job_id})
         row = result.mappings().one_or_none()
         return dict(row) if row else None
 
     async def files(self, session: AsyncSession, *, tenant_id: int, job_id: int) -> list[dict[str, Any]]:
         result = await session.execute(text("""
-            SELECT a.original_filename AS file_name,f.security_status,f.parse_status,a.storage_key,a.id AS asset_id
+            SELECT a.original_filename AS file_name,a.mime_type,f.security_status,f.parse_status,
+                   f.error_code,f.error_message,a.storage_key,a.id AS asset_id
               FROM product_parse_job_files f JOIN file_assets a ON a.id=f.file_asset_id
              WHERE f.tenant_id=:tenant AND f.parse_job_id=:job ORDER BY f.id
         """), {"tenant":tenant_id,"job":job_id})
         return [dict(r) for r in result.mappings().all()]
 
-    async def finish_demo(self, session: AsyncSession, *, tenant_id: int, job_id: int,
-                          succeeded: int, failed: int) -> None:
+    async def finish(self, session: AsyncSession, *, tenant_id: int, job_id: int,
+                     succeeded: int, failed: int) -> None:
         status = "succeeded" if failed == 0 else ("partial_succeeded" if succeeded else "failed")
+        failure_code = "DOCUMENT_PARSE_FAILED" if failed and not succeeded else None
+        failure_message = "所有文件解析失败，请查看文件级错误并修正后重试" if failed and not succeeded else None
         await session.execute(text("""
             UPDATE product_parse_jobs SET status=:status,current_stage='completed',progress_percent=100,
-              succeeded_file_count=:ok,failed_file_count=:failed,retryable=FALSE,completed_at=CURRENT_TIMESTAMP
+              succeeded_file_count=:ok,failed_file_count=:failed,retryable=:retryable,
+              failure_code=:failure_code,failure_message=:failure_message,completed_at=CURRENT_TIMESTAMP
              WHERE id=:job AND tenant_id=:tenant
-        """), {"status":status,"ok":succeeded,"failed":failed,"job":job_id,"tenant":tenant_id})
+        """), {"status":status,"ok":succeeded,"failed":failed,"retryable":bool(failed and not succeeded),
+                 "failure_code":failure_code,"failure_message":failure_message,"job":job_id,"tenant":tenant_id})
 
     @staticmethod
     def _asset_type(mime: str) -> str:
         if mime.startswith("image/"): return "image"
         if mime == "application/pdf": return "pdf"
+        if mime == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": return "spreadsheet"
         if mime in {"text/csv","application/vnd.ms-excel"}: return "csv"
         if mime == "application/json": return "json"
         return "other"

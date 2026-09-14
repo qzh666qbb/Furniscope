@@ -16,6 +16,12 @@ def _confirmation_route(state: FurniScopeGraphState, normal: str) -> str:
     return "confirmation_gate" if state.get("route_to_confirmation") else normal
 
 
+def _boundary_route(state: FurniScopeGraphState, normal: str, target: str) -> str:
+    if state.get("route_to_confirmation"):
+        return "confirmation_gate"
+    return "target_complete" if state.get("analysis_config", {}).get("target_node") == target else normal
+
+
 def _after_confirmation(state: FurniScopeGraphState) -> str:
     confirmation = state.get("stage_results", {}).get("user_confirmation", {}).get("resume", {})
     stage = confirmation.get("checkpoint_stage")
@@ -31,6 +37,14 @@ def _after_confirmation(state: FurniScopeGraphState) -> str:
     }
     if stage not in routes:
         raise ValueError(f"Unsupported confirmation checkpoint_stage: {stage}")
+    completed_target = {
+        "context_loading": "product",
+        "market_analytics": "market",
+        "opportunity_scoring": "score",
+        "evidence_auditing": "plan",
+    }.get(stage)
+    if completed_target and state.get("analysis_config", {}).get("target_node") == completed_target:
+        return "target_complete"
     return routes[stage]
 
 
@@ -71,7 +85,6 @@ def build_graph(
     graph.add_node("i12_fork", nodes.i12)
     graph.add_node("i12a_price", nodes.price_analytics)
     graph.add_node("i12b_trend", nodes.trend_analytics)
-    graph.add_node("i12c_fit", nodes.enterprise_fit)
     graph.add_node("i13_join", nodes.i13)
     graph.add_node("i14_scoring", nodes.i14)
     graph.add_node("strategy_dispatch", lambda state: {})
@@ -80,11 +93,12 @@ def build_graph(
     graph.add_node("i17_evidence", nodes.i17)
     graph.add_node("i18_report", nodes.i18)
     graph.add_node("i19_persist", nodes.i19)
+    graph.add_node("target_complete", nodes.target_complete)
 
     graph.add_edge(START, "i00_create_freeze")
     graph.add_edge("i00_create_freeze", "i01_preflight")
     graph.add_edge("i01_preflight", "i02_context")
-    graph.add_conditional_edges("i02_context", lambda s: _confirmation_route(s, "i03_data_quality"))
+    graph.add_conditional_edges("i02_context", lambda s: _boundary_route(s, "i03_data_quality", "product"))
     graph.add_conditional_edges("i03_data_quality", lambda s: _confirmation_route(s, "i04_hard_filter"))
     graph.add_conditional_edges("i04_hard_filter", lambda s: _confirmation_route(s, "i05_embedding"))
     graph.add_edge("i05_embedding", "i06_rerank")
@@ -96,16 +110,16 @@ def build_graph(
     graph.add_edge("i11_clustering", "i12_fork")
     graph.add_edge("i12_fork", "i12a_price")
     graph.add_edge("i12_fork", "i12b_trend")
-    graph.add_edge("i12_fork", "i12c_fit")
-    graph.add_edge(["i12a_price", "i12b_trend", "i12c_fit"], "i13_join")
-    graph.add_conditional_edges("i13_join", lambda s: _confirmation_route(s, "i14_scoring"))
-    graph.add_conditional_edges("i14_scoring", lambda s: _confirmation_route(s, "strategy_dispatch"))
+    graph.add_edge(["i12a_price", "i12b_trend"], "i13_join")
+    graph.add_conditional_edges("i13_join", lambda s: _boundary_route(s, "i14_scoring", "market"))
+    graph.add_conditional_edges("i14_scoring", lambda s: _boundary_route(s, "strategy_dispatch", "score"))
     graph.add_conditional_edges("strategy_dispatch", _strategy_sends)
     graph.add_edge("strategy_unit", "i15_strategy_reduce")
     graph.add_conditional_edges("i15_strategy_reduce", lambda s: _confirmation_route(s, "i17_evidence"))
-    graph.add_edge("i17_evidence", "i18_report")
+    graph.add_conditional_edges("i17_evidence", lambda s: _boundary_route(s, "i18_report", "plan"))
     graph.add_edge("i18_report", "i19_persist")
     graph.add_edge("i19_persist", END)
+    graph.add_edge("target_complete", END)
     return graph.compile(checkpointer=checkpointer)
 
 

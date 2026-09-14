@@ -1,0 +1,55 @@
+{
+  "listings": [
+    {
+      "platform_listing_id": "TEST-SOFA-001",
+      "title": "Demo Modular Sofa 3 Seat",
+      "category_code": "sofa",
+      "currency": "USD",
+      "list_price": 499,
+      "sale_price": 429,
+      "rating": 4.2,
+      "review_count": 4,
+      "captured_at": "2026-09-14T08:00:00Z",
+      "first_available_date": "2026-06-01",
+      "normalized_attributes": {
+        "market_country": "US",
+        "material": { "value": "linen" },
+        "seat_count": { "value": 3 }
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "platform_review_id": "TEST-REV-001",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 5,
+      "content_original": "The sofa is comfortable and the frame feels very sturdy.",
+      "language_code": "en",
+      "reviewer_location": "US",
+      "reviewed_at": "2026-09-10T10:00:00Z"
+    },
+    {
+      "platform_review_id": "TEST-REV-002",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 2,
+      "content_original": "The cushion collapsed after one week and has a strong smell.",
+      "language_code": "en",
+      "reviewer_location": "CA",
+      "reviewed_at": "2026-09-11T10:00:00Z"
+    },
+    {
+      "platform_review_id": "TEST-REV-003",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 5,
+      "content_original": "The sofa is comfortable and the frame feels very sturdy.",
+      "language_code": "en"
+    },
+    {
+      "platform_review_id": "TEST-REV-004",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 4,
+      "content_original": "good",
+      "language_code": "en"
+    }
+  ]
+}

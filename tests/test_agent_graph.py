@@ -60,6 +60,25 @@ class AgentGraphTest(unittest.TestCase):
 
         asyncio.run(scenario())
 
+    def test_scoped_workflow_stops_after_selected_canvas_node(self) -> None:
+        async def scenario() -> None:
+            repository = InMemoryWorkflowRepository()
+            graph = build_graph(repository, DeterministicDemoToolbox(), checkpointer=InMemorySaver())
+            engine = FurniScopeAgentEngine(graph, repository)
+            state = demo_initial_state()
+            state["analysis_config"] = {"target_node": "market"}
+            result = await engine.run(state)
+
+            self.assertEqual(result["status"], "partial_succeeded")
+            self.assertEqual(result["external_stage"], "researching_market")
+            self.assertNotIn("report_ref", result)
+            completed_stages = {run["stage_code"] for run in repository.stage_runs}
+            self.assertIn("market_analytics", completed_stages)
+            self.assertNotIn("opportunity_scoring", completed_stages)
+            self.assertNotIn("report_generating", completed_stages)
+
+        asyncio.run(scenario())
+
     def test_confirmation_answer_is_outboxed_then_worker_resumes(self) -> None:
         async def scenario() -> None:
             repository = InMemoryWorkflowRepository()

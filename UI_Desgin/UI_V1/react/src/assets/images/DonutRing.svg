@@ -1,8 +1,0 @@
-<svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="140.000000" height="140.000000" fill="none" customFrame="#000000">
-	<rect id="DonutRing" width="140.000000" height="140.000000" x="0.000000" y="0.000000" />
-	<circle id="椭圆 64" cx="70" cy="70" r="50" stroke="rgb(30,45,69)" stroke-width="22.000000" />
-	<circle id="椭圆 65" cx="70" cy="70" r="50" stroke="rgb(0,212,170)" stroke-linecap="butt" stroke-dasharray="94 220 " stroke-width="22.000000" />
-	<circle id="椭圆 66" cx="70" cy="70" r="50" stroke="rgb(245,158,11)" stroke-linecap="butt" stroke-dasharray="66 220 " stroke-width="22.000000" />
-	<circle id="椭圆 67" cx="70" cy="70" r="50" stroke="rgb(59,130,246)" stroke-linecap="butt" stroke-dasharray="44 220 " stroke-width="22.000000" />
-	<circle id="椭圆 68" cx="70" cy="70" r="50" stroke="rgb(139,92,246)" stroke-linecap="butt" stroke-dasharray="16 220 " stroke-width="22.000000" />
-</svg>

@@ -9,8 +9,9 @@ class AgentSettings(BaseSettings):
     langgraph_database_url: str
     aliyun_model_router_api_key: SecretStr
     aliyun_model_router_chat_base_url: str
-    aliyun_model_router_embedding_base_url: str
-    aliyun_model_router_rerank_base_url: str
+    aliyun_model_router_text_model: str = "qwen3.7-plus"
+    aliyun_model_router_embedding_base_url: str | None = None
+    aliyun_model_router_rerank_base_url: str | None = None
     aliyun_model_router_chat_path: str = "/chat/completions"
     aliyun_model_router_embedding_path: str = "/embeddings"
     aliyun_model_router_rerank_path: str = "/reranks"
@@ -24,11 +25,11 @@ class AgentSettings(BaseSettings):
             raise ValueError("DATABASE_URL must use PostgreSQL")
         if not self.langgraph_database_url.startswith("postgresql://"):
             raise ValueError("LANGGRAPH_DATABASE_URL must use PostgreSQL")
-        router_urls = {
-            "ALIYUN_MODEL_ROUTER_CHAT_BASE_URL": self.aliyun_model_router_chat_base_url,
-            "ALIYUN_MODEL_ROUTER_EMBEDDING_BASE_URL": self.aliyun_model_router_embedding_base_url,
-            "ALIYUN_MODEL_ROUTER_RERANK_BASE_URL": self.aliyun_model_router_rerank_base_url,
-        }
+        router_urls = {"ALIYUN_MODEL_ROUTER_CHAT_BASE_URL": self.aliyun_model_router_chat_base_url}
+        if self.aliyun_model_router_embedding_base_url:
+            router_urls["ALIYUN_MODEL_ROUTER_EMBEDDING_BASE_URL"] = self.aliyun_model_router_embedding_base_url
+        if self.aliyun_model_router_rerank_base_url:
+            router_urls["ALIYUN_MODEL_ROUTER_RERANK_BASE_URL"] = self.aliyun_model_router_rerank_base_url
         for name, url in router_urls.items():
             if not url.startswith("https://"):
                 raise ValueError(f"{name} must use HTTPS")

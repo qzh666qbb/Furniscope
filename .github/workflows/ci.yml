@@ -1,0 +1,108 @@
+name: FurniScope CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: furniscope_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d furniscope_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/furniscope_test
+      LANGGRAPH_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/furniscope_test
+      FURNISCOPE_TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/furniscope_test
+      FURNISCOPE_TEST_REDIS_URL: redis://127.0.0.1:6379/15
+      APP_ENV: test
+      POSTGRES_PASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Initialize database
+        run: |
+          psql "$FURNISCOPE_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f furniscope_postgresql_v3.sql
+      - name: Scan production files for committed credentials
+        run: scripts/security_audit.sh
+      - run: PYTHONPATH=.:backend pytest -q
+      - name: Verify PostgreSQL backup and restore
+        run: |
+          createdb "postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test"
+          POSTGRES_BACKUP_URL="$FURNISCOPE_TEST_DATABASE_URL" \
+          RESTORE_TEST_DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test" \
+            scripts/verify_backup_restore.sh
+          dropdb "postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npm run test:sites
+        working-directory: frontend
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Run frontend gold-path API contract
+        run: npm run test:e2e:contract
+        working-directory: frontend
+      - name: Run full-stack browser journey without API mocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          jwt_dir="$(mktemp -d)"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$jwt_dir/private.pem" >/dev/null 2>&1
+          openssl rsa -pubout -in "$jwt_dir/private.pem" -out "$jwt_dir/public.pem" >/dev/null 2>&1
+          export FURNISCOPE_JWT_PRIVATE_KEY="$(<"$jwt_dir/private.pem")"
+          export FURNISCOPE_JWT_PUBLIC_KEYS_JSON="$(python -c 'import json,sys; print(json.dumps({"ci-e2e": open(sys.argv[1]).read()}))' "$jwt_dir/public.pem")"
+          export FURNISCOPE_E2E_DATABASE_URL="$FURNISCOPE_TEST_DATABASE_URL"
+          export FURNISCOPE_E2E_EMAIL="browser-e2e-${GITHUB_RUN_ID}@example.invalid"
+          export FURNISCOPE_E2E_PASSWORD="$(openssl rand -hex 20)"
+          export JOB_QUEUE_MODE=in_process
+          export ANALYSIS_WORKER_MODE=external
+          export ANALYSIS_TOOL_MODE=external
+          export PRODUCT_PARSE_MODE=demo
+          PYTHONPATH=.:backend python scripts/seed_e2e_user.py
+          PYTHONPATH=.:backend uvicorn furniscope_api.app:app --host 127.0.0.1 --port 38000 >"$RUNNER_TEMP/furniscope-api.log" 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:38000/health/live >/dev/null && break
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:38000/health/live >/dev/null
+          cd frontend
+          FURNISCOPE_E2E_REAL=1 VITE_API_PROXY_TARGET=http://127.0.0.1:38000 \
+            npx playwright test tests/e2e/full-stack-no-mock.spec.js --reporter=line
+      - name: Validate container builds
+        run: |
+          docker compose config
+          docker run --rm \
+            -v "$PWD/deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+            -v "$PWD/deploy/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro" \
+            --entrypoint promtool prom/prometheus:v3.5.0 check config /etc/prometheus/prometheus.yml
+          docker build -t furniscope-api-ci .
+          docker build -t furniscope-web-ci frontend

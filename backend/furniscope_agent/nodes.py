@@ -37,7 +37,6 @@ SPECS = {
     "I12": NodeSpec("I12", "market_analytics", "analytics_fork", 1),
     "I12A": NodeSpec("I12A", "market_analytics", "price_competition", 3),
     "I12B": NodeSpec("I12B", "market_analytics", "trend", 3, "trend_skip"),
-    "I12C": NodeSpec("I12C", "market_analytics", "enterprise_fit", 3),
     "I13": NodeSpec("I13", "market_analytics", "analytics_join", 1),
     "I14": NodeSpec("I14", "opportunity_scoring", "opportunity_scoring", 3),
     "I15": NodeSpec("I15", "strategy_generating", "strategy_generate", 3, "strategy_validation_only"),
@@ -211,10 +210,6 @@ class WorkflowNodes:
         update = await self._run(state, SPECS["I12B"])
         return {"analytics_results": [{"branch": "trend", "result_ref": update["stage_results"]["I12B"]}]}
 
-    async def enterprise_fit(self, state: FurniScopeGraphState) -> dict[str, Any]:
-        update = await self._run(state, SPECS["I12C"])
-        return {"analytics_results": [{"branch": "enterprise_fit", "result_ref": update["stage_results"]["I12C"]}]}
-
     async def strategy_unit(self, state: FurniScopeGraphState) -> dict[str, Any]:
         payload = state["strategy_unit"]
         update = await self._run(state, SPECS["I15"], payload)
@@ -254,6 +249,17 @@ class WorkflowNodes:
                 "user_confirmation": {"resume": resume},
             },
         }
+
+    async def target_complete(self, state: FurniScopeGraphState) -> dict[str, Any]:
+        """Finish an intentionally scoped Plane run without fabricating a report."""
+        await self.repository.update_task(
+            state,
+            status="partial_succeeded",
+            external_stage=state["external_stage"],
+            internal_stage=state["internal_stage"],
+            progress_percent=state["progress_percent"],
+        )
+        return {"status": "partial_succeeded"}
 
     async def i19(self, state: FurniScopeGraphState) -> dict[str, Any]:
         update = await self._run(state, SPECS["I19"])

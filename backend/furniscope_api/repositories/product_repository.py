@@ -38,7 +38,19 @@ class ProductRepository:
         where = " AND ".join(filters)
         count = await session.scalar(text(f"SELECT count(*) FROM products WHERE {where}"), params)
         result = await session.execute(text(f"""
-            SELECT id AS product_id,sku,name,category_code,analysis_status,current_profile_version_id,updated_at
+            SELECT id AS product_id,sku,name,category_code,analysis_status,current_profile_version_id,
+                   created_at,updated_at,
+                   EXISTS(
+                     SELECT 1 FROM product_attributes pa
+                      WHERE pa.profile_version_id=products.current_profile_version_id
+                        AND pa.confirmation_status='conflicted'
+                   ) AS has_conflicts,
+                   (SELECT pa.value #>> '{{}}' FROM product_attributes pa
+                     WHERE pa.profile_version_id=products.current_profile_version_id
+                       AND pa.attribute_code='moq' LIMIT 1) AS moq,
+                   (SELECT pa.value #>> '{{}}' FROM product_attributes pa
+                     WHERE pa.profile_version_id=products.current_profile_version_id
+                       AND pa.attribute_code='factory_price' LIMIT 1) AS factory_price
               FROM products WHERE {where}
              ORDER BY updated_at DESC,id DESC OFFSET :offset LIMIT :limit
         """), params)
@@ -87,7 +99,19 @@ class ProductRepository:
               FROM product_profile_versions WHERE product_id=:product_id
             RETURNING id
         """), {"tenant_id": tenant_id, "product_id": product_id})
-        return int(result.scalar_one())
+        profile_id = int(result.scalar_one())
+        await session.execute(text("""
+            INSERT INTO product_attributes
+              (tenant_id,profile_version_id,attribute_code,value,unit,source_type,source_asset_id,
+               source_locator,confidence,confirmation_status)
+            SELECT pa.tenant_id,:profile_id,pa.attribute_code,pa.value,pa.unit,pa.source_type,
+                   pa.source_asset_id,pa.source_locator,pa.confidence,pa.confirmation_status
+              FROM product_attributes pa
+              JOIN products p ON p.current_profile_version_id=pa.profile_version_id
+             WHERE p.id=:product_id AND p.tenant_id=:tenant_id
+            ON CONFLICT(profile_version_id,attribute_code) DO NOTHING
+        """), {"profile_id": profile_id, "product_id": product_id, "tenant_id": tenant_id})
+        return profile_id
 
     async def update(self, session: AsyncSession, *, tenant_id: int, product_id: int,
                      name: str | None, description: str | None, analysis_status: str | None,
@@ -146,9 +170,8 @@ class ProductRepository:
         row = result.mappings().one_or_none()
         if row:
             await session.execute(text("""
-                UPDATE products SET current_profile_version_id=:profile_version_id,profile_status='confirmed',
-                       profile_completeness=1,profile_confirmed_by=:user_id,profile_confirmed_at=CURRENT_TIMESTAMP,
+                UPDATE products SET current_profile_version_id=:profile_version_id,
                        analysis_status='ready' WHERE id=:product_id AND tenant_id=:tenant_id
-            """), {"profile_version_id": profile_version_id, "user_id": user_id,
+            """), {"profile_version_id": profile_version_id,
                      "product_id": product_id, "tenant_id": tenant_id})
         return dict(row) if row else None

@@ -29,7 +29,36 @@ class AnalysisTaskCreated(BaseModel):
     status: TaskStatus
     stage: ExternalStage
     progress_percent: float = Field(ge=0, le=100)
+    workspace_uuid: UUID | None = None
     report_uuid: UUID | None
+
+
+class AnalysisTaskArchiveRequest(BaseModel):
+    task_uuids: list[UUID] = Field(min_length=1, max_length=100)
+    model_config = ConfigDict(extra="forbid")
+
+
+class AnalysisTaskArchiveResponse(BaseModel):
+    archived: int = Field(ge=0)
+
+
+class AnalysisTaskListItem(BaseModel):
+    task_uuid: UUID
+    job_name: str
+    job_type: str
+    status: TaskStatus
+    stage: ExternalStage
+    progress_percent: float = Field(ge=0, le=100)
+    product_id: int
+    product_sku: str
+    product_name: str
+    target_country: str
+    target_platform: str
+    report_uuid: UUID | None
+    source: str | None = None
+    workspace_uuid: UUID | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class AnalysisTaskStarted(BaseModel):
@@ -72,11 +101,34 @@ class UserConfirmationProjection(BaseModel):
     expires_at: datetime | None
 
 
+class ConfirmationAnswerRequest(BaseModel):
+    selected_option: str = Field(min_length=1, max_length=64)
+    user_input: Any = None
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfirmationAnswerAccepted(BaseModel):
+    confirmation_id: UUID
+    event_uuid: UUID
+    task_uuid: UUID
+    status: Literal["queued"] = "queued"
+    already_accepted: bool
+
+
+class ConfirmationListItem(UserConfirmationProjection):
+    task_uuid: UUID
+    task_status: TaskStatus
+    created_at: datetime
+
+
 class AnalysisTaskStatusResponse(BaseModel):
     task_uuid: UUID
     status: TaskStatus
     stage: ExternalStage
     progress_percent: float = Field(ge=0, le=100)
+    job_name: str | None = None
+    product_id: int | None = None
+    failure_message: str | None = None
     stage_runs: list[StageRunSummary]
     partial_failures: list[PartialFailureSummary]
     checkpoint_stage: str | None
@@ -148,3 +200,4 @@ class AnalysisTaskResultResponse(BaseModel):
     opportunities: list[OpportunitySummary]
     recommendations: list[RecommendationSummary]
     partial_failures: list[PartialFailureSummary]
+    forecast_summary: dict[str, Any] | None = None

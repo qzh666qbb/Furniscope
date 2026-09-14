@@ -179,6 +179,20 @@ class AuthRepository:
             {"family": token_family_uuid, "reason": reason},
         )
 
+    async def revoke_by_token_hash(self, session: AsyncSession, token_hash: str) -> bool:
+        result = await session.execute(
+            text(
+                """
+                UPDATE auth_sessions
+                   SET revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP),
+                       revoke_reason=COALESCE(revoke_reason,'logout')
+                 WHERE refresh_token_hash=:token_hash
+                """
+            ),
+            {"token_hash": token_hash},
+        )
+        return result.rowcount > 0
+
     @staticmethod
     def _identity(row: Any) -> UserIdentity:
         return UserIdentity(

@@ -8,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.responses import Response
 
 from .context import reset_request_id, set_request_id
+from .monitoring import HTTP_DURATION, HTTP_REQUESTS
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -25,6 +26,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             reset_request_id(token)
+        route = getattr(request.scope.get("route"), "path", "__unmatched__")
+        duration = monotonic() - started
+        HTTP_REQUESTS.labels(request.method, route, str(response.status_code)).inc()
+        HTTP_DURATION.labels(request.method, route).observe(duration)
         response.headers["X-Request-ID"] = request_id
         request.app.state.logger.info(
             "request_completed",
@@ -33,7 +38,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 "method": request.method,
                 "path": request.url.path,
                 "status_code": response.status_code,
-                "duration_ms": round((monotonic() - started) * 1000, 2),
+                "duration_ms": round(duration * 1000, 2),
             },
         )
         return response

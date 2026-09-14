@@ -540,7 +540,7 @@ flowchart TD
 
 1. Mermaid图文档需更新为七页面、五阶段、统一确认和综合结果路径。
 2. 测试用例需按S01—S06/A01重写，覆盖向导中断恢复、轮询退避、确认幂等、技术详情脱敏和user/admin边界。
-3. React路由与组件需使用本文件页面编号和API V3，不复用V2岗位权限守卫；UI视觉与组件实现以 `UI_Desgin/UI_V2/product-design-plugin-product-design-openai/furniscope-app` 为迁移起点，但业务范围仍以本文件为准。
+3. React路由与组件需使用本文件页面编号和API V3，不复用V2岗位权限守卫；UI视觉与组件实现以 `frontend/` 为迁移起点，但业务范围仍以本文件为准。
 4. Figma原型需先建立全局色板、组件状态和证据/置信度规范，再逐页使用本文Prompt。
 5. API V3后续若新增独立价格下钻接口，须先更新数据字典；当前价格Tab只读取API-RPT-01已有 `price_summary`。
 6. admin系统级通用配置若超出 `model_route_configs.compute_config`，必须先经PRD和数据字典确认，页面不得自行增加字段。
@@ -561,4 +561,3 @@ flowchart TD
 - S05使用Tabs整合竞品、评论需求、价格、机会和证据；S06突出决策与可信依据。
 - 删除岗位按钮权限、Listing页、导出页、发布审批和多人评审交互。
 - 所有操作已绑定API V3完整编号、方法和路径；P1能力仅保留在admin后台。
-

@@ -1,6 +1,0 @@
-<svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14.000000" height="14.000000" fill="none" customFrame="#000000">
-	<rect id="alert-circle" width="14.000000" height="14.000000" x="0.000000" y="0.000000" />
-	<circle id="椭圆 7" cx="7.00008106" cy="7.00002003" r="5.83333302" stroke="rgb(245,158,11)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.166667" />
-	<line id="直线 1" x1="0" x2="2.33333325" y1="0" y2="0" stroke="rgb(245,158,11)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.166667" transform="matrix(0,1,-1,0,7,4.66663)" />
-	<line id="直线 2" x1="7" x2="7.00583363" y1="9.33331299" y2="9.33331299" stroke="rgb(245,158,11)" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.166667" />
-</svg>

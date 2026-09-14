@@ -1,7 +1,9 @@
 .env
 .env.*
 !.env.example
+api.md
 var/demo_uploads/
+var/runtime/
 .venv/
 venv/
 __pycache__/
@@ -11,6 +13,7 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 backups/*.dump
+var/backups/
 node_modules/
 dist/
 build/
@@ -20,6 +23,16 @@ htmlcov/
 *.log
 work-npm-cache/
 tmp/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+forecast_assets/tenants/
+forecast_assets/state/
+forecast_assets/training_data/
+archive/
+/image-*.png
+/HF catalog.pdf
+
 .idea/
 .vscode/
 *.pem

@@ -118,7 +118,7 @@ async def require_user_or_admin(
 async def require_user(
     principal: Annotated[AuthenticatedPrincipal, Depends(resolve_principal)],
 ) -> AuthenticatedPrincipal:
-    """Business APIs are operated by the tenant user; admin has separate diagnostics APIs."""
+    """Enterprise product APIs are for tenant users only; platform admins use /api/v1/admin/*."""
     if principal.role_code != "user":
         raise BusinessError("PERMISSION_DENIED", "当前角色无权执行该业务操作", status_code=403)
     return principal

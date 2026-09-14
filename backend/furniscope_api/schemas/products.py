@@ -23,7 +23,11 @@ class ProductCreateResponse(BaseModel):
 
 
 class ProductListItem(ProductCreateResponse):
+    created_at: datetime
     updated_at: datetime
+    has_conflicts: bool = False
+    moq: str | None = None
+    factory_price: str | None = None
 
 
 class ProductAttribute(BaseModel):

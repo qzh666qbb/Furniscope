@@ -1,0 +1,20 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "panels": [
+    {"type": "timeseries", "title": "API requests / second", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "sum(rate(furniscope_http_requests_total[5m]))", "legendFormat": "QPS", "refId": "A"}], "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}},
+    {"type": "timeseries", "title": "API p95 latency", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "histogram_quantile(0.95, sum by (le) (rate(furniscope_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95", "refId": "A"}], "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}},
+    {"type": "bargauge", "title": "Analysis tasks by status", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "furniscope_analysis_tasks", "legendFormat": "{{status}}", "refId": "A"}], "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}},
+    {"type": "timeseries", "title": "Model calls", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "furniscope_model_runs_total", "legendFormat": "{{provider}} / {{status}}", "refId": "A"}], "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}},
+    {"type": "timeseries", "title": "CPU and memory", "datasource": {"type": "prometheus", "uid": "prometheus"}, "targets": [{"expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "CPU", "refId": "A"}, {"expr": "1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "legendFormat": "Memory", "refId": "B"}], "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}}
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["furniscope"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "FurniScope Operations Overview",
+  "uid": "furniscope-overview",
+  "version": 1
+}

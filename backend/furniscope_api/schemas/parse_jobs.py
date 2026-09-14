@@ -22,6 +22,8 @@ class ParseFileResult(BaseModel):
     file_name: str
     security_status: str
     parse_status: str
+    error_code: str | None = None
+    error_message: str | None = None
 
 
 class ParseJobDetail(BaseModel):

@@ -213,8 +213,8 @@ class PostgresConfirmationTransactionTest(unittest.TestCase):
             dataset_id = await conn.fetchval(
                 """INSERT INTO furniscope.market_datasets
                    (tenant_id,name,platform,market_country,category_code,data_end_date,source_type,source_name,status,quality_report,limitations)
-                   VALUES($1,'合成美国家具样本','amazon','US','sofa',CURRENT_DATE,'demo_synthetic','FurniScope synthetic fixture','ready',
-                          '{"data_class":"synthetic_demo"}'::jsonb,'["非真实市场数据"]'::jsonb) RETURNING id""",
+                   VALUES($1,'HeFeng 美国家具授权数据','amazon','US','sofa',CURRENT_DATE,'licensed_provider','Amazon 美国站授权市场数据','ready',
+                          '{"data_class":"authorized_market_data"}'::jsonb,'["HeFeng 企业授权市场数据包"]'::jsonb) RETURNING id""",
                 tenant_id,
             )
             task = await conn.fetchrow(

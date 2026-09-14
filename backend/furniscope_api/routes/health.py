@@ -19,4 +19,19 @@ async def readiness(request: Request) -> SuccessEnvelope[dict[str, str]]:
         await request.app.state.database.ping()
     except Exception as exc:
         raise BusinessError("DATABASE_UNAVAILABLE", "数据库暂不可用", status_code=503) from exc
-    return SuccessEnvelope(data={"status": "ready", "database": "ok"}, request_id=request.state.request_id)
+    if request.app.state.job_queue is not None:
+        try:
+            await request.app.state.job_queue.ping()
+        except Exception as exc:
+            raise BusinessError("JOB_QUEUE_UNAVAILABLE", "任务队列暂不可用", status_code=503) from exc
+    settings = request.app.state.settings
+    data = {
+        "status": "ready",
+        "database": "ok",
+        "model_router": "configured" if settings.has_model_router_key() else "missing",
+        "chat_fallback": "deepseek" if settings.has_deepseek_key() else "none",
+        "product_parse_mode": settings.product_parse_mode,
+    }
+    if request.app.state.job_queue is not None:
+        data["job_queue"] = "ok"
+    return SuccessEnvelope(data=data, request_id=request.state.request_id)

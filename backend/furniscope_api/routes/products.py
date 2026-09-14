@@ -1,13 +1,16 @@
 """P0 product endpoints that are not blocked by profile/storage contract drift."""
 
 from typing import Annotated
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, Query, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict
 
 from ..auth import AuthenticatedPrincipal, require_user
 from ..dependencies import DatabaseSession, Pagination
 from ..repositories.product_repository import ProductRepository
+from ..repositories.parse_repository import ParseRepository
 from ..schemas import ErrorBody, ErrorEnvelope, PageData, SuccessEnvelope
 from ..schemas.products import (ProductCreateRequest, ProductCreateResponse, ProductDetail,
     ProductListItem, ProductProfileConfirmRequest, ProductProfileConfirmResponse,
@@ -15,8 +18,14 @@ from ..schemas.products import (ProductCreateRequest, ProductCreateResponse, Pro
 from ..services.product_service import ProductService
 from ..services.parse_service import ParseService
 from ..schemas.parse_jobs import ParseAccepted
+from ..services.job_dispatch import enqueue_job
 
 router = APIRouter(prefix="/api/v1/products", tags=["Products"])
+
+
+class ProductUrlParseRequest(BaseModel):
+    url: AnyHttpUrl
+    model_config = ConfigDict(extra="forbid")
 
 
 @router.post("", operation_id="API-PRD-01", status_code=201, summary="创建产品")
@@ -96,10 +105,10 @@ async def confirm_product_profile(product_id: int, body: ProductProfileConfirmRe
     return JSONResponse(status_code=status_code, content=content)
 
 
-async def _run_demo_parse(database, settings, tenant_id: int, parse_job_id: str) -> None:
+async def _run_parse(database, settings, tenant_id: int, parse_job_id: str) -> None:
     async with database.session_factory() as session:
         try:
-            await ParseService(settings).run_demo_job(session, tenant_id=tenant_id, parse_job_id=parse_job_id)
+            await ParseService(settings).run_job(session, tenant_id=tenant_id, parse_job_id=parse_job_id)
             await session.commit()
         except Exception:
             await session.rollback()
@@ -133,6 +142,35 @@ async def parse_product_assets(product_id: int, request: Request, background_tas
         await session.rollback()
         raise
     parse_job_id=content["data"]["parse_job_id"]
-    background_tasks.add_task(_run_demo_parse, request.app.state.database, request.app.state.settings,
-                              principal.tenant_id, parse_job_id)
+    if request.app.state.job_queue is not None:
+        await enqueue_job(request.app, "product_parse",
+                          {"tenant_id": principal.tenant_id, "parse_job_id": parse_job_id},
+                          job_id=f"parse:{parse_job_id}")
+    else:
+        background_tasks.add_task(_run_parse, request.app.state.database, request.app.state.settings,
+                                  principal.tenant_id, parse_job_id)
     return JSONResponse(status_code=status_code,content=content)
+
+
+@router.post("/{product_id}/assets:url-parse", operation_id="API-PRD-08",
+             summary="预留官网产品页解析入口")
+async def parse_product_url(product_id: int, body: ProductUrlParseRequest, request: Request,
+    session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    if not await ParseRepository().product_exists(
+        session, tenant_id=principal.tenant_id, product_id=product_id,
+    ):
+        from ..errors import BusinessError
+        raise BusinessError("PRODUCT_NOT_FOUND", "产品不存在或不可访问", status_code=404)
+    host = (urlparse(str(body.url)).hostname or "").lower()
+    from ..errors import BusinessError
+    if host in {"hf-furniture.com", "www.hf-furniture.com"}:
+        raise BusinessError(
+            "PRODUCT_URL_STRUCTURE_UNSUPPORTED",
+            "暂不支持该网页结构，推荐上传 HF catalog.pdf 图册；官网入口已保留待适配",
+            status_code=422,
+        )
+    raise BusinessError(
+        "PRODUCT_URL_SOURCE_UNSUPPORTED",
+        "当前仅支持上传 PDF、XLSX、JPG 或 PNG 产品资料",
+        status_code=422,
+    )

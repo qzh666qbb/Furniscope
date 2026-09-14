@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from furniscope_api.app import create_app
-from furniscope_api.auth import AuthenticatedPrincipal, require_admin, require_user_or_admin
+from furniscope_api.auth import AuthenticatedPrincipal, require_admin, require_user, require_user_or_admin
 from furniscope_api.config import ApiSettings
 from furniscope_api.errors import BusinessError
 from furniscope_api.logging import redact
@@ -118,6 +118,16 @@ def build_test_app(*, row: dict | None, ready: bool = True):
             request_id=request.state.request_id,
         )
 
+    @app.get("/_test/business")
+    async def business_probe(
+        request: Request,
+        principal: AuthenticatedPrincipal = Depends(require_user),
+    ) -> SuccessEnvelope[dict[str, int | str]]:
+        return SuccessEnvelope(
+            data={"user_id": principal.user_id, "tenant_id": principal.tenant_id, "role_code": principal.role_code},
+            request_id=request.state.request_id,
+        )
+
     @app.get("/_test/admin")
     async def admin_probe(
         request: Request,
@@ -153,6 +163,14 @@ def test_openapi_and_success_envelope_and_request_id() -> None:
         live = client.get("/health/live", headers={"X-Request-ID": request_id})
     assert openapi.status_code == 200
     assert "/health/live" in openapi.json()["paths"]
+    ids = [
+        operation.get("operationId")
+        for methods in openapi.json()["paths"].values()
+        for operation in methods.values()
+        if isinstance(operation, dict) and operation.get("operationId")
+    ]
+    duplicates = sorted({item for item in ids if ids.count(item) > 1})
+    assert duplicates == []
     assert live.status_code == 200
     assert live.headers["X-Request-ID"] == request_id
     assert live.json()["success"] is True
@@ -193,6 +211,16 @@ def test_user_cannot_use_admin_dependency() -> None:
         response = client.get("/_test/admin", headers={"Authorization": f"Bearer {token(private_key)}"})
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "ADMIN_REQUIRED"
+
+
+def test_admin_cannot_use_enterprise_business_dependency() -> None:
+    app, _, private_key = build_test_app(row=active_row("admin"))
+    with TestClient(app) as client:
+        response = client.get(
+            "/_test/business", headers={"Authorization": f"Bearer {token(private_key, role_code='admin')}"}
+        )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "PERMISSION_DENIED"
 
 
 def test_admin_and_tenant_context_are_database_backed() -> None:

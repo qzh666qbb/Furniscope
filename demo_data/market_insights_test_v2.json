@@ -1,0 +1,51 @@
+{
+  "listings": [
+    {
+      "platform_listing_id": "TEST-SOFA-001",
+      "title": "Demo Modular Sofa 3 Seat - New Fabric",
+      "category_code": "sofa",
+      "currency": "USD",
+      "list_price": 499,
+      "sale_price": 389,
+      "rating": 4.4,
+      "review_count": 5,
+      "captured_at": "2026-09-15T08:00:00Z",
+      "first_available_date": "2026-06-01",
+      "normalized_attributes": {
+        "market_country": "US",
+        "material": { "value": "performance linen" },
+        "seat_count": { "value": 3 },
+        "promotion": { "value": "Autumn Deal" }
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "platform_review_id": "TEST-REV-001",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 5,
+      "content_original": "The sofa is comfortable and the frame feels very sturdy.",
+      "language_code": "en",
+      "reviewer_location": "US",
+      "reviewed_at": "2026-09-10T10:00:00Z"
+    },
+    {
+      "platform_review_id": "TEST-REV-002",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 2,
+      "content_original": "The cushion collapsed after one week and has a strong smell.",
+      "language_code": "en",
+      "reviewer_location": "CA",
+      "reviewed_at": "2026-09-11T10:00:00Z"
+    },
+    {
+      "platform_review_id": "TEST-REV-005",
+      "platform_listing_id": "TEST-SOFA-001",
+      "rating": 4,
+      "content_original": "The new fabric is softer and assembly was easy for two people.",
+      "language_code": "en",
+      "reviewer_location": "US",
+      "reviewed_at": "2026-09-15T12:00:00Z"
+    }
+  ]
+}

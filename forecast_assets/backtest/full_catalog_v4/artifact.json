@@ -1,0 +1,349 @@
+{
+  "surface": "report",
+  "manifest": {
+    "version": 1,
+    "surface": "report",
+    "title": "FurniScope Sales Forecast V4：全目录回测评估",
+    "description": "1204 SKU 覆盖审计、401 个有标签 SKU 的 8 周留出回测与基线比较。",
+    "generatedAt": "2026-09-10T15:46:11.683331+00:00",
+    "charts": [
+      {
+        "id": "overall_wape",
+        "title": "总体 WAPE：V4 仅小幅领先移动平均",
+        "subtitle": "越低越好；去年同期仅覆盖 71.3% 可用观测。",
+        "type": "bar",
+        "dataset": "overall",
+        "sourceId": "backtest_summary",
+        "valueFormat": "percent",
+        "layout": "half",
+        "surface": {
+          "compact": true
+        },
+        "encodings": {
+          "x": {
+            "field": "model_label",
+            "type": "nominal",
+            "label": "模型"
+          },
+          "y": {
+            "field": "wape",
+            "type": "quantitative",
+            "label": "WAPE"
+          },
+          "tooltip": [
+            {
+              "field": "observations",
+              "type": "quantitative",
+              "label": "观测数",
+              "format": "number"
+            },
+            {
+              "field": "bias",
+              "type": "quantitative",
+              "label": "偏差",
+              "format": "percent"
+            }
+          ]
+        }
+      }
+    ],
+    "sources": [
+      {
+        "id": "weekly_state",
+        "label": "周粒度模型状态",
+        "path": "forecast_assets/state/weekly.pkl"
+      },
+      {
+        "id": "backtest_summary",
+        "label": "回测摘要与口径",
+        "path": "forecast_assets/backtest/full_catalog_v4/summary.json"
+      },
+      {
+        "id": "tier_metrics",
+        "label": "销量层级指标",
+        "path": "forecast_assets/backtest/full_catalog_v4/metrics_by_sales_tier.csv"
+      },
+      {
+        "id": "site_metrics",
+        "label": "站点指标",
+        "path": "forecast_assets/backtest/full_catalog_v4/metrics_by_site.csv"
+      },
+      {
+        "id": "catalog_coverage",
+        "label": "1204 SKU 覆盖审计",
+        "path": "forecast_assets/backtest/full_catalog_v4/catalog_coverage.csv"
+      }
+    ],
+    "blocks": [
+      {
+        "id": "overall_chart",
+        "type": "chart",
+        "chartId": "overall_wape"
+      },
+      {
+        "id": "method",
+        "type": "markdown",
+        "sourceId": "catalog_coverage",
+        "body": "## 技术摘要\n\nV4 WAPE **58.06%**，较移动平均低 **0.42 个百分点**，但 MAPE/sMAPE 更差；高、中销量改善，低销量与冷启动无优势。1,204 SKU 中 401 个有 4,969 条留出标签，803 个无观测，不填零。\n\n**口径与方法：** 8 周一周前瞻回测；训练截止与统计特征均早于预测周。WAPE 为总量加权绝对误差，Bias 正值代表高估；数据校验和单测通过。\n\n**限制与行动：** 缺在售状态、品类维表，旧目标清洗可能含未来信息。应从原始订单因果重建并做多折回测；CA、IT、低销量及冷启动保留移动平均回退。"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-09-10T15:46:11.683331+00:00",
+    "status": "ready",
+    "datasets": {
+      "overall": [
+        {
+          "model_label": "V4 重新训练",
+          "observations": 4969,
+          "mae": 2.836826272,
+          "rmse": 6.2158682024,
+          "wape": 0.5806157733,
+          "mape": 0.8945870043,
+          "smape": 0.9421423031,
+          "bias": 0.0391690497,
+          "coverage": 1.0
+        },
+        {
+          "model_label": "4 周移动平均",
+          "observations": 4958,
+          "mae": 2.8616881807,
+          "rmse": 6.4954707528,
+          "wape": 0.5847689898,
+          "mape": 0.8877582864,
+          "smape": 0.892933167,
+          "bias": 0.0194294468,
+          "coverage": 0.9977862749
+        },
+        {
+          "model_label": "去年同期",
+          "observations": 3545,
+          "mae": 5.1078984485,
+          "rmse": 10.8721931514,
+          "wape": 0.8961668853,
+          "mape": 1.5365990631,
+          "smape": 0.9688741534,
+          "bias": 0.3615599713,
+          "coverage": 0.713423224
+        }
+      ],
+      "tiers": [
+        {
+          "sales_tier_label": "冷启动",
+          "model_label": "V4 重新训练",
+          "observations": 212,
+          "wape": 1.0489439336
+        },
+        {
+          "sales_tier_label": "冷启动",
+          "model_label": "4 周移动平均",
+          "observations": 208,
+          "wape": 0.8696682464
+        },
+        {
+          "sales_tier_label": "高销量",
+          "model_label": "V4 重新训练",
+          "observations": 2128,
+          "wape": 0.525526642
+        },
+        {
+          "sales_tier_label": "高销量",
+          "model_label": "4 周移动平均",
+          "observations": 2126,
+          "wape": 0.5324164597
+        },
+        {
+          "sales_tier_label": "低销量",
+          "model_label": "V4 重新训练",
+          "observations": 1156,
+          "wape": 0.8957256382
+        },
+        {
+          "sales_tier_label": "低销量",
+          "model_label": "4 周移动平均",
+          "observations": 1153,
+          "wape": 0.8931409452
+        },
+        {
+          "sales_tier_label": "中销量",
+          "model_label": "V4 重新训练",
+          "observations": 1473,
+          "wape": 0.7051089259
+        },
+        {
+          "sales_tier_label": "中销量",
+          "model_label": "4 周移动平均",
+          "observations": 1471,
+          "wape": 0.7195657041
+        }
+      ],
+      "sites": [
+        {
+          "site": "CA",
+          "model_label": "V4 重新训练",
+          "observations": 632,
+          "wape": 0.7419863294
+        },
+        {
+          "site": "CA",
+          "model_label": "4 周移动平均",
+          "observations": 630,
+          "wape": 0.65842396
+        },
+        {
+          "site": "DE",
+          "model_label": "V4 重新训练",
+          "observations": 692,
+          "wape": 0.568531865
+        },
+        {
+          "site": "DE",
+          "model_label": "4 周移动平均",
+          "observations": 691,
+          "wape": 0.5809139323
+        },
+        {
+          "site": "ES",
+          "model_label": "V4 重新训练",
+          "observations": 613,
+          "wape": 0.5909589506
+        },
+        {
+          "site": "ES",
+          "model_label": "4 周移动平均",
+          "observations": 610,
+          "wape": 0.6563794532
+        },
+        {
+          "site": "FR",
+          "model_label": "V4 重新训练",
+          "observations": 655,
+          "wape": 0.5693568615
+        },
+        {
+          "site": "FR",
+          "model_label": "4 周移动平均",
+          "observations": 655,
+          "wape": 0.5785784154
+        },
+        {
+          "site": "IT",
+          "model_label": "V4 重新训练",
+          "observations": 609,
+          "wape": 0.6143226304
+        },
+        {
+          "site": "IT",
+          "model_label": "4 周移动平均",
+          "observations": 608,
+          "wape": 0.603192446
+        },
+        {
+          "site": "NL",
+          "model_label": "V4 重新训练",
+          "observations": 45,
+          "wape": 1.037458457
+        },
+        {
+          "site": "NL",
+          "model_label": "4 周移动平均",
+          "observations": 42,
+          "wape": 1.095959596
+        },
+        {
+          "site": "US",
+          "model_label": "V4 重新训练",
+          "observations": 1723,
+          "wape": 0.5499168333
+        },
+        {
+          "site": "US",
+          "model_label": "4 周移动平均",
+          "observations": 1722,
+          "wape": 0.5554343019
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "weekly_state",
+      "query": {
+        "engine": "backtest artifact tables",
+        "language": "sql",
+        "sql": "SELECT * FROM weekly_state WHERE date < holdout_start ORDER BY sku_site, date",
+        "description": "固定训练截止日，使用严格滞后和扩展统计特征，对留出期执行一周前瞻滚动评分。",
+        "executed_at": "2026-09-10T15:46:11.683331+00:00",
+        "metric_definitions": [
+          "WAPE = sum(abs(prediction - actual)) / sum(abs(actual))",
+          "Bias = sum(prediction - actual) / sum(abs(actual))",
+          "Coverage = usable predictions / requested observations"
+        ]
+      }
+    },
+    {
+      "id": "backtest_summary",
+      "query": {
+        "engine": "backtest artifact tables",
+        "language": "sql",
+        "sql": "SELECT model, observations, mae, rmse, wape_pct, mape_pct, smape_pct, bias_pct, coverage_pct FROM backtest_overall ORDER BY model",
+        "description": "固定训练截止日，使用严格滞后和扩展统计特征，对留出期执行一周前瞻滚动评分。",
+        "executed_at": "2026-09-10T15:46:11.683331+00:00",
+        "metric_definitions": [
+          "WAPE = sum(abs(prediction - actual)) / sum(abs(actual))",
+          "Bias = sum(prediction - actual) / sum(abs(actual))",
+          "Coverage = usable predictions / requested observations"
+        ]
+      }
+    },
+    {
+      "id": "tier_metrics",
+      "query": {
+        "engine": "backtest artifact tables",
+        "language": "sql",
+        "sql": "SELECT sales_tier, model, observations, wape_pct FROM metrics_by_sales_tier WHERE model IN ('sales_forecast_v4_retrained', 'moving_average_4w') ORDER BY sales_tier, model",
+        "description": "固定训练截止日，使用严格滞后和扩展统计特征，对留出期执行一周前瞻滚动评分。",
+        "executed_at": "2026-09-10T15:46:11.683331+00:00",
+        "metric_definitions": [
+          "WAPE = sum(abs(prediction - actual)) / sum(abs(actual))",
+          "Bias = sum(prediction - actual) / sum(abs(actual))",
+          "Coverage = usable predictions / requested observations"
+        ]
+      }
+    },
+    {
+      "id": "site_metrics",
+      "query": {
+        "engine": "backtest artifact tables",
+        "language": "sql",
+        "sql": "SELECT site, model, observations, wape_pct FROM metrics_by_site WHERE model IN ('sales_forecast_v4_retrained', 'moving_average_4w') ORDER BY site, model",
+        "description": "固定训练截止日，使用严格滞后和扩展统计特征，对留出期执行一周前瞻滚动评分。",
+        "executed_at": "2026-09-10T15:46:11.683331+00:00",
+        "metric_definitions": [
+          "WAPE = sum(abs(prediction - actual)) / sum(abs(actual))",
+          "Bias = sum(prediction - actual) / sum(abs(actual))",
+          "Coverage = usable predictions / requested observations"
+        ]
+      }
+    },
+    {
+      "id": "catalog_coverage",
+      "query": {
+        "engine": "backtest artifact tables",
+        "language": "sql",
+        "sql": "SELECT sku, first_observed_week, last_observed_week, source_rows, sites, holdout_observations, status, reason FROM catalog_coverage ORDER BY sku",
+        "description": "固定训练截止日，使用严格滞后和扩展统计特征，对留出期执行一周前瞻滚动评分。",
+        "executed_at": "2026-09-10T15:46:11.683331+00:00",
+        "metric_definitions": [
+          "WAPE = sum(abs(prediction - actual)) / sum(abs(actual))",
+          "Bias = sum(prediction - actual) / sum(abs(actual))",
+          "Coverage = usable predictions / requested observations"
+        ]
+      }
+    }
+  ],
+  "package_info": {
+    "originUrl": "artifact://furniscope-sales-forecast-v4-backtest"
+  }
+}

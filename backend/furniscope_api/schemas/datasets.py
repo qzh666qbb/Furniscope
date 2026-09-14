@@ -51,6 +51,8 @@ class DatasetListItem(BaseModel):
     platform: str
     market_country: str
     category_code: str
+    source_type: str
+    source_name: str
     status: str
     listing_count: int
     review_count: int
@@ -58,14 +60,58 @@ class DatasetListItem(BaseModel):
     quality_score: float
     data_start_date: date | None
     data_end_date: date
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    version_no: int | None = None
+    quality_report: dict[str, Any] = Field(default_factory=dict)
 
 
 class DatasetDetail(DatasetListItem):
     version_no: int
     marketplace_code: str | None
-    source_type: str
-    source_name: str
     authorization_reference: str | None
     field_mapping: list[dict[str, Any]]
     quality_report: dict[str, Any]
     limitations: list[Any]
+
+
+class DatasetListingPreview(BaseModel):
+    listing_id: int
+    platform_listing_id: str
+    title: str
+    brand: str | None
+    category_code: str
+    currency: str
+    sale_price: float
+    list_price: float | None = None
+    rating: float | None
+    review_count: int | None
+    captured_at: datetime
+    first_available_date: date | None
+    market_country: str | None = None
+    normalized_attributes: dict[str, Any]
+
+
+class DatasetReviewPreview(BaseModel):
+    review_id: int
+    platform_review_id: str
+    listing_title: str
+    rating: float | None
+    content_original: str
+    language_code: str
+    reviewer_location: str | None = None
+    sentiment: str | None = None
+    reviewed_at: datetime | None
+    verified_purchase: bool | None
+    is_valid: bool
+    invalid_reason: str | None
+
+
+class DatasetBoundTask(BaseModel):
+    task_uuid: str
+    job_name: str
+    status: str
+    product_sku: str | None = None
+    product_name: str | None = None
+    report_uuid: str | None = None
+    created_at: datetime | None = None

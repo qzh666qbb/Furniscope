@@ -7,7 +7,10 @@ from uuid import uuid4
 from ..config import ApiSettings
 from ..errors import BusinessError
 
-ALLOWED_MIME = {"application/json","text/csv","application/pdf","image/jpeg","image/png","image/webp"}
+ALLOWED_MIME = {"application/json","text/csv","application/csv","text/json","application/octet-stream",
+                "application/pdf","image/jpeg","image/png",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+ALLOWED_SUFFIX = {".json", ".csv", ".xlsx", ".pdf", ".jpg", ".jpeg", ".png"}
 
 
 class DemoStorage:
@@ -24,10 +27,12 @@ class DemoStorage:
             raise BusinessError("FILE_EMPTY", "上传文件为空", status_code=400)
         if len(content) > self.max_bytes:
             raise BusinessError("FILE_SIZE_EXCEEDED", "文件超过大小限制", status_code=413)
-        if mime_type not in ALLOWED_MIME:
-            raise BusinessError("FILE_TYPE_UNSUPPORTED", "文件类型不受支持", status_code=415)
+        suffix = Path(filename).suffix.lower()
+        if mime_type not in ALLOWED_MIME or (mime_type == "application/octet-stream" and suffix not in ALLOWED_SUFFIX):
+            if suffix not in ALLOWED_SUFFIX:
+                raise BusinessError("FILE_TYPE_UNSUPPORTED", "文件类型不受支持", status_code=415)
         digest = hashlib.sha256(content).hexdigest()
-        safe_suffix = Path(filename).suffix.lower()[:12]
+        safe_suffix = suffix[:12]
         relative = Path(str(tenant_id)) / f"{uuid4().hex}{safe_suffix}"
         target = self.root / relative
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)

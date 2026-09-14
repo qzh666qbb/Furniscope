@@ -1,0 +1,81 @@
+.parent-page-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  margin: 0 0 16px;
+  color: #7b8998;
+  font-size: 10px;
+}
+
+.parent-page-tab button {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  color: #536477;
+  border: 1px solid #cfd9e0;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+  transition: color .16s ease, border-color .16s ease, background-color .16s ease;
+}
+
+.parent-page-tab button:hover,
+.parent-page-tab button:focus-visible {
+  color: #078c8d;
+  border-color: #8fc5c1;
+  background: #f7fbfb;
+  outline: none;
+}
+
+.parent-page-tab button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.parent-page-tab button span {
+  color: #8a97a5;
+  font-weight: 400;
+}
+
+.parent-page-tab button strong {
+  font-weight: 700;
+}
+
+.parent-page-divider {
+  width: 12px;
+  height: 12px;
+  color: #a6b0ba;
+}
+
+.parent-page-current {
+  color: #7b8998;
+  font-weight: 600;
+}
+
+.parent-page-tab.compact {
+  min-height: 24px;
+  margin: 0;
+}
+
+.parent-page-tab.compact button {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 9px;
+}
+
+.parent-page-tab.inverted {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .parent-page-current,
+  .parent-page-divider,
+  .parent-page-tab button > span {
+    display: none;
+  }
+}

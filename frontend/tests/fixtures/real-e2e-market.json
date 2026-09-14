@@ -1,0 +1,15 @@
+{
+  "listings": [
+    {"platform_listing_id":"E2E-L1","title":"Modern oak three seat sofa","currency":"USD","sale_price":399,"captured_at":"2026-09-01T00:00:00Z","normalized_attributes":{"material":{"value":"oak wood"},"style":{"value":"modern"}}},
+    {"platform_listing_id":"E2E-L2","title":"Modern wood frame couch","currency":"USD","sale_price":349,"captured_at":"2026-09-01T00:00:00Z","normalized_attributes":{"material":{"value":"wood"},"style":{"value":"modern"}}},
+    {"platform_listing_id":"E2E-L3","title":"Compact living room sofa","currency":"USD","sale_price":299,"captured_at":"2026-09-01T00:00:00Z","normalized_attributes":{"style":{"value":"modern"}}}
+  ],
+  "reviews": [
+    {"platform_listing_id":"E2E-L1","platform_review_id":"E2E-R1","rating":5,"content_original":"The oak frame feels sturdy and the cushions are comfortable.","language_code":"en","verified_purchase":true},
+    {"platform_listing_id":"E2E-L1","platform_review_id":"E2E-R2","rating":2,"content_original":"The shipping box arrived damaged and one wooden leg was broken.","language_code":"en","verified_purchase":true},
+    {"platform_listing_id":"E2E-L2","platform_review_id":"E2E-R3","rating":5,"content_original":"Assembly was easy and the instructions were clear.","language_code":"en","verified_purchase":true},
+    {"platform_listing_id":"E2E-L2","platform_review_id":"E2E-R4","rating":3,"content_original":"The seat is too firm for long use but the material looks good.","language_code":"en","verified_purchase":true},
+    {"platform_listing_id":"E2E-L3","platform_review_id":"E2E-R5","rating":4,"content_original":"Good size for a small living room and looks beautiful.","language_code":"en","verified_purchase":true},
+    {"platform_listing_id":"E2E-L3","platform_review_id":"E2E-R6","rating":2,"content_original":"The package had a bad smell and the fabric was stained.","language_code":"en","verified_purchase":true}
+  ]
+}

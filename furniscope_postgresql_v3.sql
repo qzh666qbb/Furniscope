@@ -130,6 +130,7 @@ CREATE TABLE enterprise_profiles (
   annual_capacity_note TEXT,
   constraints JSONB NOT NULL DEFAULT '[]'::jsonb,
   profile_completeness NUMERIC(5,4) NOT NULL DEFAULT 0,
+  profile_version INTEGER NOT NULL DEFAULT 1,
   confirmed_by BIGINT REFERENCES users(id),
   confirmed_at TIMESTAMPTZ(3),
   created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -140,6 +141,7 @@ CREATE TABLE enterprise_profiles (
     jsonb_typeof(constraints)='array'
   ),
   CONSTRAINT chk_enterprise_completeness CHECK (profile_completeness BETWEEN 0 AND 1),
+  CONSTRAINT chk_enterprise_profile_version CHECK (profile_version>=1),
   CONSTRAINT chk_enterprise_confirmation CHECK ((confirmed_by IS NULL)=(confirmed_at IS NULL))
 );
 COMMENT ON TABLE enterprise_profiles IS 'One enterprise profile per tenant; V2 enterprise_constraints are merged into constraints JSONB.';
@@ -159,6 +161,7 @@ CREATE TABLE products (
   created_by BIGINT REFERENCES users(id),
   created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMPTZ(3),
   CONSTRAINT uk_products_tenant_sku UNIQUE (tenant_id,sku),
   CONSTRAINT chk_product_lifecycle CHECK (lifecycle_status IN ('concept','sample','active','discontinued')),
   CONSTRAINT chk_product_analysis CHECK (analysis_status IN ('draft','profile_pending','ready','archived'))
@@ -339,6 +342,7 @@ CREATE TABLE market_datasets (
   created_by BIGINT REFERENCES users(id),
   created_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMPTZ(3),
   CONSTRAINT uk_dataset_tenant_name_version UNIQUE(tenant_id,name,version_no),
   CONSTRAINT chk_dataset_dates CHECK (data_start_date IS NULL OR data_end_date>=data_start_date),
   CONSTRAINT chk_dataset_source CHECK (source_type IN ('enterprise_export','licensed_provider','public_authorized','demo_synthetic')),
@@ -395,6 +399,8 @@ CREATE TABLE reviews (
   title_original TEXT,
   content_original TEXT NOT NULL,
   language_code VARCHAR(16) NOT NULL DEFAULT 'und',
+  reviewer_location VARCHAR(100),
+  sentiment VARCHAR(16),
   title_translated TEXT,
   content_translated TEXT,
   reviewed_at TIMESTAMPTZ(3),
@@ -477,6 +483,8 @@ CREATE TABLE analysis_tasks (
   progress_percent NUMERIC(5,2) NOT NULL DEFAULT 0,
   checkpoint_stage VARCHAR(64),
   analysis_config JSONB NOT NULL DEFAULT '{}'::jsonb,
+  enterprise_profile_version INTEGER NOT NULL DEFAULT 0,
+  enterprise_profile_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
   ontology_version VARCHAR(64) NOT NULL,
   scoring_version VARCHAR(64) NOT NULL,
   prompt_bundle_version VARCHAR(64) NOT NULL,
@@ -494,6 +502,7 @@ CREATE TABLE analysis_tasks (
   CONSTRAINT chk_task_internal_stage CHECK (internal_stage IN ('task_initializing','preflight_check','context_loading','data_quality','competitor_filtering','competitor_embedding','competitor_reranking','user_confirmation','review_preprocessing','review_extracting','need_clustering','market_analytics','opportunity_scoring','strategy_generating','evidence_auditing','report_generating','persisting','completed')),
   CONSTRAINT chk_task_progress CHECK (progress_percent BETWEEN 0 AND 100),
   CONSTRAINT chk_task_config CHECK (jsonb_typeof(analysis_config)='object'),
+  CONSTRAINT chk_task_enterprise_snapshot CHECK (jsonb_typeof(enterprise_profile_snapshot)='object' AND enterprise_profile_version>=0),
   CONSTRAINT chk_task_complete CHECK (status<>'succeeded' OR (external_stage='completed' AND progress_percent=100 AND completed_at IS NOT NULL))
 );
 COMMENT ON TABLE analysis_tasks IS 'Super AI employee analysis tasks with internal state and five-stage external projection.';
@@ -724,7 +733,7 @@ CREATE OR REPLACE FUNCTION validate_review_aspect_span() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE source_text TEXT;
 BEGIN
-  SELECT content_original INTO source_text FROM reviews WHERE id=NEW.review_id;
+  SELECT content_original INTO source_text FROM furniscope.reviews WHERE id=NEW.review_id;
   IF source_text IS NULL OR NEW.evidence_end > char_length(source_text) OR
      substring(source_text FROM NEW.evidence_start+1 FOR NEW.evidence_end-NEW.evidence_start) <> NEW.evidence_quote THEN
     RAISE EXCEPTION 'evidence span/quote does not match protected review original';
@@ -831,6 +840,7 @@ CREATE TABLE market_opportunities (
   competition_space_score NUMERIC(5,2) NOT NULL,
   profit_space_score NUMERIC(5,2),
   enterprise_fit_score NUMERIC(5,2) NOT NULL,
+  enterprise_fit_confidence NUMERIC(5,4) NOT NULL DEFAULT 0.4,
   base_score NUMERIC(5,2) NOT NULL,
   confidence NUMERIC(5,4) NOT NULL,
   recommendation_level VARCHAR(32) NOT NULL,
@@ -844,6 +854,7 @@ CREATE TABLE market_opportunities (
   CONSTRAINT chk_opportunity_status CHECK (status IN ('generated','data_needed')),
   CONSTRAINT chk_opportunity_scores CHECK (demand_heat_score BETWEEN 0 AND 100 AND (demand_growth_score IS NULL OR demand_growth_score BETWEEN 0 AND 100) AND unmet_need_score BETWEEN 0 AND 100 AND competition_space_score BETWEEN 0 AND 100 AND (profit_space_score IS NULL OR profit_space_score BETWEEN 0 AND 100) AND enterprise_fit_score BETWEEN 0 AND 100 AND base_score BETWEEN 0 AND 100),
   CONSTRAINT chk_opportunity_conf CHECK (confidence BETWEEN 0 AND 1),
+  CONSTRAINT chk_opportunity_fit_confidence CHECK (enterprise_fit_confidence BETWEEN 0 AND 1),
   CONSTRAINT chk_opportunity_level CHECK (recommendation_level IN ('prioritize_validate','collect_more_data','capability_gap','limited_opportunity')),
   CONSTRAINT chk_opportunity_json CHECK (jsonb_typeof(target_user_codes)='array' AND jsonb_typeof(usage_scenario_codes)='array' AND jsonb_typeof(primary_cluster_ids)='array' AND jsonb_array_length(primary_cluster_ids)>0 AND jsonb_typeof(weight_config)='object' AND jsonb_typeof(manufacturing_fit)='array')
 );
@@ -973,6 +984,17 @@ BEGIN
 END $$;
 
 COMMIT;
+
+-- Additive Forecast V4 domain. Kept in a standalone migration so existing V3
+-- databases and fresh installations execute the exact same contract.
+\ir migrations/v3_forecast_integration.sql
+\ir migrations/v3_5_admin_control_center.sql
+\ir migrations/v3_6_registration_applications.sql
+\ir migrations/v3_7_authorized_market_signals.sql
+\ir migrations/v3_8_alert_notifications.sql
+\ir migrations/v3_9_active_web_collection.sql
+\ir migrations/v3_10_analysis_workspaces.sql
+\ir migrations/v3_11_forecast_sku_aliases.sql
 
 -- Verification SQL (read-only; run after build).
 SET search_path TO furniscope, public;

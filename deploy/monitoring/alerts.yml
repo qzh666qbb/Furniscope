@@ -1,0 +1,27 @@
+groups:
+  - name: furniscope
+    rules:
+      - alert: FurniScopeApiUnavailable
+        expr: up{job="furniscope-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: FurniScope API has been unavailable for two minutes
+      - alert: FurniScopeHighHttpFailureRate
+        expr: sum(rate(furniscope_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(furniscope_http_requests_total[5m])), 0.001) > 0.10
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: FurniScope HTTP 5xx rate is above 10 percent
+      - alert: FurniScopeFailedTaskBacklog
+        expr: furniscope_analysis_tasks{status="failed"} > 5
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: More than five analysis tasks are failed
+      - alert: FurniScopeDiskSpaceLow
+        expr: node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} < 0.10
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: Host filesystem has less than 10 percent free space

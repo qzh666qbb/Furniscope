@@ -1,0 +1,207 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: furniscope
+      POSTGRES_USER: furniscope
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./furniscope_postgresql_v3.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U furniscope -d furniscope"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: .
+    environment:
+      PYTHONPATH: /app:/app/backend
+      DATABASE_URL: postgresql+asyncpg://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
+      LANGGRAPH_DATABASE_URL: postgresql://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: development
+      CORS_ALLOWED_ORIGINS: '["http://localhost:8083","http://127.0.0.1:8083"]'
+      ANALYSIS_WORKER_MODE: ${ANALYSIS_WORKER_MODE:-external}
+      ANALYSIS_TOOL_MODE: ${ANALYSIS_TOOL_MODE:-external}
+      PRODUCT_PARSE_MODE: ${PRODUCT_PARSE_MODE:-model}
+      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-26214400}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-}
+      JOB_QUEUE_MODE: redis
+      ALIYUN_MODEL_ROUTER_API_KEY: ${ALIYUN_MODEL_ROUTER_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_CHAT_BASE_URL: ${DEEPSEEK_CHAT_BASE_URL:-https://api.deepseek.com/v1}
+      DEEPSEEK_TEXT_MODEL: ${DEEPSEEK_TEXT_MODEL:-deepseek-chat}
+      FURNISCOPE_JWT_PRIVATE_KEY: ${FURNISCOPE_JWT_PRIVATE_KEY:-}
+      FURNISCOPE_JWT_PUBLIC_KEYS_JSON: ${FURNISCOPE_JWT_PUBLIC_KEYS_JSON:-}
+      DEMO_STORAGE_ROOT: /app/var/demo_uploads
+    volumes:
+      - upload-data:/app/var/demo_uploads
+      - forecast-artifacts:/app/forecast_assets/tenants
+      - ./var/runtime:/app/var/runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    build: .
+    command: ["python", "-m", "furniscope_api.worker"]
+    environment:
+      PYTHONPATH: /app:/app/backend
+      DATABASE_URL: postgresql+asyncpg://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
+      LANGGRAPH_DATABASE_URL: postgresql://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
+      REDIS_URL: redis://redis:6379/0
+      JOB_QUEUE_MODE: redis
+      APP_ENV: development
+      ANALYSIS_WORKER_MODE: ${ANALYSIS_WORKER_MODE:-external}
+      ANALYSIS_TOOL_MODE: ${ANALYSIS_TOOL_MODE:-external}
+      PRODUCT_PARSE_MODE: ${PRODUCT_PARSE_MODE:-model}
+      UPLOAD_MAX_BYTES: ${UPLOAD_MAX_BYTES:-26214400}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:-}
+      ALIYUN_MODEL_ROUTER_API_KEY: ${ALIYUN_MODEL_ROUTER_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_CHAT_BASE_URL: ${DEEPSEEK_CHAT_BASE_URL:-https://api.deepseek.com/v1}
+      DEEPSEEK_TEXT_MODEL: ${DEEPSEEK_TEXT_MODEL:-deepseek-chat}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+      WORKER_BLOCK_MS: ${WORKER_BLOCK_MS:-5000}
+      WORKER_LEASE_MS: ${WORKER_LEASE_MS:-120000}
+      WORKER_MAX_ATTEMPTS: ${WORKER_MAX_ATTEMPTS:-3}
+      WORKER_JOB_TIMEOUT_SECONDS: ${WORKER_JOB_TIMEOUT_SECONDS:-900}
+      DEMO_STORAGE_ROOT: /app/var/demo_uploads
+    volumes:
+      - upload-data:/app/var/demo_uploads
+      - forecast-artifacts:/app/forecast_assets/tenants
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8083:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  backup:
+    image: postgres:16-alpine
+    profiles: ["operations"]
+    environment:
+      POSTGRES_BACKUP_URL: postgresql://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
+      BACKUP_DIRECTORY: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    command: ["/scripts/scheduled_backup.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - postgres-backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["monitoring"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    ports: ["${PROMETHEUS_PORT:-9090}:9090"]
+    volumes:
+      - ./deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    depends_on: [backend, alertmanager, postgres-exporter, redis-exporter, node-exporter, cadvisor]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    profiles: ["monitoring"]
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    ports: ["${ALERTMANAGER_PORT:-9093}:9093"]
+    volumes:
+      - ./deploy/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: ["monitoring"]
+    environment:
+      GRAFANA_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    entrypoint: ["/bin/sh", "/etc/grafana/furniscope-entrypoint.sh"]
+    ports: ["${GRAFANA_PORT:-3000}:3000"]
+    volumes:
+      - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./deploy/monitoring/grafana-entrypoint.sh:/etc/grafana/furniscope-entrypoint.sh:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [prometheus]
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.17.1
+    profiles: ["monitoring"]
+    environment:
+      DATA_SOURCE_NAME: postgresql://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.77.0
+    profiles: ["monitoring"]
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    profiles: ["monitoring"]
+    command: ["--path.rootfs=/host"]
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
+    profiles: ["monitoring"]
+    privileged: true
+    devices: ["/dev/kmsg"]
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+volumes:
+  postgres-data:
+  redis-data:
+  upload-data:
+  forecast-artifacts:
+  postgres-backups:
+  prometheus-data:
+  grafana-data:

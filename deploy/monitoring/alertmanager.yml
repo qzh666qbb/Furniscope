@@ -1,0 +1,9 @@
+route:
+  receiver: operations-log
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 2m
+  repeat_interval: 4h
+
+receivers:
+  - name: operations-log

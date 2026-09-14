@@ -15,7 +15,7 @@
 2. `Docs/参赛提交/FurniScope_Idea附件说明V1.md`：项目价值、业务闭环、架构和实现进度。
 3. `Docs/项目设计文档/01_产品需求规格说明书SRS_PRD_V2.md`：完整产品定义与 P0 范围。
 4. `Docs/项目设计文档/06_FurniScope_Mermaid图V3.md`：业务流程、系统架构、ER 和 Agent 映射图。
-5. `UI_Desgin/.../Docs/FurniScope_完整UI页面设计稿_V1.pdf`：完整 UI 页面视觉方案。
+5. `archive/ui-design-v2/Docs/FurniScope_完整UI页面设计稿_V1.pdf`：完整 UI 页面视觉方案。
 6. Agent、API、数据库文档及开发实现说明。
 7. `backend/`、`tests/` 和 PostgreSQL DDL：核心代码与可验证实现。
 
@@ -97,7 +97,7 @@ FastAPI 后端，按照职责分层。
 
 开发记录中的最近一次真实 PostgreSQL 全量验证结果为 **30 passed、0 skipped**。运行完整集成测试需要提供隔离的 `FURNISCOPE_TEST_DATABASE_URL`。
 
-## 9. `UI_Desgin/UI_V2/.../furniscope-app/`
+## 9. `frontend/`
 
 当前 React 19 + Vite UI 实现的精简提交内容。
 
@@ -116,7 +116,7 @@ FastAPI 后端，按照职责分层。
 
 | 文件 | 内容 |
 |---|---|
-| `UI_Desgin/.../Docs/FurniScope_完整UI页面设计稿_V1.pdf` | 完整 UI 页面设计稿原文件 |
+| `archive/ui-design-v2/Docs/FurniScope_完整UI页面设计稿_V1.pdf` | 完整 UI 页面设计稿原文件 |
 | `Docs/参赛提交/FurniScope_Full_UI_Design_V1.pdf` | 同一设计稿的英文文件名兼容副本，防止部分解压工具显示中文乱码 |
 
 两份 PDF 内容相同，并非两套不同方案。
@@ -131,4 +131,3 @@ FastAPI 后端，按照职责分层。
 ## 12. 当前范围说明
 
 附件证明的是当前设计与开发基线，不表示全部路线图均已完成。数据库、Agent 主链、FastAPI 基础设施、认证、幂等、产品、数据集和分析任务 API 已完成；统一确认 HTTP API、洞察下钻、报告详情和完整前后端联调仍属于后续增量开发范围。
-

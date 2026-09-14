@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import ApiSettings
 from ..errors import BusinessError
 from ..repositories.auth_repository import AuthRepository, UserIdentity
-from ..schemas.auth import AuthUser, CurrentUserResponse, LoginResponse, RefreshTokenResponse, TenantProjection
+from ..schemas.auth import AuthUser, CurrentUserResponse, LoginResponse, LogoutResponse, RefreshTokenResponse, TenantProjection
 from ..security.password import PasswordService
 from ..security.token_service import TokenConfigurationError, TokenService
 
@@ -26,12 +26,22 @@ class AuthService:
         self.password_service = password_service or PasswordService()
         self.token_service = token_service or TokenService(settings)
 
-    async def login(self, session: AsyncSession, *, email: str, password: str) -> LoginResponse:
+    async def login(
+        self, session: AsyncSession, *, email: str, password: str, expected_role: str = "user"
+    ) -> LoginResponse:
         identity = await self.repository.find_by_email(session, email)
         if not self.password_service.verify(password, identity.password_hash if identity else None):
             raise BusinessError("AUTH_INVALID_CREDENTIALS", "邮箱或密码错误", status_code=401)
         assert identity is not None
         self._assert_identity_active(identity)
+        if identity.role_code != expected_role:
+            if expected_role == "admin":
+                raise BusinessError(
+                    "AUTH_ENTERPRISE_PORTAL_REQUIRED", "企业账号请从企业工作台登录", status_code=403
+                )
+            raise BusinessError(
+                "AUTH_ADMIN_PORTAL_REQUIRED", "平台管理员请从独立管理入口登录", status_code=403
+            )
         response = await self._issue_session(session, identity=identity, token_family_uuid=uuid4())
         await self.repository.update_last_login(
             session, user_id=identity.user_id, tenant_id=identity.tenant_id
@@ -82,6 +92,12 @@ class AuthService:
                 default_currency=identity.default_currency,
             ),
         )
+
+    async def logout(self, session: AsyncSession, *, refresh_token: str) -> LogoutResponse:
+        token_hash = self.token_service.hash_refresh_token(refresh_token)
+        await self.repository.revoke_by_token_hash(session, token_hash)
+        # Logout is intentionally idempotent and does not reveal whether a token existed.
+        return LogoutResponse()
 
     async def _issue_session(
         self, session: AsyncSession, *, identity: UserIdentity, token_family_uuid

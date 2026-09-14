@@ -26,6 +26,6 @@ async def get_parse_job(parse_job_id: str,request:Request,session:DatabaseSessio
         progress_percent=job["progress_percent"],current_stage=job["current_stage"],
         summary=ParseSummary(file_count=job["file_count"],succeeded_file_count=job["succeeded_file_count"],
                              failed_file_count=job["failed_file_count"]),
-        file_results=[ParseFileResult(**{k:f[k] for k in ("file_name","security_status","parse_status")}) for f in files],
+        file_results=[ParseFileResult(**{k:f[k] for k in ("file_name","security_status","parse_status","error_code","error_message")}) for f in files],
         retryable=job["retryable"],failure_code=job["failure_code"],failure_message=job["failure_message"])
     return SuccessEnvelope(data=data,request_id=request.state.request_id)

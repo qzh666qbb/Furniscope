@@ -10,6 +10,58 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class AnalysisTaskRepository:
+    async def list(self, session: AsyncSession, *, tenant_id: int,
+                   offset: int, limit: int, source: str | None = None) -> tuple[list[dict[str, Any]], int]:
+        params = {"tenant_id": tenant_id, "offset": offset, "limit": limit, "source": source}
+        where = (
+            "t.tenant_id=:tenant_id AND t.status<>'cancelled' AND "
+            "(CAST(:source AS text) IS NULL "
+            "OR t.analysis_config->>'source'=CAST(:source AS text))"
+        )
+        total = int(await session.scalar(text(
+            f"SELECT count(*) FROM analysis_tasks t WHERE {where}"
+        ), params) or 0)
+        result = await session.execute(text(f"""
+            SELECT t.task_uuid::text,t.job_name,t.job_type,t.status,
+                   t.external_stage AS stage,t.progress_percent,t.product_id,
+                   p.sku AS product_sku,p.name AS product_name,
+                   trim(t.target_country) AS target_country,t.target_platform,
+                   t.analysis_config->>'source' AS source,
+                   NULLIF(t.analysis_config->>'workspace_uuid','')::uuid AS workspace_uuid,
+                   report.report_uuid::text,t.created_at,t.updated_at
+              FROM analysis_tasks t
+              JOIN products p ON p.id=t.product_id AND p.tenant_id=t.tenant_id
+              LEFT JOIN LATERAL (
+                SELECT r.report_uuid
+                  FROM analysis_reports r
+                 WHERE r.analysis_job_id=t.id AND r.tenant_id=t.tenant_id
+                   AND r.status='draft'
+                 ORDER BY r.report_version DESC,r.id DESC LIMIT 1
+              ) report ON true
+             WHERE {where}
+             ORDER BY t.updated_at DESC,t.id DESC
+             OFFSET :offset LIMIT :limit
+        """), params)
+        return [dict(row) for row in result.mappings().all()], total
+
+    async def archive_tasks(self, session: AsyncSession, *, tenant_id: int,
+                            task_uuids: list[str]) -> int:
+        params = {"tenant_id": tenant_id, "uuids": task_uuids}
+        await session.execute(text("""
+            UPDATE analysis_reports SET status='superseded',updated_at=CURRENT_TIMESTAMP
+             WHERE tenant_id=:tenant_id AND status='draft'
+               AND analysis_job_id IN (
+                 SELECT id FROM analysis_tasks
+                  WHERE tenant_id=:tenant_id AND CAST(task_uuid AS text)=ANY(:uuids)
+               )
+        """), params)
+        result = await session.execute(text("""
+            UPDATE analysis_tasks SET status='cancelled',updated_at=CURRENT_TIMESTAMP
+             WHERE tenant_id=:tenant_id AND CAST(task_uuid AS text)=ANY(:uuids)
+               AND status<>'cancelled'
+        """), params)
+        return int(result.rowcount or 0)
+
     async def input_scope(self, session: AsyncSession, *, tenant_id: int, product_id: int,
                           profile_version_id: int, dataset_id: int) -> dict[str, Any]:
         result = await session.execute(text("""
@@ -30,20 +82,38 @@ class AnalysisTaskRepository:
     async def create(self, session: AsyncSession, *, tenant_id: int, user_id: int,
                      idempotency_key: str, payload: dict[str, Any],
                      versions: dict[str, str]) -> dict[str, Any]:
+        snapshot = await session.scalar(text("""
+            SELECT jsonb_build_object(
+              'profile_version',COALESCE((SELECT profile_version FROM enterprise_profiles
+                                           WHERE tenant_id=:tenant_id),0),
+              'captured_at',CURRENT_TIMESTAMP,
+              'profile',(SELECT to_jsonb(ep)-'id'-'tenant_id'
+                           FROM enterprise_profiles ep WHERE ep.tenant_id=:tenant_id),
+              'capabilities',COALESCE((
+                SELECT jsonb_agg(to_jsonb(mc)-'id'-'tenant_id'-'created_by'
+                                 ORDER BY mc.capability_type,mc.capability_code)
+                  FROM manufacturing_capabilities mc WHERE mc.tenant_id=:tenant_id
+              ),'[]'::jsonb))
+        """), {"tenant_id": tenant_id})
+        snapshot = snapshot or {"profile_version": 0, "profile": None, "capabilities": []}
         params = {**payload, **versions, "tenant_id": tenant_id, "user_id": user_id,
                   "idempotency_key": idempotency_key,
-                  "analysis_config_json": json.dumps(payload["analysis_config"], ensure_ascii=False)}
+                  "analysis_config_json": json.dumps(payload["analysis_config"], ensure_ascii=False),
+                  "enterprise_profile_version": int(snapshot.get("profile_version") or 0),
+                  "enterprise_profile_snapshot": json.dumps(snapshot, ensure_ascii=False, default=str)}
         result = await session.execute(text("""
             INSERT INTO analysis_tasks
               (tenant_id,job_name,job_type,product_id,product_profile_version_id,dataset_id,
                target_country,target_platform,analysis_currency,analysis_config,ontology_version,
                scoring_version,prompt_bundle_version,model_route_version,idempotency_key,created_by,
+               enterprise_profile_version,enterprise_profile_snapshot,
                external_stage,internal_stage)
             VALUES
               (:tenant_id,:job_name,:job_type,:product_id,:product_profile_version_id,:dataset_id,
                :target_country,:target_platform,:analysis_currency,CAST(:analysis_config_json AS jsonb),
                :ontology_version,:scoring_version,:prompt_bundle_version,:model_route_version,
-               :idempotency_key,:user_id,'understanding_product','task_initializing')
+               :idempotency_key,:user_id,:enterprise_profile_version,
+               CAST(:enterprise_profile_snapshot AS jsonb),'understanding_product','task_initializing')
             RETURNING id,task_uuid::text,job_name,job_type,status,
                       external_stage AS stage,progress_percent
         """), params)
@@ -85,7 +155,8 @@ class AnalysisTaskRepository:
                      task_uuid: str) -> dict[str, Any] | None:
         result = await session.execute(text("""
             SELECT t.id,t.task_uuid::text,t.status,t.external_stage AS stage,
-                   t.progress_percent,t.checkpoint_stage,r.report_uuid::text,
+                   t.progress_percent,t.checkpoint_stage,t.job_name,t.product_id,
+                   t.failure_message,r.report_uuid::text,
                    EXISTS(SELECT 1 FROM workflow_checkpoints w
                            WHERE w.task_id=t.id AND w.tenant_id=t.tenant_id
                              AND w.stage_code=t.checkpoint_stage AND w.is_safe_resume
@@ -107,7 +178,7 @@ class AnalysisTaskRepository:
         result = await session.execute(text("""
             SELECT stage_code,attempt_no,status,started_at,ended_at,retryable,
                    CASE WHEN :admin THEN error_code ELSE NULL END AS error_code,
-                   CASE WHEN :admin THEN error_message ELSE NULL END AS error_message
+                   error_message
               FROM task_stage_runs
              WHERE tenant_id=:tenant_id AND task_id=:task_id
              ORDER BY created_at DESC,id DESC LIMIT :limit
@@ -116,7 +187,6 @@ class AnalysisTaskRepository:
         if not admin:
             for row in rows:
                 row.pop("error_code", None)
-                row.pop("error_message", None)
         return rows
 
     async def partial_failures(self, session: AsyncSession, *, tenant_id: int,

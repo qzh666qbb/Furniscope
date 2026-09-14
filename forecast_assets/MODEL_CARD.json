@@ -1,0 +1,107 @@
+{
+  "model_version": "sales-forecast-v4",
+  "engine": "xgboost_lightgbm_dynamic_ensemble",
+  "data_through": "2026-06-30",
+  "sku_count": 1204,
+  "trained_models": {
+    "day": {
+      "trained_at": "2026-08-26 04:41:56.105542",
+      "feature_count": 40,
+      "artifact": "state/day_model.pkl",
+      "sha256": "b0543c3451e5f47550a2a2e02e6b5155b3b87464f2e061de10f011efb0977fd5"
+    },
+    "week": {
+      "trained_at": "2026-08-26 04:41:35.971733",
+      "feature_count": 48,
+      "artifact": "state/week_model.pkl",
+      "sha256": "eaaa6181692988a4ca4a8169a18071e1c5c82c59dee9138b394e533a2c01edfa"
+    }
+  },
+  "reported_backtest": {
+    "source": "docs/销量预测V4.md",
+    "scope": "Top 15 high-volume SKUs, 8-week backtest",
+    "weekly_normalized_mae_percent": 14.9,
+    "daily_7_day_sum_normalized_mae_percent_approx": 35,
+    "stable_sku_weekly_error_percent": "5-7",
+    "stable_sku_daily_7_day_error_percent_approx": 15,
+    "note": "Reported historical evaluation copied with the V4 delivery; not recomputed during repository import."
+  },
+  "data_quality": {
+    "valid_order_rows": 879711,
+    "valid_order_ratio_percent": 98.6,
+    "inventory_match_before_percent": 33.2,
+    "inventory_match_after_percent": 98.7
+  },
+  "limitations": [
+    "Daily forecasts are noisier than weekly forecasts.",
+    "For SKUs averaging fewer than five units per day, prefer weekly forecasts.",
+    "Historical evaluation metrics must be recomputed after retraining or changing source data."
+  ],
+  "recomputed_backtest": {
+    "generated_at": "2026-09-10T15:46:11.683331+00:00",
+    "holdout": {
+      "start": "2026-05-11",
+      "end": "2026-06-29",
+      "weeks": 8,
+      "method": "fixed-training-window plus rolling one-week-ahead holdout scoring"
+    },
+    "catalog_audit": {
+      "catalog_skus": 1204,
+      "scored_skus": 401,
+      "unscored_skus": 803,
+      "scored_catalog_pct": 33.30564784053156,
+      "holdout_observations": 4969
+    },
+    "candidate_metrics": {
+      "scope": "all",
+      "model": "sales_forecast_v4_retrained",
+      "observations": 4969,
+      "actual_units": 24278.0,
+      "mae": 2.836826271951018,
+      "rmse": 6.215868202355011,
+      "wape_pct": 58.0615773347253,
+      "mape_pct": 89.45870043348502,
+      "smape_pct": 94.21423030914872,
+      "bias_pct": 3.916904967421381,
+      "coverage_pct": 100.0
+    },
+    "baseline_comparison": {
+      "moving_average_4w": {
+        "scope": "all",
+        "model": "moving_average_4w",
+        "observations": 4958,
+        "actual_units": 24263.0,
+        "mae": 2.8616881807180317,
+        "rmse": 6.495470752820654,
+        "wape_pct": 58.47689898198903,
+        "mape_pct": 88.7758286434968,
+        "smape_pct": 89.29331670342413,
+        "bias_pct": 1.942944675706494,
+        "coverage_pct": 99.77862749044073
+      },
+      "prior_year_same_week": {
+        "scope": "all",
+        "model": "prior_year_same_week",
+        "observations": 3545,
+        "actual_units": 20205.5,
+        "mae": 5.107898448519041,
+        "rmse": 10.87219315138466,
+        "wape_pct": 89.6166885254015,
+        "mape_pct": 153.65990631473286,
+        "smape_pct": 96.8874153388079,
+        "bias_pct": 36.155997129494445,
+        "coverage_pct": 71.34232239887301
+      },
+      "wape_improvement_vs_moving_average_percentage_points": 0.4153216472637311
+    },
+    "artifacts": {
+      "summary": "forecast_assets/backtest/full_catalog_v4/summary.json",
+      "catalog_coverage": "forecast_assets/backtest/full_catalog_v4/catalog_coverage.csv",
+      "predictions": "forecast_assets/backtest/full_catalog_v4/holdout_predictions.csv",
+      "by_sales_tier": "forecast_assets/backtest/full_catalog_v4/metrics_by_sales_tier.csv",
+      "by_site": "forecast_assets/backtest/full_catalog_v4/metrics_by_site.csv",
+      "by_sku": "forecast_assets/backtest/full_catalog_v4/metrics_by_sku.csv"
+    },
+    "qualification": "Candidate performance is comparable to the four-week moving-average baseline overall; do not claim broad superiority until raw-order causal preprocessing and active-catalog labels are available."
+  }
+}

@@ -198,7 +198,7 @@ Token Claims 只包含稳定身份和范围。Access Token仅允许`RS256`，Hea
 - 优先级：P0；路径/方法：`GET /api/v1/products`；权限：user
 - Header：鉴权；Path/Body：无
 - Query：`page/page_size`可选，`analysis_status`可选，`category_code`可选，`keyword`可选。
-- 成功 200：分页 items，每项返回 `product_id/sku/name/category_code/analysis_status/current_profile_version_id/updated_at`。
+- 成功 200：分页 items，每项返回 `product_id/sku/name/category_code/analysis_status/current_profile_version_id/created_at/updated_at/has_conflicts/moq/factory_price`；`has_conflicts`表示当前画像是否存在待人工处理的多源参数冲突，`moq/factory_price`用于产品中心商业参数摘要。
 - 失败：400 `PAGINATION_INVALID`；403 `TENANT_CONTEXT_MISMATCH`。
 
 ### API-PRD-03 获取产品与画像详情
@@ -215,6 +215,8 @@ Token Claims 只包含稳定身份和范围。Access Token仅允许`RS256`，Hea
 - Body：`name/description/analysis_status`均可选；`attributes`可选数组，条目使用 API-PRD-03 属性字段，不允许改已确认不可变版本。
 - 成功 200：返回产品、最新草稿`profile_version_id`和`resource_version`；响应Header同时返回同值`ETag`。
 - 失败：404 `PRODUCT_NOT_FOUND`；409 `RESOURCE_VERSION_CONFLICT`；422 `PRODUCT_PROFILE_IMMUTABLE`/`PRODUCT_ATTRIBUTE_INVALID`。
+
+多源属性合并必须遵循 `人工填写/人工确认 > 文档提取 > AI视觉识别/推断`。高优先级值覆盖展示值时，低优先级差异必须保留在来源定位中并标记 `conflicted`，不得静默丢弃；人工修正基于完整当前画像创建草稿版本，不得只保留本次修改字段。
 
 ### API-PRD-05 上传并解析产品资料
 

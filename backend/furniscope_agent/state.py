@@ -65,6 +65,7 @@ class FurniScopeGraphState(TypedDict, total=False):
     target_market: dict[str, Any]
     version_bundle: dict[str, Any]
     analysis_config: dict[str, Any]
+    enterprise_profile_snapshot: dict[str, Any]
     product_context_ref: dict[str, Any]
     valid_listing_ids: list[int]
     valid_review_ids: list[int]

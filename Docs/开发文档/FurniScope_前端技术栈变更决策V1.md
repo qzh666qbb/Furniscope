@@ -11,7 +11,7 @@ React 19 + Vite
 现有高保真 UI 实现作为前端视觉与组件迁移起点：
 
 ```text
-UI_Desgin/UI_V2/product-design-plugin-product-design-openai/furniscope-app
+frontend/
 ```
 
 ## 2. 决策原因
