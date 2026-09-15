@@ -18,7 +18,7 @@ test("真实后端：登录、产品分析入口与预测入口", async ({ page 
   await expect(page.getByText("E2E-SOFA", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "开始分析" }).click();
   await expect(page.getByText("AI 分析对话", { exact: true })).toBeVisible();
-  await expect(page.getByText("Browser E2E sofa")).toBeVisible();
+  await expect(page.getByRole("strong").filter({ hasText: "E2E-SOFA · Browser E2E sofa" })).toBeVisible();
 
   await page.getByRole("navigation", { name: "主导航" }).getByRole("button", { name: "销量预测" }).click();
   await expect(page.getByRole("heading", { name: "商品销量预测" })).toBeVisible();
