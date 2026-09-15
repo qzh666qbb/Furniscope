@@ -11,10 +11,12 @@ import hashlib
 import json
 import math
 import re
+import time
 from decimal import Decimal
 from typing import Any
 
 import asyncpg
+from pydantic import BaseModel, Field
 
 from .contracts import CapabilityResult
 from .errors import AgentError
@@ -45,6 +47,11 @@ _TAXONOMY: dict[str, tuple[str, ...]] = {
 }
 _NEGATIVE = ("not ", "bad", "poor", "broken", "hard", "difficult", "damage", "smell", "差", "不好", "破", "难", "异味", "失望")
 _POSITIVE = ("good", "great", "excellent", "love", "easy", "comfortable", "sturdy", "好", "满意", "喜欢", "容易", "舒适", "牢固")
+
+
+class ReportNarrative(BaseModel):
+    executive_summary: str = Field(min_length=8, max_length=2000)
+    decision_note: str = Field(min_length=4, max_length=500)
 
 
 def _json(value: Any) -> str:
@@ -254,6 +261,7 @@ class ExternalFurnitureToolbox:
         if not documents:
             raise AuthorizedDataRequired("候选商品没有可用于向量匹配的标题或描述")
         if use_model and self.model_client is not None:
+            started = time.monotonic()
             embedding_result = await self.model_client.embeddings(
                 [signature, *[text for _, text in documents]]
             )
@@ -263,6 +271,14 @@ class ExternalFurnitureToolbox:
                 similarity = sum(left * right for left, right in zip(query_vector, vector, strict=True))
                 scores.append({"listing_id": listing_id, "similarity": round(float(similarity), 6)})
             method = f"{embedding_result['provider']}:{embedding_result['model']}"
+            await self._model_run(
+                state, "embed", {"listing_ids": [listing_id for listing_id, _ in documents]},
+                provider=embedding_result.get("provider") or "aliyun_bailian",
+                model_id=str(embedding_result.get("model") or "text-embedding-v4"),
+                schema_version="embed-v1", status="succeeded",
+                latency_ms=int((time.monotonic() - started) * 1000),
+                input_tokens=embedding_result.get("total_tokens"),
+            )
         else:
             scores = [{"listing_id": listing_id, "similarity": round(_similarity(signature, text), 6)}
                       for listing_id, text in documents]
@@ -288,6 +304,7 @@ class ExternalFurnitureToolbox:
         ))
         rerank_scores: dict[int, float] = {}
         if use_model and self.model_client is not None:
+            started = time.monotonic()
             rerank_result = await self.model_client.rerank(
                 signature,
                 [f"{item['title']} {_json(_object(item['normalized_attributes']))}" for item in rows],
@@ -295,6 +312,14 @@ class ExternalFurnitureToolbox:
             rerank_scores = {
                 item["index"]: item["score"] for item in rerank_result["ranking"]
             }
+            await self._model_run(
+                state, "rerank", {"listing_ids": [row["id"] for row in rows]},
+                provider=rerank_result.get("provider") or "aliyun_bailian",
+                model_id=str(rerank_result.get("model") or "qwen3-rerank"),
+                schema_version="rerank-v1", status="succeeded",
+                latency_ms=int((time.monotonic() - started) * 1000),
+                input_tokens=rerank_result.get("total_tokens"),
+            )
         persisted = []
         async with self.pool.acquire() as conn, conn.transaction():
             for row_index, row in enumerate(rows):
@@ -331,7 +356,12 @@ class ExternalFurnitureToolbox:
         batches = [{"batch_id": f"batch-{i // batch_size + 1}", "review_ids": review_ids[i:i + batch_size]} for i in range(0, len(review_ids), batch_size)]
         return CapabilityResult(output_ref={"batch_count": len(batches), "review_count": len(review_ids)}, state_update={"review_batches": batches})
 
-    async def _model_run(self, state: FurniScopeGraphState, task_type: str, source: Any) -> int:
+    async def _model_run(self, state: FurniScopeGraphState, task_type: str, source: Any,
+                         *, provider: str = "furniscope_rules", model_id: str = "evidence-rules-v1",
+                         schema_version: str = "rules-v1", status: str = "cached",
+                         latency_ms: int = 0, schema_valid: bool = True,
+                         input_tokens: int | None = None, output_tokens: int | None = None,
+                         error_code: str | None = None) -> int:
         digest = hashlib.sha256(_json(source).encode()).hexdigest()
         stage_run_id = await self.pool.fetchval(
             "SELECT id FROM furniscope.task_stage_runs WHERE task_id=$1 AND status='running' ORDER BY id DESC LIMIT 1",
@@ -340,11 +370,61 @@ class ExternalFurnitureToolbox:
         return int(await self.pool.fetchval(
             """INSERT INTO furniscope.ai_model_runs
                (tenant_id,task_id,stage_run_id,provider,model_id,task_type,input_hash,
-                output_schema_version,latency_ms,status,retry_count,schema_valid)
-               VALUES($1,$2,$3,'furniscope_rules','evidence-rules-v1',$4,$5,'rules-v1',0,'cached',0,true)
+                output_schema_version,input_tokens,output_tokens,latency_ms,status,retry_count,schema_valid,error_code)
+               VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,0,$13,$14)
                RETURNING id""",
-            state["tenant_id"], state["task_id"], stage_run_id, task_type, digest,
+            state["tenant_id"], state["task_id"], stage_run_id, provider, model_id, task_type, digest,
+            schema_version, input_tokens, output_tokens, latency_ms, status, schema_valid, error_code,
         ))
+
+    async def _gateway_report_narrative(self, state: FurniScopeGraphState, evidence: dict[str, Any]
+                                        ) -> tuple[int, str | None, str | None]:
+        fallback_summary = (
+            f"基于 {evidence['listing_count']} 个商品和 {evidence['valid_review_count']} 条有效评论，"
+            f"识别 {evidence['opportunity_count']} 个待验证机会。"
+        )
+        fallback_decision = evidence["decision"]
+        if self.model_client is None:
+            run_id = await self._model_run(state, "report", evidence)
+            return run_id, fallback_summary, fallback_decision
+        started = time.monotonic()
+        try:
+            narrative = await self.model_client.structured(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "你是FurniScope报告撰写器。只根据给定证据写中文JSON："
+                            "executive_summary、decision_note。"
+                            "禁止编造价格、评分、评论数或来源；数字必须来自证据。"
+                        ),
+                    },
+                    {"role": "user", "content": _json(evidence)},
+                ],
+                output_type=ReportNarrative,
+            )
+            latency_ms = int((time.monotonic() - started) * 1000)
+            run_id = await self._model_run(
+                state, "report", evidence,
+                provider=getattr(self.model_client, "last_chat_provider", None) or "aliyun_token_plan",
+                model_id=getattr(self.model_client, "last_chat_model", None) or "qwen3.7-plus",
+                schema_version="report-narrative-v1", status="succeeded",
+                latency_ms=latency_ms, schema_valid=True,
+                input_tokens=getattr(self.model_client, "last_input_tokens", None),
+                output_tokens=getattr(self.model_client, "last_output_tokens", None),
+            )
+            return run_id, narrative.executive_summary.strip(), narrative.decision_note.strip()
+        except Exception as exc:
+            latency_ms = int((time.monotonic() - started) * 1000)
+            run_id = await self._model_run(
+                state, "report", evidence,
+                provider=getattr(self.model_client, "last_chat_provider", None) or "aliyun_token_plan",
+                model_id=getattr(self.model_client, "last_chat_model", None) or "qwen3.7-plus",
+                schema_version="report-narrative-v1", status="failed",
+                latency_ms=latency_ms, schema_valid=False,
+                error_code=type(exc).__name__[:100],
+            )
+            return run_id, fallback_summary, fallback_decision
 
     async def _review_extract_batch(self, state: FurniScopeGraphState, payload: dict[str, Any]) -> CapabilityResult:
         ids = payload.get("review_ids", [])
@@ -625,7 +705,13 @@ class ExternalFurnitureToolbox:
 
     async def _report_compose(self, state: FurniScopeGraphState, _payload: dict[str, Any]) -> CapabilityResult:
         existing = await self.pool.fetchval("SELECT report_uuid::text FROM furniscope.analysis_reports WHERE analysis_job_id=$1 AND tenant_id=$2 ORDER BY report_version DESC LIMIT 1", state["task_id"], state["tenant_id"])
-        if existing:
+        has_gateway = await self.pool.fetchval(
+            """SELECT 1 FROM furniscope.ai_model_runs
+                WHERE task_id=$1 AND tenant_id=$2 AND task_type='report'
+                  AND provider <> 'furniscope_rules' LIMIT 1""",
+            state["task_id"], state["tenant_id"],
+        )
+        if existing and has_gateway:
             return CapabilityResult(output_ref={"report_uuid": existing}, state_update={"report_ref": {"report_uuid": existing}})
         task = await self.pool.fetchrow(
             """SELECT t.job_name,t.target_country,t.target_platform,t.analysis_currency,
@@ -638,16 +724,38 @@ class ExternalFurnitureToolbox:
         )
         opportunities = await self.pool.fetch("SELECT id,title,description,base_score,confidence,recommendation_level FROM furniscope.market_opportunities WHERE analysis_job_id=$1 ORDER BY base_score DESC", state["task_id"])
         recommendations = await self.pool.fetch("SELECT r.id,r.recommended_action,r.validation_method,r.risk_level FROM furniscope.product_recommendations r JOIN furniscope.market_opportunities o ON o.id=r.opportunity_id WHERE o.analysis_job_id=$1 ORDER BY r.id", state["task_id"])
-        model_run_id = await self._model_run(state, "report", {"opportunity_ids": [r["id"] for r in opportunities]})
         top_score = float(opportunities[0]["base_score"])
         confidence = min(float(r["confidence"]) for r in opportunities)
         decision = opportunities[0]["recommendation_level"]
         data_class = "authorized_market_data"
+        evidence = {
+            "product_name": task["product_name"], "sku": task["sku"],
+            "dataset": task["dataset_name"], "authorization_reference": task["authorization_reference"],
+            "listing_count": task["listing_count"], "valid_review_count": task["valid_review_count"],
+            "opportunity_count": len(opportunities), "decision": decision,
+            "top_score": top_score,
+            "opportunities": [
+                {"title": row["title"], "score": float(row["base_score"]), "level": row["recommendation_level"]}
+                for row in opportunities
+            ],
+            "recommendations": [row["recommended_action"] for row in recommendations],
+        }
+        model_run_id, summary, decision_note = await self._gateway_report_narrative(state, evidence)
+        if decision_note and decision_note != decision:
+            summary = f"{summary}\n\n决策说明：{decision_note}"
         sections = [
             {"section_code": "opportunities", "title": "市场机会", "sort_order": 1, "items": [dict(r) for r in opportunities]},
             {"section_code": "recommendations", "title": "产品与制造建议", "sort_order": 2, "items": [dict(r) for r in recommendations]},
             {"section_code": "evidence_boundary", "title": "证据与边界", "sort_order": 3, "content": "所有定量值来自当前数据集；建议需经样品和用户测试验证。"},
         ]
+        if existing:
+            await self.pool.execute(
+                """UPDATE furniscope.analysis_reports
+                      SET executive_summary=$1, generated_model_run_id=$2, updated_at=now()
+                    WHERE report_uuid=$3::uuid AND tenant_id=$4""",
+                summary, model_run_id, existing, state["tenant_id"],
+            )
+            return CapabilityResult(output_ref={"report_uuid": existing}, state_update={"report_ref": {"report_uuid": existing}})
         report_uuid = await self.pool.fetchval(
             """INSERT INTO furniscope.analysis_reports
                (tenant_id,analysis_job_id,title,executive_summary,decision_recommendation,
@@ -657,8 +765,7 @@ class ExternalFurnitureToolbox:
                VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11::jsonb,$12::jsonb,$13::jsonb,$14::jsonb,$15::jsonb,$16::jsonb,$17)
                RETURNING report_uuid::text""",
             state["tenant_id"], state["task_id"], f"{task['product_name']}市场机会与生产建议",
-            f"基于 {task['listing_count']} 个商品和 {task['valid_review_count']} 条有效评论，识别 {len(opportunities)} 个待验证机会。",
-            decision, top_score, confidence,
+            summary, decision, top_score, confidence,
             _json({"data_class": data_class, "dataset": task["dataset_name"], "source": task["source_name"], "authorization_reference": task["authorization_reference"], "country": task["target_country"], "platform": task["target_platform"], "listing_count": task["listing_count"], "valid_review_count": task["valid_review_count"], "limitations": task["limitations"]}),
             _json({"product_id": state["product_id"], "profile_version": state["product_profile_version"], "sku": task["sku"]}),
             _json(_object(task["enterprise_profile_snapshot"])),

@@ -99,3 +99,43 @@ class TenantProjection(BaseModel):
 
 class CurrentUserResponse(AuthUser):
     tenant: TenantProjection
+
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized or normalized.startswith("@") or normalized.endswith("@"):
+            raise ValueError("invalid email")
+        return normalized
+
+
+class PasswordResetRequestResponse(BaseModel):
+    delivery: Literal["on_screen"]
+    reset_code: str
+    expires_in_seconds: int
+    email: str
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    reset_code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=12, max_length=1024)
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if "@" not in normalized or normalized.startswith("@") or normalized.endswith("@"):
+            raise ValueError("invalid email")
+        return normalized
+
+
+class PasswordResetConfirmResponse(BaseModel):
+    reset: bool = True
+    email: str

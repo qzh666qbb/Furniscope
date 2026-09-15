@@ -1,6 +1,6 @@
 # FurniScope 数据库设计（现行）
 
-本文描述当前仓库实际落地的数据层，不是历史 V2 规划。口径以可执行 SQL 为准；本文只解释边界、关系、存什么、以及和页面怎么对上。
+本文描述当前仓库实际落地的数据层，不是历史 V2 规划。口径优先级为：运行库结构与服务代码 > 可执行 SQL > 历史设计文档。本文同时说明空库、应用启动后和当前演示库三种状态，避免把“迁移文件存在”误当成“数据库已经升级”。
 
 | 项 | 值 |
 |---|---|
@@ -9,8 +9,11 @@
 | 扩展 | `pgcrypto`（UUID） |
 | 基线 DDL | `furniscope_postgresql_v3.sql` |
 | 增量迁移 | `migrations/v3_*.sql` |
+| 迁移台账 | `furniscope.schema_migrations`（当前仅登记版本，不负责自动执行 SQL） |
+| 运行期建表入口 | `backend/furniscope_api/services/schema_bootstrap.py` |
 | 设计原稿（V3 基线） | `Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md` |
 | 初始化说明 | `Docs/项目设计文档/03_FurniScope_PostgreSQL数据库初始化说明V3.md` |
+| 本文核对日期 | 2026-09-14 |
 
 Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.d/001-schema.sql`，并把 `migrations/` 挂到同级目录，供基线末尾 `\ir` 引用。数据卷一旦建过，改 SQL **不会**自动重跑，需要新库或手工迁移。
 
@@ -18,7 +21,7 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 ## 1. 设计原则
 
-1. **`tenants` 是隔离边界。** 业务表带 `tenant_id`，服务层查询必须注入租户；外键防止跨租户误关联。生产可再开 RLS，当前依赖应用层强制。
+1. **`tenants` 是隔离边界。** 业务表普遍带 `tenant_id`，服务层查询必须注入租户。当前没有启用 RLS，而且不少关联是“对象 ID 外键 + 独立 tenant_id”，并非复合租户外键，因此跨租户隔离主要依赖 API 鉴权与仓储层过滤，不能只依赖数据库外键。
 2. **角色只有两种。** `users.role_code` ∈ `user` / `admin`。多 Agent 是内部能力，不是权限主体。
 3. **对内 BIGINT IDENTITY，对外 UUID。** API 用 `task_uuid`、`report_uuid`、`session_uuid` 等；Checkpoint 用业务字符串 `checkpoint_id`。
 4. **时间一律 `TIMESTAMPTZ`。** 金额 `NUMERIC`；置信度 `NUMERIC(5,4)` 左右；可变结构用 `JSONB`，并有 `jsonb_typeof` CHECK。排序、过滤、关联字段保持普通列，不塞进大 JSON。
@@ -36,9 +39,10 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 | 组件 | 职责 |
 |---|---|
-| 对象存储 / `DEMO_STORAGE_ROOT` | 产品图、规格书、数据集文件；库中只有 `storage_key` |
-| Redis | 分析 / 预测任务队列，不是主数据 |
-| LangGraph Checkpointer | 同一套 Postgres 上的官方恢复表；与 `workflow_checkpoints` **不得互相替代** |
+| Docker `upload-data` 卷 / `DEMO_STORAGE_ROOT` | 当前实现存产品图、规格书、数据集文件；库中只有 `storage_key`。生产可替换为对象存储，但仓库默认不是 S3/OSS |
+| `forecast-artifacts` 卷 / `forecast_assets` | 预测模型、训练数据与回测产物；数据库只保存 URI、版本与 checksum |
+| Redis | 分析、解析、数据集导入、预测、训练、控制事件和采集任务队列；不是主数据 |
+| LangGraph Checkpointer | 同一套 Postgres、当前同一 `furniscope` Schema 下的 `checkpoints`、`checkpoint_blobs`、`checkpoint_writes`、`checkpoint_migrations`；与业务表 `workflow_checkpoints` **不得互相替代** |
 | 前端 localStorage（偏好） | 侧栏折叠、工作流分栏宽度、记住邮箱等 UI 状态；**不是**工作台主数据 |
 
 ---
@@ -62,6 +66,8 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 空库跑完后业务表约 **54** 张（35 核心 + 8 预测 + 1 注册 + 5 信号 + 2 通知 + 2 工作台对话 + 1 预测 SKU 映射）。
 
+此时尚无竞品动态三表、`schema_migrations` 和 LangGraph 官方表。后端或 Worker 第一次启动会执行一次 `bootstrap_runtime_schema()`，补齐竞品动态三表，并对工作台消息、采集和通知结构做兼容性检查。因此“只执行 SQL 的空库”和“应用已启动的空库”并不完全相同。
+
 ### 3.2 已有库增量（需手工或运维执行）
 
 下列文件 **不在** 基线 `\ir` 里，给升级旧库用。其中 **竞品动态三张表只在这里**：
@@ -70,6 +76,9 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 |---|---|
 | `v3_4_competitor_tracking.sql` | `competitor_watch_targets` / `competitor_listing_snapshots` / `competitor_change_alerts` |
 | `v3_11_watch_compare_selected.sql` | 竞品库 `compare_selected`（应用启动时 `ensure_schema` 也会补） |
+| `v3_12_workspace_message_kind_context.sql` | 工作台消息类型增加 `context`，用于产品/市场选择等可见上下文 |
+| `v3_13_schema_migrations.sql` | 新建迁移台账，并把截至 v3.13 的既有版本登记为已应用 |
+| `v3_14_schema_bootstrap_only.sql` | 登记“运行期 DDL 仅在进程启动执行”的治理版本 |
 | `v3_10_analysis_workspaces.sql` | 已有库补工作台与消息表（空库已由基线 `\ir`） |
 | `v3_11_forecast_sku_aliases.sql` | 产品 SKU ↔ 训练历史映射，并丢掉未映射的预测目录 SKU |
 | `v3_1_tenant_forecast.sql` | 已有预测库补租户字段（与 integration 重叠，`IF NOT EXISTS`） |
@@ -81,7 +90,30 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 | `v3_evidence_trigger_schema_fix.sql` | 证据 Span 触发器限定 `furniscope.reviews` |
 | `v2_1_to_v3.sql` | 历史 V2.1 整库迁移 |
 
-演示环境若已有数据卷且从未执行 `v3_4`，竞品监控接口会缺表。新功能上线前应对现网执行一次该脚本。
+`schema_migrations` 目前是**台账，不是迁移执行器**：没有自动扫描、按序执行、失败回滚或 checksum 校验逻辑；`v3_13` 还会批量登记历史版本。因此运维仍需先执行目标 SQL，再确认表、列、约束存在，不能只看台账行。
+
+### 3.3 当前实际启动顺序与表数量
+
+```mermaid
+flowchart LR
+  A[Postgres 空数据卷] --> B[执行基线 DDL 与 8 个迁移引入]
+  B --> C[54 张业务表]
+  C --> D[Backend / Worker 启动 Bootstrap]
+  D --> E[补竞品动态 3 表及兼容列]
+  E --> F[手工执行 v3.13 / v3.14 台账迁移]
+  F --> G[58 张应用业务/治理表]
+  G --> H[LangGraph Checkpointer 初始化]
+  H --> I[当前运行库 62 张表]
+```
+
+截至 2026-09-14，当前演示库 `furniscope` Schema 共 **62** 张基础表：
+
+- 54 张基线及基线引入表；
+- 3 张竞品动态表；
+- 1 张 `schema_migrations`；
+- 4 张 LangGraph 官方 Checkpointer 表。
+
+当前库台账记录 22 个版本，最新为 `v3_14_schema_bootstrap_only`。启动 Bootstrap 是旧库兼容保护，不应替代正式迁移：尤其 `CompetitorTrackingService.ensure_schema()` 的兜底建表约束弱于 `v3_4_competitor_tracking.sql`，生产升级应显式执行 `v3_4`。
 
 ---
 
@@ -222,7 +254,7 @@ erDiagram
 
 仍留在 localStorage、**不入库**的只有 UI 偏好：分栏宽度、侧栏折叠、登录邮箱、未接入路由的向导草稿。
 
-#### 5.4.2 库表设计（`v3_10`）
+#### 5.4.2 库表设计（`v3_10` + `v3_12`）
 
 ```mermaid
 erDiagram
@@ -247,6 +279,7 @@ erDiagram
 |---|---|---|
 | `greeting` | 工作台开场白 | `planeGreeting` |
 | `text` | 普通用户输入或助手说明 | 输入框、载入产品确认 |
+| `context` | 已选择产品、市场等可见上下文 | 产品载入与运行范围同步 |
 | `run_event` | 启动/完成一次分析的状态句 | 「已运行至某节点」 |
 | `task_chat` | 基于已完成任务的证据问询 | API-INS-07 的 `answer` |
 | `error` | 失败提示 | 接口错误文案 |
@@ -303,19 +336,30 @@ erDiagram
 | `notification_channels` / `notification_events` | Webhook/钉钉等通道与投递状态 |
 
 采集 `source_kind`：`authorized_market_json`、`authorized_review_stream`、`amazon_product_page`、`amazon_review_page`、`web_review_page`。  
-密钥只记环境变量名，不进单元格。
+政策 `source_type`：`official_rss`、`official_json`。通知 `channel_type`：`webhook`、`dingtalk`、`slack`、`email_gateway`、`sms_gateway`。密钥只记环境变量名，不进单元格。
+
+当前运行链路：
+
+1. Worker 启动时及之后每 30 秒扫描一次启用源；到期条件由 `schedule_minutes`、`last_fetched_at`、`last_queued_at` 共同控制。
+2. 到期源进入 Redis 队列，执行后更新来源的 `last_status/last_error/last_fetched_at`，市场采集另写 `authorized_collect_runs`。
+3. 评论事件按 `(tenant_id, content_hash)` 去重；政策预警同样按内容哈希去重。
+4. 竞品或政策告警根据启用渠道生成 `notification_events`；Worker 每 30 秒投递 pending 事件，最多尝试 5 次。
+
+实现边界：一次采集只要没有抛异常就会记录为 `succeeded`，即使 `fetched_count=0`、`inserted_count=0`。因此运营判断必须同时看状态和计数，不能把 `succeeded` 等同于“已获取真实数据”。邮件和短信当前是 HTTP 网关 payload，不是内置 SMTP 或短信 SDK。
 
 ### 5.6 竞品动态（`v3_4`）
 
 | 表 | 存什么 |
 |---|---|
-| `competitor_watch_targets` | 租户竞品库：外部 ASIN（平台+国家+ASIN 唯一），`compare_selected` 表示当前是否参与对比 |
+| `competitor_watch_targets` | 租户竞品库：外部 ASIN（平台+国家+ASIN 唯一）；`product_id` 绑定本企业比较对象，`match_score` 记录文本匹配分，`compare_selected` 表示当前是否参与对比 |
 | `competitor_listing_snapshots` | 每次价格、评分、标题、促销、指纹、原始 payload |
 | `competitor_change_alerts` | 变价/改标题等，含前后 JSON、是否已读 |
 
 监控对象应是**外部市场商品**，不应把本企业 `products.sku`（如 `SYN-HF-*`）写成 watch。应用层会识别并拒绝/归档。
 
-竞品库与市场数据集是两层：`market_listings` 是导入的原料目录；只有加入 `competitor_watch_targets` 的条目才出现在「竞品库」。勾选对比写 `compare_selected`，从列表删除则把 watch 置为 `archived`。
+竞品库与市场数据集是两层：`market_listings` 是导入的原料目录；只有加入 `competitor_watch_targets` 的条目才出现在「竞品库」。导入或采集数据集时会生成快照并比较价格、标题、图片、五点描述、促销，变化写入 `competitor_change_alerts`。勾选对比写 `compare_selected`，从列表删除则把 watch 置为 `archived`。
+
+`product_id`、`match_score` 当前由启动 Bootstrap 补列，尚未写回 `v3_4_competitor_tracking.sql`。这意味着仅执行迁移脚本和启动过应用的数据库结构可能不同，后续应把两列及其外键/索引正式固化到迁移。
 
 ### 5.7 销量预测
 
@@ -342,6 +386,18 @@ erDiagram
 
 `ai_model_runs.task_type`：`vision_extract/text_extract/translate/embed/rerank/reason/report`。
 
+### 5.9 Schema 治理与 LangGraph 内部表
+
+| 表 | 所有者 | 作用 |
+|---|---|---|
+| `schema_migrations` | FurniScope | 记录迁移版本、应用时间、可选 checksum；目前不自动执行迁移 |
+| `checkpoints` | LangGraph | 图运行状态快照 |
+| `checkpoint_blobs` | LangGraph | Checkpoint 二进制/序列化大字段 |
+| `checkpoint_writes` | LangGraph | 节点写入记录 |
+| `checkpoint_migrations` | LangGraph | Checkpointer 自身结构版本 |
+
+不要直接用业务代码修改四张 LangGraph 表，也不要把它们加入业务清理脚本。`workflow_checkpoints` 是 FurniScope 的安全、轻量业务投影，用于审批恢复和审计；LangGraph 四表负责框架级恢复，两者需要同时保留。
+
 ---
 
 ## 6. JSONB 契约（常用）
@@ -364,6 +420,7 @@ erDiagram
 
 ## 7. 一致性与安全
 
+- **租户隔离：** API 从 JWT/会话解析 `tenant_id`，仓储 SQL 同时过滤租户。当前未启用 RLS，且只有部分预测表使用 `(id, tenant_id)` 复合外键；新增代码必须把租户过滤视为强制条件。
 - **证据 Span：** 触发器保证 `review_aspects.evidence_quote` = `reviews.content_original[start:end]`；原文不被译文或模型输出覆盖。
 - **幂等：** 分析任务、解析任务、阶段运行、确认、控制事件、预测 job/训练 各有租户级幂等键。
 - **恢复：** 确认只能挂 `is_safe_resume=true` 的业务 Checkpoint；回答写入 `workflow_control_events`，由 Worker/Supervisor 投递 resume。
@@ -372,6 +429,8 @@ erDiagram
 - **软删：** `products.deleted_at`、`market_datasets.deleted_at`；列表默认排除。
 - **工作台对话：** 消息挂 `analysis_workspaces`，不按单次任务复制；问询上下文在请求期组装，不把 system 大包写入消息表。
 - **归档工作日记：** 报告 `status=superseded` 且无 draft 报告时，任务列表不再展示；工作台 `status=archived`。
+- **物理删除：** 市场数据集更新会先清理关联证据、评论方面、竞品匹配、评论和 listing，再重建导入结果；普通页面删除使用软删。工作台物理删除前必须先处理 `last_analysis_task_id` 与任务引用，日常流程只做归档。
+- **Schema DDL：** Backend 和 Worker 仅在进程启动时调用统一 Bootstrap；但 `DatasetRepository.list_reviews()` 与数据集导入仍会执行 `ALTER TABLE reviews ... IF NOT EXISTS` 作为旧库兼容。生产环境应先完成迁移，使这些语句成为 no-op。
 
 ---
 
@@ -394,7 +453,100 @@ erDiagram
 
 ---
 
-## 9. 与 V3 设计文档的差异
+## 9. 核心数据生命周期
+
+### 9.1 产品资料
+
+`products` → `file_assets` → `product_parse_jobs` / `product_parse_job_files` → 新 `product_profile_versions` → `product_attributes` → 用户确认 → `products.current_profile_version_id`
+
+解析状态：`queued` → `running` → `succeeded` / `partial_succeeded` / `failed`。当前 `PRODUCT_PARSE_MODE=model` 会调用外部模型路由；模型密钥缺失时文件级解析失败，数据库不会凭空补产品属性。
+
+### 9.2 市场数据集
+
+`market_datasets(uploaded)` → Worker 导入与清洗 → `market_listings` / `reviews` → 质量统计写回 → `ready` 或 `rejected`
+
+替换上传沿用同一个数据集 ID，删除旧明细后重建，并令 `version_no + 1`。因此分析任务必须冻结数据集版本和范围快照，不能仅依赖数据集当前计数还原历史结论。
+
+### 9.3 AI 分析
+
+`analysis_workspaces` → `analysis_tasks` → `task_stage_runs` / 两类 Checkpoint → 洞察与证据结果表 → `analysis_reports` → `analysis_workspace_messages`
+
+五个外部阶段只是 UI 投影；每个阶段可对应多个内部节点与多次尝试。查询异常时优先联合检查 `analysis_tasks.failure_*`、`task_stage_runs.error_*`、`workflow_partial_failures` 和 Redis 死信，而不是只看进度百分比。
+
+### 9.4 预测
+
+`tenant_sku_catalog` / `forecast_sku_aliases` → `forecast_model_deployments` → `forecast_jobs` → `forecast_runs` → `forecast_results`
+
+追加训练另走 `forecast_training_runs` 并产生新的 `forecast_models`，部署切换后才成为租户当前模型。预测结果可靠性为 A–D，但可靠性等级不能代替真实留出集指标。
+
+---
+
+## 10. 当前实现完成度与数据库判定口径
+
+| 能力 | 数据库/服务现状 | 判断可用时至少满足 |
+|---|---|---|
+| 产品档案 | 表、上传队列、版本和属性证据已实现 | 解析任务成功，画像完整度达标，关键属性已确认 |
+| 市场数据集 | CSV/JSON/XLSX 导入、清洗、预览、替换、软删已实现 | `status=ready`，listing/有效评论计数大于 0，质量报告可解释 |
+| AI 五节点 | 任务、节点尝试、业务/框架 Checkpoint、证据、报告已实现 | 最终任务成功或明确部分成功，每个已执行节点有 stage run，报告证据可回溯 |
+| 工作台对话 | 工作台和消息持久化已实现，`context` 已纳入契约 | API 写入成功，刷新或换浏览器后能从 PostgreSQL 恢复 |
+| 主动采集 | 手动拉取和 Worker 30 秒到期扫描均已实现 | 最近 run 不仅 `succeeded`，还应有合理的 fetched/inserted 计数 |
+| 竞品动态 | watch、快照、差异告警与通知入队已实现 | 目标为外部商品，至少有两个时间点快照才能验证“变化” |
+| 评论舆情 | 事件存储、去重、情感字段已实现 | 来源真实返回评论且 `sentiment_events` 有新增 |
+| 政策预警 | 官方 RSS/JSON、关键词命中、已读状态已实现 | 已配置启用源，并产生实际 `policy_alerts`；不能用竞品未读数代替 |
+| 外部通知 | 通用 Webhook、钉钉、Slack、邮件/短信网关投递已实现 | 至少一个渠道启用，测试事件达到 `delivered` |
+| 销量预测 | 模型、部署、任务、运行、结果、追加训练账本已实现 | SKU 映射完整、部署有效、job 成功且业务指标经过验证 |
+
+---
+
+## 11. 运维核查 SQL
+
+以下均为只读语句：
+
+```sql
+SET search_path TO furniscope, public;
+
+-- 当前 FurniScope Schema 表数与清单
+SELECT count(*) FROM information_schema.tables
+WHERE table_schema = 'furniscope' AND table_type = 'BASE TABLE';
+
+-- 已登记迁移（注意：登记不等于已校验 DDL）
+SELECT version, applied_at, checksum
+FROM schema_migrations ORDER BY applied_at, version;
+
+-- 未完成或失败的核心异步任务
+SELECT task_uuid, status, internal_stage, failure_code, updated_at
+FROM analysis_tasks
+WHERE status NOT IN ('succeeded', 'partial_succeeded', 'cancelled')
+ORDER BY updated_at DESC;
+
+SELECT parse_job_id, status, failure_code, updated_at
+FROM product_parse_jobs
+WHERE status NOT IN ('succeeded', 'partial_succeeded')
+ORDER BY updated_at DESC;
+
+SELECT job_uuid, status, failure_code, updated_at
+FROM forecast_jobs
+WHERE status NOT IN ('succeeded', 'cancelled')
+ORDER BY updated_at DESC;
+
+-- 采集“状态成功但没有数据”的来源
+SELECT s.id, s.name, r.status, r.fetched_count, r.inserted_count, r.started_at
+FROM authorized_collect_sources s
+JOIN LATERAL (
+  SELECT * FROM authorized_collect_runs x
+  WHERE x.source_id = s.id AND x.tenant_id = s.tenant_id
+  ORDER BY x.started_at DESC LIMIT 1
+) r ON true
+WHERE r.status = 'succeeded' AND r.fetched_count = 0;
+
+-- 待投递或最终失败的通知
+SELECT status, count(*) FROM notification_events
+GROUP BY status ORDER BY status;
+```
+
+---
+
+## 12. 与 V3 设计文档的差异
 
 `Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md` 记录 2026-08-09 基线（35 表）。现行系统在其上叠加了预测、注册、市场信号、通知，以及需单独执行的竞品监控。字段以仓库 SQL 为准，不以该文档的 35 表统计为上限。
 
@@ -402,10 +554,12 @@ V2.1 合并进 V3 的去向见原设计文档第 8 节（constraints、field_map
 
 ---
 
-## 10. 改库时注意
+## 13. 改库时注意
 
-1. 改表先改 `furniscope_postgresql_v3.sql` 或新增 `migrations/v3_N_*.sql`，并决定是否加入基线 `\ir`（空库要有的必须 `\ir`）。
-2. 已有 Docker 卷不会重跑 init；本地验证可 `docker compose down -v`（会清空数据）或对运行中库 `psql` 执行迁移。
-3. 禁止把密钥、密码明文、完整评论批量写进 `audit_logs` 快照。
-4. 新业务表必须带 `tenant_id` 及指向 `tenants` 的外键。
-5. 完整列类型、默认值、CHECK、索引以 SQL 注释为准，避免文档与 DDL 双口径。
+1. 改表应新增一个单向、可重复执行的 `migrations/v3_N_*.sql`，并决定是否加入基线 `\ir`；空库必需结构必须纳入基线，不能只依赖启动 Bootstrap。
+2. 先执行迁移并验证，再写入 `schema_migrations`；不要只登记版本。新迁移应计算并保存 checksum，当前历史空 checksum 后续可补治理。
+3. 已有 Docker 卷不会重跑 init。本地若使用 `docker compose down -v` 会清空整个项目数据库，执行前必须确认目标并备份；更推荐创建独立测试库验证基线和迁移。
+4. 禁止把密钥、密码明文、完整评论批量写进 `audit_logs` 快照。
+5. 新业务表必须带 `tenant_id`；优先使用包含 `tenant_id` 的复合唯一键/外键，降低仅靠应用层过滤的风险。
+6. 表、列、约束、索引必须同时在“全新空库”和“已有库升级”两条路径验证，并确认 Backend、Worker 都能启动。
+7. 完整列类型、默认值、CHECK、索引以 SQL 注释为准；服务中的 `ensure_schema` 只作兼容保护，不应成为第三套长期结构定义。

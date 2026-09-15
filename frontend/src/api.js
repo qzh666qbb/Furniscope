@@ -67,10 +67,11 @@ async function refreshAccessToken() {
 }
 
 async function request(path, options = {}, includeResponse = false) {
-  const isForm = options.body instanceof FormData;
-  const headers = { ...(isForm ? {} : { "Content-Type": "application/json" }), ...(options.headers || {}) };
-  let token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
-  if (!options.skipRefresh && token && sessionStorage.getItem(REFRESH_TOKEN_KEY) && tokenExpiresSoon(token)) {
+  const { skipRefresh = false, skipAuth = false, headers: extraHeaders, ...fetchOptions } = options;
+  const isForm = fetchOptions.body instanceof FormData;
+  const headers = { ...(isForm ? {} : { "Content-Type": "application/json" }), ...(extraHeaders || {}) };
+  let token = skipAuth ? null : sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  if (!skipRefresh && !skipAuth && token && sessionStorage.getItem(REFRESH_TOKEN_KEY) && tokenExpiresSoon(token)) {
     try {
       refreshPromise ||= refreshAccessToken().finally(() => { refreshPromise = null; });
       token = await refreshPromise;
@@ -82,24 +83,24 @@ async function request(path, options = {}, includeResponse = false) {
   if (token) headers.Authorization = `Bearer ${token}`;
   let response;
   try {
-    response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    response = await fetch(`${API_BASE}${path}`, { ...fetchOptions, headers });
   } catch {
     throw transientFailure(0, "服务暂时不可用，请稍后重试");
   }
   const body = await response.json().catch(() => null);
   if (response.status === 401) {
-    if (!options.skipRefresh && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+    if (!skipRefresh && !skipAuth && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
       try {
         refreshPromise ||= refreshAccessToken().finally(() => { refreshPromise = null; });
         const nextToken = await refreshPromise;
-        return request(path, { ...options, skipRefresh: true, headers: { ...(options.headers || {}), Authorization: `Bearer ${nextToken}` } }, includeResponse);
+        return request(path, { ...options, skipRefresh: true, headers: { ...(extraHeaders || {}), Authorization: `Bearer ${nextToken}` } }, includeResponse);
       } catch (error) {
         if (!error?.transient) clearSession();
         throw error;
       }
     }
-    clearSession();
-    throw new Error(body?.error?.message || "登录已过期，请重新登录");
+    if (!skipAuth) clearSession();
+    throw new Error(body?.error?.message || (skipAuth ? "邮箱或密码错误" : "登录已过期，请重新登录"));
   }
   if (!response.ok) {
     throw response.status >= 500
@@ -153,7 +154,10 @@ export function subscribeTaskEvents(taskUuid, onMessage, onError) {
 
 export async function login(email, password) {
   const data = await api("/api/v1/auth/login", {
-    method: "POST", body: JSON.stringify({ email, password }),
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+    skipAuth: true,
+    skipRefresh: true,
   });
   storeSession(data);
   return data;
@@ -161,7 +165,10 @@ export async function login(email, password) {
 
 export async function adminLogin(email, password) {
   const data = await api("/api/v1/auth/admin/login", {
-    method: "POST", body: JSON.stringify({ email, password }),
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+    skipAuth: true,
+    skipRefresh: true,
   });
   storeSession(data);
   return data;
@@ -171,6 +178,25 @@ export async function submitRegistration(payload) {
   return api("/api/v1/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
+    skipAuth: true,
+    skipRefresh: true,
+  });
+}
+
+export async function requestPasswordReset(email) {
+  return api("/api/v1/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipAuth: true,
+    skipRefresh: true,
+  });
+}
+
+export async function confirmPasswordReset(payload) {
+  return api("/api/v1/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    skipAuth: true,
     skipRefresh: true,
   });
 }

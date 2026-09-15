@@ -221,7 +221,7 @@ class JobHandlers:
                     UPDATE forecast_training_runs SET status='failed',
                       error_code='WORKER_EXECUTION_FAILED',error_message=:message,completed_at=now()
                     WHERE training_uuid=CAST(:training_uuid AS uuid) AND tenant_id=:tenant_id
-                      AND status<>'succeeded'
+                      AND status IN ('queued','running')
                 """), p)
             await session.commit()
 

@@ -24,6 +24,10 @@ class ServiceModelRouterClient:
         self.settings = settings
         self.client = client or httpx.AsyncClient()
         self.owns_client = client is None
+        self.last_chat_provider: str | None = None
+        self.last_chat_model: str | None = None
+        self.last_input_tokens: int | None = None
+        self.last_output_tokens: int | None = None
 
     async def close(self) -> None:
         if self.owns_client:
@@ -84,10 +88,17 @@ class ServiceModelRouterClient:
                             f"{route['provider']} quota exhausted"
                         )
                     response.raise_for_status()
-                    content = response.json()["choices"][0]["message"]["content"]
+                    payload = response.json()
+                    content = payload["choices"][0]["message"]["content"]
                     if content.strip().startswith("```"):
                         content = content[content.find("\n") + 1:content.rfind("```")].strip()
-                    return adapter.validate_json(content)
+                    parsed = adapter.validate_json(content)
+                    usage = payload.get("usage") or {}
+                    self.last_chat_provider = route["provider"]
+                    self.last_chat_model = payload.get("model") or model
+                    self.last_input_tokens = usage.get("prompt_tokens")
+                    self.last_output_tokens = usage.get("completion_tokens")
+                    return parsed
                 except ModelQuotaExhausted:
                     raise
                 except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError,

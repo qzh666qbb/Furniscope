@@ -146,6 +146,7 @@ async def _cleanup(seed: dict) -> None:
         await connection.execute("DELETE FROM furniscope.product_profile_versions WHERE tenant_id=ANY($1::bigint[])", tenant_ids)
         await connection.execute("DELETE FROM furniscope.products WHERE tenant_id=ANY($1::bigint[])", tenant_ids)
         await connection.execute("DELETE FROM furniscope.auth_sessions WHERE user_id=ANY($1::bigint[])", user_ids)
+        await connection.execute("DELETE FROM furniscope.password_reset_requests WHERE user_id=ANY($1::bigint[])", user_ids)
         await connection.execute("DELETE FROM furniscope.registration_applications WHERE reviewed_by=ANY($1::bigint[])", user_ids)
         await connection.execute("DELETE FROM furniscope.users WHERE id=ANY($1::bigint[])", user_ids)
         await connection.execute(
@@ -215,6 +216,62 @@ def test_wrong_and_unknown_credentials_are_indistinguishable(auth_environment) -
     assert wrong.status_code == unknown.status_code == 401
     assert wrong.json()["error"] == unknown.json()["error"]
     assert wrong.json()["error"]["code"] == "AUTH_INVALID_CREDENTIALS"
+
+
+def test_enterprise_password_reset_updates_password_and_revokes_sessions(auth_environment) -> None:
+    seed, client, _ = auth_environment
+    user = seed["users"]["user"]
+    login = _login(client, user["email"])
+    assert login.status_code == 200
+    refresh_token = login.json()["data"]["refresh_token"]
+
+    unknown = client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": f"missing-{uuid4().hex[:8]}@example.invalid"},
+    )
+    assert unknown.status_code == 404
+    assert unknown.json()["error"]["code"] == "AUTH_ACCOUNT_NOT_FOUND"
+
+    admin_request = client.post(
+        "/api/v1/auth/password-reset/request",
+        json={"email": seed["users"]["admin"]["email"]},
+    )
+    assert admin_request.status_code == 403
+
+    requested = client.post("/api/v1/auth/password-reset/request", json={"email": user["email"].upper()})
+    assert requested.status_code == 200
+    payload = requested.json()["data"]
+    assert payload["delivery"] == "on_screen"
+    assert payload["email"] == user["email"]
+    assert len(payload["reset_code"]) == 6
+    new_password = f"Reset-Pass-{uuid4().hex[:8]}!"
+
+    wrong = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"email": user["email"], "reset_code": "000000", "new_password": new_password},
+    )
+    assert wrong.status_code == 401
+    assert wrong.json()["error"]["code"] == "AUTH_RESET_CODE_INVALID"
+
+    confirmed = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"email": user["email"], "reset_code": payload["reset_code"], "new_password": new_password},
+    )
+    assert confirmed.status_code == 200
+    assert confirmed.json()["data"]["reset"] is True
+
+    reused = client.post(
+        "/api/v1/auth/password-reset/confirm",
+        json={"email": user["email"], "reset_code": payload["reset_code"], "new_password": new_password},
+    )
+    assert reused.status_code == 401
+
+    old_login = _login(client, user["email"])
+    assert old_login.status_code == 401
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+    assert refreshed.status_code == 401
+    new_login = _login(client, user["email"], new_password)
+    assert new_login.status_code == 200
 
 
 def test_login_portals_reject_cross_role(auth_environment) -> None:
@@ -358,6 +415,8 @@ def test_openapi_contains_only_locked_auth_paths(auth_environment) -> None:
     assert "/api/v1/auth/admin/login" in paths and "post" in paths["/api/v1/auth/admin/login"]
     assert "/api/v1/auth/refresh" in paths and "post" in paths["/api/v1/auth/refresh"]
     assert "/api/v1/users/me" in paths and "get" in paths["/api/v1/users/me"]
+    assert "/api/v1/auth/password-reset/request" in paths and "post" in paths["/api/v1/auth/password-reset/request"]
+    assert "/api/v1/auth/password-reset/confirm" in paths and "post" in paths["/api/v1/auth/password-reset/confirm"]
     assert paths["/api/v1/auth/login"]["post"]["operationId"] == "API-AUTH-01"
     assert paths["/api/v1/auth/admin/login"]["post"]["operationId"] == "API-AUTH-05"
     assert paths["/api/v1/auth/refresh"]["post"]["operationId"] == "API-AUTH-02"

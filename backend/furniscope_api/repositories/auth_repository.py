@@ -193,6 +193,28 @@ class AuthRepository:
         )
         return result.rowcount > 0
 
+    async def update_password_hash(
+        self, session: AsyncSession, *, user_id: int, password_hash: str
+    ) -> None:
+        await session.execute(
+            text(
+                "UPDATE users SET password_hash=:password_hash,updated_at=CURRENT_TIMESTAMP WHERE id=:user_id"
+            ),
+            {"password_hash": password_hash, "user_id": user_id},
+        )
+
+    async def revoke_user_sessions(self, session: AsyncSession, *, user_id: int, reason: str) -> None:
+        await session.execute(
+            text(
+                """
+                UPDATE auth_sessions
+                   SET revoked_at=CURRENT_TIMESTAMP,revoke_reason=:reason
+                 WHERE user_id=:user_id AND revoked_at IS NULL
+                """
+            ),
+            {"user_id": user_id, "reason": reason},
+        )
+
     @staticmethod
     def _identity(row: Any) -> UserIdentity:
         return UserIdentity(

@@ -1,6 +1,6 @@
 # FurniScope 简化版全套文档一致性校验报告 V2.0
 
-> 状态说明（2026-08-10）：本文是编码修复前的设计阶段校验快照，其中P0问题已由数据库/Agent实现修复及《FurniScope FastAPI编码准入复核报告 V1.1》复核关闭。当前研发准入结论以[`../开发文档/FurniScope_FastAPI编码准入复核报告V1.md`](../开发文档/FurniScope_FastAPI编码准入复核报告V1.md)为准；本文保留用于追溯，不再作为当前阻断判定。
+> 状态说明（2026-08-10）：本文是编码修复前的设计阶段校验快照，其中P0问题已由数据库/Agent实现修复及《FurniScope FastAPI编码准入复核报告 V1.1》复核关闭。对应阶段性准入报告已归档至[`../../../../archive/docs/development-milestones/FurniScope_FastAPI编码准入复核报告V1.md`](../../../../archive/docs/development-milestones/FurniScope_FastAPI编码准入复核报告V1.md)；当前研发状态以代码、自动化测试和根目录 README 为准。本文仅用于追溯，不再作为当前阻断判定。
 
 ## 1. 校验结论
 

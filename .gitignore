@@ -29,9 +29,14 @@ frontend/blob-report/
 forecast_assets/tenants/
 forecast_assets/state/
 forecast_assets/training_data/
-archive/
+# Historical UI/prototype trees stay local; document archives and their indexes
+# are versioned so moving a tracked document never appears as data loss.
+archive/*
+!archive/README.md
+!archive/docs/
+!archive/docs/**
 /image-*.png
-/HF catalog.pdf
+/demo_data/source/HF catalog.pdf
 
 .idea/
 .vscode/

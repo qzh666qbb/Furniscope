@@ -139,8 +139,18 @@ def generate(catalog: Path, sales: Path, output: Path, count: int, reviews_each:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--catalog", type=Path, default=Path("HF catalog.pdf"))
-    parser.add_argument("--sales", type=Path, default=Path("../update/append_test/append_orders_20260624_20260630.xlsx"))
+    parser.add_argument(
+        "--catalog",
+        type=Path,
+        default=Path("demo_data/source/HF catalog.pdf"),
+    )
+    parser.add_argument(
+        "--sales",
+        type=Path,
+        default=Path(
+            "forecast_assets/append_samples/append_orders_20260624_20260630.xlsx"
+        ),
+    )
     parser.add_argument("--output", type=Path, default=Path("demo_data/hf_market_demo.json"))
     parser.add_argument("--listings", type=int, default=76)
     parser.add_argument("--reviews-per-listing", type=int, default=20)

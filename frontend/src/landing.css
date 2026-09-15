@@ -1,0 +1,386 @@
+.fs-landing{
+  position:relative;
+  min-height:100vh;
+  overflow:hidden;
+  color:#e8f4f6;
+  background:#020b14;
+  isolation:isolate;
+}
+.fs-landing-aurora,
+.fs-landing-grid,
+.fs-landing-particles{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.fs-landing-aurora{
+  background:
+    radial-gradient(900px 520px at 12% -10%, rgba(36,197,181,.38), transparent 58%),
+    radial-gradient(720px 480px at 92% 8%, rgba(14,92,120,.55), transparent 60%),
+    radial-gradient(640px 420px at 70% 110%, rgba(7,143,138,.22), transparent 55%),
+    linear-gradient(180deg,#03111d 0%,#020b14 55%,#041824 100%);
+  z-index:0;
+}
+.fs-landing-grid{
+  z-index:1;
+  background-image:
+    linear-gradient(rgba(46,211,197,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46,211,197,.07) 1px, transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(circle at 50% 35%, #000 18%, transparent 78%);
+  animation:fs-grid-drift 22s linear infinite;
+}
+.fs-landing-particles i{
+  position:absolute;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#2ed3c5;
+  opacity:.18;
+  box-shadow:0 0 12px #2ed3c5;
+  animation:fs-float 7s ease-in-out infinite;
+}
+.fs-landing-particles i:nth-child(1){left:8%;top:18%;animation-delay:.1s}
+.fs-landing-particles i:nth-child(2){left:16%;top:62%;animation-delay:.4s}
+.fs-landing-particles i:nth-child(3){left:24%;top:28%;animation-delay:.8s}
+.fs-landing-particles i:nth-child(4){left:33%;top:76%;animation-delay:1.1s}
+.fs-landing-particles i:nth-child(5){left:41%;top:14%;animation-delay:1.5s}
+.fs-landing-particles i:nth-child(6){left:49%;top:58%;animation-delay:.3s}
+.fs-landing-particles i:nth-child(7){left:57%;top:22%;animation-delay:1.8s}
+.fs-landing-particles i:nth-child(8){left:64%;top:70%;animation-delay:.6s}
+.fs-landing-particles i:nth-child(9){left:72%;top:36%;animation-delay:2s}
+.fs-landing-particles i:nth-child(10){left:81%;top:12%;animation-delay:.9s}
+.fs-landing-particles i:nth-child(11){left:88%;top:54%;animation-delay:1.3s}
+.fs-landing-particles i:nth-child(12){left:12%;top:86%;animation-delay:2.2s}
+.fs-landing-particles i:nth-child(13){left:39%;top:42%;animation-delay:.2s}
+.fs-landing-particles i:nth-child(14){left:68%;top:88%;animation-delay:1.6s}
+.fs-landing-particles i:nth-child(15){left:93%;top:78%;animation-delay:.7s}
+.fs-landing-particles i:nth-child(16){left:5%;top:48%;animation-delay:1.9s}
+.fs-landing-particles i:nth-child(17){left:77%;top:8%;animation-delay:1.2s}
+.fs-landing-particles i:nth-child(18){left:28%;top:8%;animation-delay:2.4s}
+.fs-landing-nav,
+.fs-landing-hero,
+.fs-landing-capabilities,
+.fs-landing-foot{
+  position:relative;
+  z-index:2;
+}
+.fs-landing-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:22px 48px 0;
+}
+.fs-landing-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.fs-landing-brand img{
+  width:42px;
+  height:42px;
+  border-radius:11px;
+  box-shadow:0 0 24px rgba(46,211,197,.35);
+}
+.fs-landing-brand span{
+  font-family:"Playfair Display",Georgia,serif;
+  font-size:28px;
+  letter-spacing:-.5px;
+}
+.fs-landing-nav nav{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.fs-landing-nav a,
+.fs-landing-nav button{
+  color:#c5d8e0;
+  border:0;
+  background:transparent;
+  font-size:13px;
+}
+.fs-landing-nav a{
+  padding:8px 12px;
+  text-decoration:none;
+}
+.fs-landing-ghost{
+  padding:8px 14px;
+  color:#9ec9c4;
+}
+.fs-landing-enter,
+.fs-landing-cta,
+.fs-landing-secondary,
+.fs-landing-foot button{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.fs-landing-enter{
+  height:40px;
+  padding:0 16px;
+  color:#02131c;
+  border-radius:999px;
+  background:linear-gradient(135deg,#7ff6ea,#1ec8b8);
+  font-weight:700;
+  box-shadow:0 8px 28px rgba(30,200,184,.28);
+}
+.fs-landing-hero{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);
+  gap:24px;
+  align-items:center;
+  min-height:calc(100vh - 220px);
+  padding:28px 56px 12px;
+}
+.fs-landing-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 18px;
+  padding:6px 12px;
+  color:#7ff6ea;
+  border:1px solid rgba(127,246,234,.28);
+  border-radius:999px;
+  background:rgba(8,40,48,.55);
+  font-size:12px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.fs-landing-kicker svg{width:15px;height:15px}
+.fs-landing-copy h1{
+  margin:0;
+  font-family:"Playfair Display",Georgia,serif;
+  font-size:clamp(42px,5.4vw,72px);
+  line-height:1.12;
+  letter-spacing:-1.5px;
+}
+.fs-landing-copy h1 em{
+  display:inline-block;
+  margin-top:4px;
+  color:#7ff6ea;
+  font-style:normal;
+  text-shadow:0 0 32px rgba(127,246,234,.35);
+}
+.fs-landing-lead{
+  max-width:560px;
+  margin:22px 0 0;
+  color:#b7c9d3;
+  font-size:16px;
+  line-height:1.85;
+}
+.fs-landing-actions{
+  display:flex;
+  gap:14px;
+  margin-top:32px;
+}
+.fs-landing-cta{
+  height:54px;
+  padding:0 26px;
+  color:#02131c;
+  border:0;
+  border-radius:999px;
+  background:linear-gradient(135deg,#9ffff4,#14c4b4 58%,#0ea89a);
+  font-size:16px;
+  font-weight:800;
+  box-shadow:0 12px 40px rgba(20,196,180,.32);
+  animation:fs-cta-pulse 2.8s ease-in-out infinite;
+}
+.fs-landing-cta svg{width:20px;height:20px}
+.fs-landing-secondary{
+  height:54px;
+  padding:0 20px;
+  color:#d7ecea;
+  border:1px solid rgba(127,246,234,.28);
+  border-radius:999px;
+  background:rgba(8,28,38,.45);
+  backdrop-filter:blur(10px);
+}
+.fs-landing-stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
+  max-width:620px;
+  margin:36px 0 0;
+  padding:0;
+  list-style:none;
+}
+.fs-landing-stats li{
+  padding:14px 0 0;
+  border-top:1px solid rgba(127,246,234,.16);
+}
+.fs-landing-stats strong{
+  display:block;
+  color:#f2fffd;
+  font-size:14px;
+}
+.fs-landing-stats span{
+  display:block;
+  margin-top:6px;
+  color:#8aa0ad;
+  font-size:12px;
+  line-height:1.5;
+}
+.fs-landing-stage{
+  position:relative;
+  height:560px;
+  display:grid;
+  place-items:center;
+}
+.fs-landing-ring,
+.fs-landing-ring-2{
+  position:absolute;
+  border:1px solid rgba(127,246,234,.18);
+  border-radius:50%;
+  box-shadow:0 0 40px rgba(46,211,197,.08) inset;
+}
+.fs-landing-ring{
+  width:460px;
+  height:460px;
+  animation:fs-spin 28s linear infinite;
+}
+.fs-landing-ring-2{
+  width:340px;
+  height:340px;
+  border-style:dashed;
+  animation:fs-spin 18s linear infinite reverse;
+}
+.fs-landing-core{
+  position:relative;
+  width:300px;
+  height:300px;
+  overflow:hidden;
+  border-radius:50%;
+  border:1px solid rgba(127,246,234,.35);
+  box-shadow:0 0 80px rgba(46,211,197,.28), 0 30px 60px rgba(0,0,0,.35);
+}
+.fs-landing-core img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 62%;
+  animation:fs-breathe 6s ease-in-out infinite;
+}
+.fs-landing-scan{
+  position:absolute;
+  inset:18% -20% auto;
+  height:42%;
+  background:linear-gradient(180deg, transparent, rgba(127,246,234,.28), transparent);
+  animation:fs-scan 3.6s ease-in-out infinite;
+}
+.fs-landing-chip{
+  position:absolute;
+  padding:8px 14px;
+  color:#e7fffb;
+  border:1px solid rgba(127,246,234,.3);
+  border-radius:999px;
+  background:rgba(4,22,32,.78);
+  font-size:12px;
+  backdrop-filter:blur(10px);
+  animation:fs-orbit 12s linear infinite;
+}
+.fs-landing-chip:nth-child(5){ offset-distance:0%; }
+.fs-landing-chip:nth-of-type(1){ top:48px; left:72px; }
+.fs-landing-chip:nth-of-type(2){ top:78px; right:48px; animation-duration:13s; }
+.fs-landing-chip:nth-of-type(3){ bottom:120px; left:36px; animation-duration:11s; }
+.fs-landing-chip:nth-of-type(4){ bottom:68px; right:78px; animation-duration:14s; }
+.fs-landing-chip:nth-of-type(5){ top:50%; right:8px; animation-duration:12.5s; }
+.fs-landing-capabilities{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:14px;
+  padding:0 56px 28px;
+}
+.fs-landing-capabilities article{
+  padding:20px 18px;
+  border:1px solid rgba(127,246,234,.14);
+  border-radius:16px;
+  background:linear-gradient(180deg, rgba(8,36,48,.72), rgba(4,18,28,.55));
+  box-shadow:0 12px 40px rgba(0,0,0,.18);
+  transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.fs-landing-capabilities article:hover{
+  transform:translateY(-6px);
+  border-color:rgba(127,246,234,.42);
+  box-shadow:0 18px 40px rgba(20,196,180,.16);
+}
+.fs-landing-capabilities i{
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  color:#02131c;
+  border-radius:11px;
+  background:linear-gradient(135deg,#7ff6ea,#14c4b4);
+}
+.fs-landing-capabilities h2{
+  margin:14px 0 8px;
+  font-size:16px;
+}
+.fs-landing-capabilities p{
+  margin:0;
+  color:#9db3bd;
+  font-size:13px;
+  line-height:1.7;
+}
+.fs-landing-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 56px 24px;
+  color:#7d93a0;
+  font-size:12px;
+}
+.fs-landing-foot button{
+  color:#9ffff4;
+  border:0;
+  background:transparent;
+}
+.fs-landing-foot svg{width:15px;height:15px}
+
+@keyframes fs-grid-drift{
+  from{background-position:0 0}
+  to{background-position:72px 72px}
+}
+@keyframes fs-float{
+  0%,100%{transform:translateY(0);opacity:.15}
+  50%{transform:translateY(-18px);opacity:.55}
+}
+@keyframes fs-spin{
+  to{transform:rotate(360deg)}
+}
+@keyframes fs-breathe{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.06)}
+}
+@keyframes fs-scan{
+  0%{transform:translateY(-40%);opacity:.15}
+  50%{opacity:.55}
+  100%{transform:translateY(160%);opacity:.1}
+}
+@keyframes fs-cta-pulse{
+  0%,100%{box-shadow:0 12px 40px rgba(20,196,180,.28)}
+  50%{box-shadow:0 16px 48px rgba(127,246,234,.42)}
+}
+@keyframes fs-orbit{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+}
+
+@media(max-width:1180px){
+  .fs-landing-hero{grid-template-columns:1fr;padding:24px 28px}
+  .fs-landing-stage{height:420px}
+  .fs-landing-capabilities{grid-template-columns:repeat(2,1fr);padding-inline:28px}
+  .fs-landing-nav,.fs-landing-foot{padding-inline:28px}
+}
+@media(prefers-reduced-motion:reduce){
+  .fs-landing-grid,
+  .fs-landing-particles i,
+  .fs-landing-ring,
+  .fs-landing-ring-2,
+  .fs-landing-core img,
+  .fs-landing-scan,
+  .fs-landing-cta,
+  .fs-landing-chip{
+    animation:none !important;
+  }
+}

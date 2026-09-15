@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowsClockwise, Brain, Buildings, CheckCircle, ClockCounterClockwise,
+  ArrowsClockwise, Brain, Buildings, CheckCircle, ClockCounterClockwise, Key,
   MagnifyingGlass, Plus, ShieldCheck, SignOut, Trash, UploadSimple, WarningCircle, X,
 } from "@phosphor-icons/react";
 import { api, clearSession, idempotencyKey } from "./api.js";
@@ -70,6 +70,35 @@ function ApproveApplicationModal({ item, onClose, onApproved }) {
   </form></div>;
 }
 
+function ResetPasswordModal({ item, onClose, onReset }) {
+  const [saving, setSaving] = useState(false), [error, setError] = useState("");
+  const submit = async event => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("new_password") || "");
+    const confirm = String(form.get("confirm_password") || "");
+    if (password.length < 12) return setError("新密码至少需要 12 位");
+    if (password !== confirm) return setError("两次输入的密码不一致");
+    try {
+      setSaving(true); setError("");
+      await api(`/api/v1/admin/enterprise-users/${item.tenant_id}:reset-password?user_id=${item.user_id}`, {
+        method: "POST",
+        headers: { "If-Match": item.resource_version },
+        body: JSON.stringify({ new_password: password }),
+      });
+      onReset();
+    } catch (err) { setError(err.message); }
+    finally { setSaving(false); }
+  };
+  return <div className="admin-modal-backdrop" onClick={onClose}><form className="admin-form-modal enterprise-create" onSubmit={submit} onClick={e => e.stopPropagation()}>
+    <header><div><h2>重置 {item.enterprise_name} 的密码</h2><p>将立即作废该账号的已登录会话。请把新密码安全交付给企业联系人。</p></div><button type="button" onClick={onClose}><X /></button></header>
+    <label>登录邮箱<input value={item.email || ""} readOnly /></label>
+    <div className="field-grid"><label>新密码<input name="new_password" type="password" required minLength="12" autoComplete="new-password" placeholder="至少 12 位" /></label><label>确认密码<input name="confirm_password" type="password" required minLength="12" autoComplete="new-password" placeholder="再次输入" /></label></div>
+    {error && <p className="admin-form-error"><WarningCircle />{error}</p>}
+    <footer><button type="button" onClick={onClose}>取消</button><button className="primary" disabled={saving}>{saving ? "正在重置…" : "确认重置密码"}</button></footer>
+  </form></div>;
+}
+
 function DeleteEnterpriseModal({ item, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false), [error, setError] = useState("");
   const remove = async () => {
@@ -94,7 +123,7 @@ function EnterpriseUsersPanel() {
   const [state, setState] = useState({ loading: true, error: "", items: [] });
   const [applications, setApplications] = useState([]);
   const [keyword, setKeyword] = useState(""), [status, setStatus] = useState(""), [creating, setCreating] = useState(false);
-  const [approving, setApproving] = useState(null), [deleting, setDeleting] = useState(null);
+  const [approving, setApproving] = useState(null), [deleting, setDeleting] = useState(null), [resetting, setResetting] = useState(null);
   const load = () => {
     setState(previous => ({ ...previous, loading: true, error: "" }));
     const query = new URLSearchParams({ page_size: "100" });
@@ -152,9 +181,10 @@ function EnterpriseUsersPanel() {
     </div>
     {applications.length > 0 && <section className="application-queue"><header><strong>待审批注册申请</strong><span>{applications.length} 条</span></header><div className="control-table compact"><table><thead><tr><th>企业</th><th>联系人</th><th>邮箱</th><th>建议租户编码</th><th>提交时间</th><th>操作</th></tr></thead><tbody>{applications.map(item => <tr key={item.id}><td><strong>{item.enterprise_name}</strong></td><td>{item.contact_name}</td><td>{item.email}</td><td><code>{item.suggested_tenant_code}</code></td><td>{formatDate(item.created_at)}</td><td><div className="row-actions"><button className="primary-text" onClick={() => setApproving(item)}>通过</button><button className="danger" onClick={() => reject(item)}>拒绝</button></div></td></tr>)}</tbody></table></div></section>}
     <div className="control-toolbar"><form onSubmit={e => { e.preventDefault(); load(); }}><MagnifyingGlass /><input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="搜索企业、租户编码或邮箱" /><button>搜索</button></form><select value={status} onChange={e => setStatus(e.target.value)}><option value="">全部状态</option><option value="active">正常</option><option value="trial">试用</option><option value="suspended">暂停</option><option value="closed">已删除</option></select><button onClick={load}><ArrowsClockwise />刷新</button></div>
-    <State {...state} empty={!state.items.length} onRetry={load}><div className="control-table"><table><thead><tr><th>企业用户</th><th>租户</th><th>账号状态</th><th>功能授权</th><th>当前模型</th><th>最近登录</th><th>操作</th></tr></thead><tbody>{state.items.map(item => <tr key={item.user_id}><td><strong>{item.enterprise_name}</strong><small>{item.contact_name || "未设置联系人"} · {item.email || "无登录账号"}</small></td><td><code>{item.tenant_code}</code><em className={`state ${item.tenant_status}`}>{tenantLabels[item.tenant_status]}</em></td><td><em className={`state ${item.user_status}`}>{userLabels[item.user_status] || "无账号"}</em></td><td><div className="entitlement-stack"><label className="entitlement-toggle"><input type="checkbox" disabled={item.tenant_status === "closed"} checked={(item.entitlements || []).includes("sales_forecast")} onChange={event => toggleEntitlement(item, "sales_forecast", event.target.checked)} /><span />销量预测</label><label className="entitlement-toggle"><input type="checkbox" disabled={item.tenant_status === "closed"} checked={(item.entitlements || []).includes("market_analysis")} onChange={event => toggleEntitlement(item, "market_analysis", event.target.checked)} /><span />市场分析</label></div></td><td><strong>{item.model_version || "待分配"}</strong><small>{item.training_data_through ? `数据至 ${item.training_data_through}` : `${item.sku_count || 0} 个 SKU`}</small></td><td>{formatDate(item.last_login_at)}</td><td><div className="row-actions"><button className={item.user_status === "active" ? "danger" : ""} onClick={() => update(item, item.tenant_status === "closed" ? { tenant_status: "active", user_status: "active" } : { user_status: item.user_status === "active" ? "disabled" : "active" })}>{item.tenant_status === "closed" ? "恢复账号" : item.user_status === "active" ? "停用账号" : "启用账号"}</button>{item.tenant_status !== "closed" && <button className="danger" onClick={() => setDeleting(item)}><Trash />删除</button>}</div></td></tr>)}</tbody></table></div></State>
+    <State {...state} empty={!state.items.length} onRetry={load}><div className="control-table"><table><thead><tr><th>企业用户</th><th>租户</th><th>账号状态</th><th>功能授权</th><th>当前模型</th><th>最近登录</th><th>操作</th></tr></thead><tbody>{state.items.map(item => <tr key={item.user_id}><td><strong>{item.enterprise_name}</strong><small>{item.contact_name || "未设置联系人"} · {item.email || "无登录账号"}</small></td><td><code>{item.tenant_code}</code><em className={`state ${item.tenant_status}`}>{tenantLabels[item.tenant_status]}</em></td><td><em className={`state ${item.user_status}`}>{userLabels[item.user_status] || "无账号"}</em></td><td><div className="entitlement-stack"><label className="entitlement-toggle"><input type="checkbox" disabled={item.tenant_status === "closed"} checked={(item.entitlements || []).includes("sales_forecast")} onChange={event => toggleEntitlement(item, "sales_forecast", event.target.checked)} /><span />销量预测</label><label className="entitlement-toggle"><input type="checkbox" disabled={item.tenant_status === "closed"} checked={(item.entitlements || []).includes("market_analysis")} onChange={event => toggleEntitlement(item, "market_analysis", event.target.checked)} /><span />市场分析</label></div></td><td><strong>{item.model_version || "待分配"}</strong><small>{item.training_data_through ? `数据至 ${item.training_data_through}` : `${item.sku_count || 0} 个 SKU`}</small></td><td>{formatDate(item.last_login_at)}</td><td><div className="row-actions"><button className={item.user_status === "active" ? "danger" : ""} onClick={() => update(item, item.tenant_status === "closed" ? { tenant_status: "active", user_status: "active" } : { user_status: item.user_status === "active" ? "disabled" : "active" })}>{item.tenant_status === "closed" ? "恢复账号" : item.user_status === "active" ? "停用账号" : "启用账号"}</button>{item.tenant_status !== "closed" && item.email && <button onClick={() => setResetting(item)}><Key />重置密码</button>}{item.tenant_status !== "closed" && <button className="danger" onClick={() => setDeleting(item)}><Trash />删除</button>}</div></td></tr>)}</tbody></table></div></State>
     {creating && <EnterpriseCreateModal onClose={() => setCreating(false)} onCreated={() => { setCreating(false); load(); }} />}
     {approving && <ApproveApplicationModal item={approving} onClose={() => setApproving(null)} onApproved={() => { setApproving(null); load(); }} />}
+    {resetting && <ResetPasswordModal item={resetting} onClose={() => setResetting(null)} onReset={() => { setResetting(null); load(); }} />}
     {deleting && <DeleteEnterpriseModal item={deleting} onClose={() => setDeleting(null)} onDeleted={() => { setDeleting(null); load(); }} />}
   </section>;
 }

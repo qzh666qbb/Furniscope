@@ -77,7 +77,14 @@ class ForecastRuntime:
                 "granularities": ["day", "week"],
                 "trained_at": {key: value.get("trained_at") for key, value in
                                model_card.get("trained_models", {}).items()},
-                "reported_backtest": model_card.get("reported_backtest", {}),
+                "reported_backtest": (
+                    {
+                        **(model_card.get("recomputed_backtest") or {}),
+                        "copied_from_docs": model_card.get("reported_backtest") or {},
+                    }
+                    if model_card.get("recomputed_backtest")
+                    else (model_card.get("reported_backtest") or {})
+                ),
                 "data_quality": model_card.get("data_quality", {}),
             }
         except (OSError, ValueError, RuntimeError) as exc:

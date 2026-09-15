@@ -25,6 +25,10 @@ class EnterpriseUserUpdate(BaseModel):
     )
 
 
+class EnterprisePasswordReset(BaseModel):
+    new_password: str = Field(min_length=12, max_length=1024)
+
+
 class RegistrationApproval(BaseModel):
     tenant_code: str = Field(pattern=r"^[A-Z0-9_]{2,32}$")
     entitlements: list[Literal["sales_forecast", "market_analysis"]] = Field(

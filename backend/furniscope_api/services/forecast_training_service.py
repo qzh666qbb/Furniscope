@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import shutil
 from datetime import date, datetime, timezone
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,13 +40,66 @@ class ForecastTrainingService:
             raise BusinessError("FORECAST_APPEND_FILE_INVALID",
                                 f"{label}不是有效的 Excel 工作簿", status_code=422)
 
+    @staticmethod
+    def _workbook_columns(content: bytes) -> set[str]:
+        frame = pd.read_excel(io.BytesIO(content), engine="openpyxl", nrows=0)
+        return {str(column).strip().lower() for column in frame.columns}
+
+    def _validate_orders_workbook(self, filename: str, content: bytes) -> None:
+        self._validate_workbook(filename, content, "订单文件")
+        columns = self._workbook_columns(content)
+        has_settlement = {"date/time", "sku", "product sales"} <= columns or (
+            "product sales" in columns and "sku" in columns)
+        has_simple = (
+            ("sales" in columns or "销量" in columns or "daily_sales" in columns)
+            and ("sku" in columns)
+            and ("site" in columns or "站点" in columns)
+            and ("date" in columns or "日期" in columns)
+        )
+        if has_settlement or has_simple:
+            return
+        if "inventory" in columns or "库存" in columns or "库存数量" in columns:
+            raise BusinessError(
+                "FORECAST_APPEND_ORDERS_REQUIRED",
+                "当前上传的是库存文件。请把 append_orders_*.xlsx 放到「订单数据（必选）」，"
+                "把库存文件放到第二个「库存数据（可选）」",
+                status_code=422,
+            )
+        raise BusinessError(
+            "FORECAST_APPEND_FILE_INVALID",
+            "订单文件至少需要 date、sku、site、sales（或中文：日期/站点/销量），"
+            "也可以使用 Amazon 结算报告（date/time、sku、product sales）",
+            status_code=422,
+        )
+
+    def _validate_inventory_workbook(self, filename: str, content: bytes) -> None:
+        self._validate_workbook(filename, content, "库存文件")
+        columns = self._workbook_columns(content)
+        has_inventory = "inventory" in columns or "库存" in columns or "库存数量" in columns
+        has_sku = "sku" in columns
+        has_date = "date" in columns or "日期" in columns or "时间" in columns
+        has_site = "site" in columns or "site_code" in columns or "站点" in columns
+        if has_inventory and has_sku and has_date and has_site:
+            return
+        if "sales" in columns or "销量" in columns or "product sales" in columns:
+            raise BusinessError(
+                "FORECAST_APPEND_FILE_INVALID",
+                "当前上传的是订单文件。库存请使用 date、sku、inventory、site 四列",
+                status_code=422,
+            )
+        raise BusinessError(
+            "FORECAST_APPEND_FILE_INVALID",
+            "库存文件至少需要 date、sku、inventory、site（或中文：日期/SKU/库存数量/站点）",
+            status_code=422,
+        )
+
     async def accept(self, session: AsyncSession, *, tenant_id: int, user_id: int,
                      idempotency_key: str, orders_filename: str, orders_content: bytes,
                      inventory_filename: str | None, inventory_content: bytes | None) -> tuple[int, dict[str, Any]]:
-        self._validate_workbook(orders_filename, orders_content, "订单文件")
+        self._validate_orders_workbook(orders_filename, orders_content)
         if inventory_content is not None:
-            self._validate_workbook(inventory_filename or "inventory.xlsx",
-                                    inventory_content, "库存文件")
+            self._validate_inventory_workbook(inventory_filename or "inventory.xlsx",
+                                             inventory_content)
         orders_digest = hashlib.sha256(orders_content).hexdigest()
         inventory_digest = (hashlib.sha256(inventory_content).hexdigest()
                             if inventory_content is not None else None)

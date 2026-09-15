@@ -1,0 +1,41 @@
+FurniScope 对外链接与体验信息
+更新时间：2026-09-15（UTC）
+
+一、产品体验地址
+
+公网体验地址：http://1.15.68.127:42817
+
+本地体验地址：http://127.0.0.1:8083
+适用场景：在项目根目录启动 Docker Compose 后本机访问，不属于公网链接。
+
+二、测试账号
+
+企业用户账号：hefeng@furniscope.local
+企业用户密码：hefeng123456
+入口：登录页，填写完整企业邮箱。
+
+管理员账号：admin@furniscope.local
+管理员密码：admin123456
+入口：登录页底部「平台管理员入口」，不能走企业登录。
+
+说明：仅用于 FurniScope 演示环境，请勿用于其他系统，请勿修改密码或删除演示数据。
+
+三、代码仓库
+
+GitHub 仓库：https://github.com/qzh666qbb/Furniscope
+当前验证状态：可公开访问。
+
+
+四、产品演示视频
+
+仓库路径：assets/demo/FurniScope-产品演示.mp4
+GitHub 链接：https://github.com/qzh666qbb/Furniscope/blob/main/assets/demo/FurniScope-产品演示.mp4
+
+
+五、项目文档位置
+
+当前文档导航：Docs/README.md
+复赛材料清单：Docs/参赛提交/README.md
+系统使用说明书：Docs/参赛提交/05_FurniScope系统使用说明书.pdf
+技术架构及模型说明：Docs/FurniScope_技术架构及调用模型说明.pdf
+核心功能清单：Docs/FurniScope_核心功能清单.pdf

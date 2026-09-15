@@ -59,7 +59,11 @@ def extract(catalog: Path, output: Path) -> dict[str, str]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--catalog", type=Path, default=Path("HF catalog.pdf"))
+    parser.add_argument(
+        "--catalog",
+        type=Path,
+        default=Path("demo_data/source/HF catalog.pdf"),
+    )
     parser.add_argument("--output", type=Path, default=Path("frontend/public/assets/hf-products"))
     args = parser.parse_args()
     result = extract(args.catalog, args.output)

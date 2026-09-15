@@ -38,7 +38,7 @@ services:
       LANGGRAPH_DATABASE_URL: postgresql://furniscope:${POSTGRES_PASSWORD}@postgres:5432/furniscope
       REDIS_URL: redis://redis:6379/0
       APP_ENV: development
-      CORS_ALLOWED_ORIGINS: '["http://localhost:8083","http://127.0.0.1:8083"]'
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS}"
       ANALYSIS_WORKER_MODE: ${ANALYSIS_WORKER_MODE:-external}
       ANALYSIS_TOOL_MODE: ${ANALYSIS_TOOL_MODE:-external}
       PRODUCT_PARSE_MODE: ${PRODUCT_PARSE_MODE:-model}

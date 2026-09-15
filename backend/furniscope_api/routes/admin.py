@@ -17,10 +17,11 @@ from ..dependencies import DatabaseSession, Pagination
 from ..errors import BusinessError
 from ..schemas import SuccessEnvelope
 from ..schemas.admin import (AdminUserUpdate, ModelRouteUpdate, PromptTemplateCreate,
-                             EnterpriseUserCreate, EnterpriseUserUpdate,
+                             EnterprisePasswordReset, EnterpriseUserCreate, EnterpriseUserUpdate,
                              RegistrationApproval, RegistrationRejection,
                              TenantDataSourceCreate, TenantSkuUpsert,
                              WorkflowRecoveryRequest)
+from ..services.password_reset_service import PasswordResetService
 from ..security.password import PasswordService
 from ..services.enterprise_onboarding import provision_enterprise_account
 from ..services.forecast_training_service import ForecastTrainingService
@@ -271,6 +272,38 @@ async def update_enterprise_user(
     return SuccessEnvelope(data={"tenant_id": updated["id"], "tenant_code": updated["tenant_code"],
         **after, "resource_version": resource_version(updated["updated_at"])},
         request_id=request.state.request_id)
+
+
+@router.post("/enterprise-users/{tenant_id}:reset-password", operation_id="API-ADM-23")
+async def reset_enterprise_password(
+    tenant_id: int, body: EnterprisePasswordReset, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_admin)],
+    if_match: Annotated[str, Header(alias="If-Match")],
+    user_id: int | None = Query(default=None, gt=0),
+):
+    tenant = (await session.execute(text(
+        "SELECT * FROM tenants WHERE id=:tenant FOR UPDATE"), {"tenant": tenant_id})).mappings().one_or_none()
+    if tenant is None:
+        raise BusinessError("TENANT_NOT_FOUND", "企业用户不存在", status_code=404)
+    require_version(if_match, tenant["updated_at"])
+    owner = (await session.execute(text("""SELECT * FROM users WHERE tenant_id=:tenant
+        AND role_code='user' AND (CAST(:user_id AS bigint) IS NULL OR id=:user_id)
+        ORDER BY created_at,id LIMIT 1 FOR UPDATE"""),
+        {"tenant": tenant_id, "user_id": user_id})).mappings().one_or_none()
+    if owner is None:
+        raise BusinessError("USER_NOT_FOUND", "企业登录账号不存在", status_code=404)
+    await PasswordResetService().admin_set_password(
+        session, user_id=int(owner["id"]), new_password=body.new_password
+    )
+    await _audit(session, principal, action="admin.enterprise.reset_password", resource="user",
+                 resource_id=int(owner["id"]), before={"email": owner["email"]},
+                 after={"email": owner["email"], "sessions_revoked": True},
+                 request_id=request.state.request_id, tenant_id=tenant_id)
+    await session.commit()
+    return SuccessEnvelope(
+        data={"tenant_id": tenant_id, "user_id": int(owner["id"]), "email": owner["email"], "reset": True},
+        request_id=request.state.request_id,
+    )
 
 
 @router.delete("/enterprise-users/{tenant_id}", operation_id="API-ADM-22")

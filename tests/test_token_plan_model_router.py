@@ -141,6 +141,7 @@ def test_aliyun_quota_exhausted_falls_back_to_deepseek() -> None:
                 output_type=Output,
             )
         assert result.status == "ok"
+        assert client.last_chat_provider == "deepseek"
         assert "token-plan.cn-beijing.maas.aliyuncs.com" in hosts
         assert "api.deepseek.com" in hosts
 

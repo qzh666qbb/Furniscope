@@ -10,9 +10,12 @@ from ..errors import BusinessError
 from ..schemas import SuccessEnvelope
 from ..schemas.auth import (
     CurrentUserResponse, LoginRequest, LoginResponse, LogoutResponse,
+    PasswordResetConfirmRequest, PasswordResetConfirmResponse,
+    PasswordResetRequest, PasswordResetRequestResponse,
     RefreshRequest, RefreshTokenResponse, RegistrationApplicationResponse, RegistrationRequest,
 )
 from ..services.auth_service import AuthService
+from ..services.password_reset_service import PasswordResetService
 from ..services.registration_service import RegistrationService
 
 router = APIRouter(prefix="/api/v1", tags=["Authentication"])
@@ -77,6 +80,46 @@ async def register(body: RegistrationRequest, request: Request, session: Databas
             status="pending",
             created_at=data["created_at"],
         ),
+        request_id=request.state.request_id,
+    )
+
+
+@router.post(
+    "/auth/password-reset/request",
+    response_model=SuccessEnvelope[PasswordResetRequestResponse],
+    operation_id="API-AUTH-07",
+    summary="申请企业账号密码重置校验码",
+)
+async def request_password_reset(body: PasswordResetRequest, request: Request, session: DatabaseSession):
+    try:
+        data = await PasswordResetService().request_reset(session, email=body.email)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    return SuccessEnvelope(
+        data=PasswordResetRequestResponse(**data),
+        request_id=request.state.request_id,
+    )
+
+
+@router.post(
+    "/auth/password-reset/confirm",
+    response_model=SuccessEnvelope[PasswordResetConfirmResponse],
+    operation_id="API-AUTH-08",
+    summary="使用校验码设置新密码",
+)
+async def confirm_password_reset(body: PasswordResetConfirmRequest, request: Request, session: DatabaseSession):
+    try:
+        data = await PasswordResetService().confirm_reset(
+            session, email=body.email, reset_code=body.reset_code, new_password=body.new_password
+        )
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    return SuccessEnvelope(
+        data=PasswordResetConfirmResponse(**data),
         request_id=request.state.request_id,
     )
 

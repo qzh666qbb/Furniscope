@@ -6,6 +6,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import json
+from pathlib import Path
 from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
@@ -63,6 +64,16 @@ class RedisJobQueue:
 
     async def close(self) -> None:
         await self.client.aclose()
+
+    async def archive_dead_letters(self, archive_path: Path) -> int:
+        target = Path(archive_path)
+        entries = await self.client.xrange(DEAD_STREAM)
+        payload = [{"id": message_id, "fields": fields} for message_id, fields in entries]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        if entries:
+            await self.client.delete(DEAD_STREAM)
+        return len(payload)
 
     async def enqueue(self, kind: str, payload: dict[str, Any], *, job_id: str | None = None,
                       attempt: int = 1, deduplicate: bool = True) -> str:
@@ -149,6 +160,7 @@ class RedisJobQueue:
                     "job_id": job.job_id, "kind": job.kind,
                     "payload": json.dumps(job.payload, ensure_ascii=False),
                     "attempt": str(job.attempt), "error_type": type(exc).__name__,
+                    "failure_code": "JOB_ATTEMPTS_EXHAUSTED",
                     "failed_at": datetime.now(timezone.utc).isoformat(),
                 })
             await self.client.xack(STREAM, GROUP, job.message_id)

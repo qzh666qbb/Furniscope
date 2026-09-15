@@ -44,8 +44,11 @@ function AppendTrainingTab({ model, onPublished }) {
     loadRuns().catch(err => setMessage(err.message));
   }, []);
 
-  const submit = async () => {
-    if (!orders) return setMessage("请先选择订单 Excel 文件");
+    const submit = async () => {
+    if (!orders) return setMessage("请先选择订单 Excel 文件（不是库存文件）");
+    if (/库存|inventory/i.test(orders.name)) {
+      return setMessage("当前选中的是库存文件。请把 append_orders_*.xlsx 放到「订单数据」，库存文件放到第二个框");
+    }
     if (!window.confirm("相同日期、SKU、站点的数据将以本次上传为准。追加完成后会自动重新训练并发布新模型，是否继续？")) return;
     const form = new FormData();
     form.append("orders_file", orders);
@@ -257,7 +260,7 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
   return <main className="workspace forecast-page"><Sidebar page="forecast"/><section className="workspace-main"><Topbar/><div className="forecast-workspace">
     {fromProducts && <ParentPageTab label="产品中心" current={`${requestedSku || "产品"} 销量预测`} to="products" />}
     <header className="forecast-hero-card">
-      <div><h1>商品销量预测</h1><p>按 SKU 和站点生成销量区间，并形成可执行的备货建议。</p></div>
+      <div><h1>商品销量预测</h1><p>按 SKU 和站点生成销量区间，并形成可执行的备货建议。{model?.ready && model?.reported_backtest?.candidate_metrics?.wape_pct != null ? `本环境回测 WAPE ${Number(model.reported_backtest.candidate_metrics.wape_pct).toFixed(1)}%（${model.reported_backtest.catalog_audit?.scored_skus || "—"}/${model.reported_backtest.catalog_audit?.catalog_skus || "—"} SKU）。` : ""}</p></div>
       <div className={`forecast-current-model ${model && !model.ready ? "unavailable" : ""}`}>
         <Database/><span>当前模型<strong>{model?.ready ? `已就绪 · 数据更新至 ${model.data_through || "—"}` : model ? "模型暂不可用" : "正在检查模型状态"}</strong></span>
       </div>

@@ -53,6 +53,8 @@ import {
   adminLogin as apiAdminLogin,
   login as apiLogin,
   logout as apiLogout,
+  requestPasswordReset,
+  confirmPasswordReset,
   submitRegistration,
 } from "./api.js";
 import "./admin.css";
@@ -72,6 +74,8 @@ import "./forecast-layout-fix.css";
 import "./topbar-badge-alignment.css";
 import "./analysis-organization.css";
 import "./live-wizard.css";
+import { Landing } from "./Landing.jsx";
+import "./landing.css";
 
 const productImage = (sku) =>
   sku
@@ -220,6 +224,9 @@ function Login({ onEnter }) {
       <section className="form-panel">
         <form className="login-form" onSubmit={submit}>
           <header>
+            <button type="button" className="login-back-home" onClick={() => { location.hash = "landing"; }}>
+              <ArrowLeft /> 返回首页
+            </button>
             <h1>登录 FurniScope</h1>
             <p>使用企业账号继续</p>
           </header>
@@ -255,7 +262,7 @@ function Login({ onEnter }) {
               <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
               <span><b>记住我</b><small>仅保存邮箱，不保存密码</small></span>
             </label>
-            <button type="button" onClick={() => setMessage("请联系企业管理员重置密码")}>忘记密码？</button>
+            <button type="button" onClick={() => (location.hash = "forgot-password")}>忘记密码？</button>
           </div>
           <button className="login-button">登录</button>
           <p className="form-message">{message}</p>
@@ -339,6 +346,107 @@ function Register() {
           <p className="register-message" role="status">{message}</p>
           <footer>已有账号？<button type="button" onClick={() => (location.hash = "login")}>直接登录</button></footer>
         </form>
+      </section>
+    </main>
+  );
+}
+
+function ForgotPassword() {
+  const rememberedEmail = localStorage.getItem("furniscope-remembered-email") || "";
+  const [step, setStep] = useState("request");
+  const [email, setEmail] = useState(rememberedEmail);
+  const [resetCode, setResetCode] = useState("");
+  const [issuedCode, setIssuedCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [message, setMessage] = useState("");
+  const [done, setDone] = useState(false);
+  const requestCode = async (event) => {
+    event.preventDefault();
+    if (!email.trim()) return setMessage("请输入企业邮箱");
+    try {
+      setMessage("正在核对企业账号…");
+      const data = await requestPasswordReset(email.trim());
+      setEmail(data.email);
+      setIssuedCode(data.reset_code || "");
+      setResetCode(data.reset_code || "");
+      setStep("confirm");
+      setMessage("");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+  const submitPassword = async (event) => {
+    event.preventDefault();
+    if (!resetCode.trim()) return setMessage("请输入 6 位校验码");
+    if (password.length < 12) return setMessage("新密码至少需要 12 位");
+    if (password !== confirm) return setMessage("两次输入的密码不一致");
+    try {
+      setMessage("正在设置新密码…");
+      await confirmPasswordReset({
+        email: email.trim(),
+        reset_code: resetCode.trim(),
+        new_password: password,
+      });
+      localStorage.setItem("furniscope-remembered-email", email.trim());
+      setDone(true);
+      setMessage("密码已更新，请使用新密码登录。");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+  return (
+    <main className="register-page">
+      <section className="register-intro">
+        <button onClick={() => (location.hash = "login")}><ArrowLeft /> 返回登录</button>
+        <div>
+          <img src="./assets/furniscope-mark.png" alt="" />
+          <span>FurniScope</span>
+        </div>
+        <h1>重置企业账号密码</h1>
+        <p>核对企业邮箱后设置新密码。当前演示环境会在本页显示一次性校验码；接入企业邮箱后将改为发送到邮箱。</p>
+        <ul>
+          <li><Check weight="bold" /> 校验码 30 分钟内有效，使用后立即失效</li>
+          <li><Check weight="bold" /> 新密码至少 12 位</li>
+          <li><Check weight="bold" /> 重置成功后已登录会话会全部退出</li>
+        </ul>
+      </section>
+      <section className="register-form-panel">
+        {step === "request" ? (
+          <form className="register-form" onSubmit={requestCode}>
+            <header><span>PASSWORD RESET</span><h2>忘记密码</h2><p>输入已开通的企业邮箱，获取重置校验码</p></header>
+            <label>企业邮箱<input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" /></label>
+            <button className="register-submit">获取校验码</button>
+            <p className="register-message" role="status">{message}</p>
+            <footer>想起密码了？<button type="button" onClick={() => (location.hash = "login")}>返回登录</button></footer>
+          </form>
+        ) : (
+          <form className="register-form" onSubmit={submitPassword}>
+            <header><span>SET NEW PASSWORD</span><h2>设置新密码</h2><p>校验码已生成。请立即设置新密码，不要把校验码发给他人。</p></header>
+            {issuedCode && (
+              <div className="reset-code-card">
+                <small>演示环境校验码</small>
+                <strong>{issuedCode}</strong>
+                <span>生产环境将发送到企业邮箱，不会显示在页面上。</span>
+              </div>
+            )}
+            <label>企业邮箱<input type="email" value={email} readOnly /></label>
+            <label>6 位校验码<input inputMode="numeric" autoComplete="one-time-code" value={resetCode} onChange={(e) => setResetCode(e.target.value)} placeholder="6 位数字" maxLength="6" /></label>
+            <div className="register-field-pair">
+              <label>新密码<input type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="至少 12 位" minLength="12" /></label>
+              <label>确认密码<input type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="再次输入" minLength="12" /></label>
+            </div>
+            <button className="register-submit" disabled={done}>{done ? "密码已更新" : "确认重置"}</button>
+            <p className="register-message" role="status">{message}</p>
+            <footer>
+              {done ? (
+                <button type="button" onClick={() => (location.hash = "login")}>去登录</button>
+              ) : (
+                <button type="button" onClick={() => { setStep("request"); setMessage(""); }}>重新获取校验码</button>
+              )}
+            </footer>
+          </form>
+        )}
       </section>
     </main>
   );
@@ -3927,9 +4035,11 @@ export function App() {
       "admin",
       "admin-login",
       "register",
+      "forgot-password",
       "login",
+      "landing",
     ];
-    if (!route) return hasSession() ? "workspace" : "login";
+    if (!route) return hasSession() ? "workspace" : "landing";
     if (route === "settings") return "workspace";
     return known.includes(route) ? route : "workspace";
   };
@@ -3993,7 +4103,7 @@ export function App() {
   const leave = async () => {
     await apiLogout();
     setUser(null);
-    location.hash = "login";
+    location.hash = "landing";
   };
   if (checking)
     return (
@@ -4031,6 +4141,11 @@ export function App() {
   if (route === "admin-login")
     return <AdminLogin onEnter={(next) => enter(next, "admin")} />;
   if (route === "register") return <Register />;
+  if (route === "forgot-password") return <ForgotPassword />;
+  if (route === "landing") {
+    if (user) return <Dashboard user={user} onLogout={leave} />;
+    return <Landing />;
+  }
   if (route === "admin")
     return user?.role_code === "admin" ? (
       <AdminControlCenter />
