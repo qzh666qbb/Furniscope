@@ -52,6 +52,12 @@ class ForecastService:
     return engine_root, state_dir
 
 
+def test_coerce_training_date_accepts_iso_string() -> None:
+    assert coerce_training_date("2026-07-07") == date(2026, 7, 7)
+    assert coerce_training_date(date(2026, 7, 7)) == date(2026, 7, 7)
+    assert coerce_training_date(None) is None
+
+
 @pytest.mark.asyncio
 async def test_runtime_normalizes_existing_v4_engine(tmp_path: Path) -> None:
     engine_root, state_dir = build_fake_engine(tmp_path)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Header, Request
@@ -14,6 +13,7 @@ from ..dependencies import DatabaseSession
 from ..errors import BusinessError
 from ..repositories.forecast_repository import ForecastRepository
 from ..schemas import SuccessEnvelope
+from ..services.forecast_runtime import coerce_training_date
 from .internal_model import _authorize
 
 router = APIRouter(prefix="/internal/v1/forecast", tags=["Internal Forecast"],
@@ -59,9 +59,7 @@ async def deploy_forecast_model(tenant_id: int, body: ForecastDeploymentCreate,
         raise BusinessError("FORECAST_ARTIFACT_INVALID", str(exc), status_code=422) from exc
     metrics = {key: metadata.get(key) for key in (
         "sku_count", "granularities", "trained_at", "reported_backtest", "data_quality")}
-    data_through = metadata.get("data_through")
-    if isinstance(data_through, str):
-        data_through = date.fromisoformat(data_through)
+    data_through = coerce_training_date(metadata.get("data_through"))
     try:
         model = (await session.execute(text("""INSERT INTO furniscope.forecast_models
             (model_code,owner_tenant_id,model_scope,version,engine,state_uri,state_checksum,

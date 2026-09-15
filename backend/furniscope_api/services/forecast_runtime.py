@@ -11,10 +11,21 @@ import asyncio
 import hashlib
 import importlib.util
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from threading import RLock
 from typing import Any
+
+
+def coerce_training_date(value: Any) -> date | None:
+    """asyncpg DATE binds need datetime.date, not ISO strings from meta.json."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value).strip()[:10])
 
 from ..config import ApiSettings
 

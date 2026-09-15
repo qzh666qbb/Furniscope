@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import ApiSettings
 from ..errors import BusinessError
 from ..repositories.forecast_repository import ForecastRepository
-from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry
+from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry, coerce_training_date
 
 
 class ForecastModelReplacementService:
@@ -108,7 +108,7 @@ class ForecastModelReplacementService:
                 RETURNING id,model_uuid::text"""), {
                 "tenant": tenant_id, "version": version, "engine": effective_algorithm,
                 "uri": state_uri, "checksum": metadata["state_checksum"],
-                "through": metadata.get("data_through"),
+                "through": coerce_training_date(metadata.get("data_through")),
                 "metrics": json.dumps({"sku_count": metadata.get("sku_count"),
                                        "replacement": {"parameters": parameters,
                                                        "change_note": change_note}}),

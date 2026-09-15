@@ -19,7 +19,7 @@ from ..config import ApiSettings
 from ..errors import BusinessError
 from ..repositories.forecast_repository import ForecastRepository
 from .demo_storage import DemoStorage
-from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry
+from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry, coerce_training_date
 
 
 class ForecastTrainingService:
@@ -258,7 +258,7 @@ class ForecastTrainingService:
             state_uri = f"server-managed://tenant/{tenant_id}/{training_uuid}"
             model_metrics = {"append": append_metrics, "sku_count": final_metadata.get("sku_count"),
                              "granularities": final_metadata.get("granularities")}
-            training_date = final_metadata.get("data_through")
+            training_date = coerce_training_date(final_metadata.get("data_through"))
             model = (await session.execute(text("""
                 INSERT INTO forecast_models
                   (model_code,owner_tenant_id,model_scope,version,engine,state_uri,state_checksum,
