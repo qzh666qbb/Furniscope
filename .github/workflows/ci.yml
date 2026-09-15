@@ -49,11 +49,13 @@ jobs:
       - run: PYTHONPATH=.:backend pytest -q
       - name: Verify PostgreSQL backup and restore
         run: |
-          createdb "postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test"
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" -v ON_ERROR_STOP=1 \
+            -c "CREATE DATABASE furniscope_restore_test"
           POSTGRES_BACKUP_URL="$FURNISCOPE_TEST_DATABASE_URL" \
           RESTORE_TEST_DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test" \
             scripts/verify_backup_restore.sh
-          dropdb "postgresql://postgres:postgres@127.0.0.1:5432/furniscope_restore_test"
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" -v ON_ERROR_STOP=1 \
+            -c "DROP DATABASE furniscope_restore_test"
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
