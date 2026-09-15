@@ -16,7 +16,7 @@
 | 企业邮箱 | `hefeng@furniscope.local` |
 | 密码 | `hefeng123456` |
 
-登录页必须填完整企业邮箱。演示视频与代码同仓，GitHub 地址：<https://github.com/qzh666qbb/Furniscope/blob/main/assets/demo/FurniScope-产品演示.mp4>。
+登录页必须填完整企业邮箱。演示视频与代码同仓，GitHub 请用原始文件地址打开（文件页无法预览）：<https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4>。
 
 企业用户走左侧六块导航：**首页 → 产品中心 → AI 工作台 → 销量预测 → 市场洞察 → 决策报告**。平台管理员走独立入口，看不到企业工作台。
 

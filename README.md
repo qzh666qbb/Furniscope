@@ -37,13 +37,13 @@ FurniScope 不是只会生成市场摘要的聊天机器人。它是一名由企
 | 管理员邮箱 | `admin@furniscope.local` |
 | 管理员密码 | `admin123456` |
 | 租户 | HeFeng 演示企业 |
-| 演示视频 | [assets/demo/FurniScope-产品演示.mp4](assets/demo/FurniScope-产品演示.mp4) |
+| 演示视频 | [在线观看 / 下载](https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4) |
 
 企业账号从登录页进入，填写完整企业邮箱，不要只填 `hefeng`。管理员从登录页底部「平台管理员入口」进入，不能走企业登录。以上为评审体验账号，请勿修改密码或删除演示数据。
 
-演示视频与代码在同一仓库，本地路径为 `assets/demo/FurniScope-产品演示.mp4`，GitHub 也可直接打开：
+演示视频与代码在同一仓库，本地路径为 `assets/demo/FurniScope-产品演示.mp4`。GitHub 文件页无法在线预览大视频，请用原始文件地址打开或下载：
 
-https://github.com/qzh666qbb/Furniscope/blob/main/assets/demo/FurniScope-产品演示.mp4
+https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4
 
 操作细节见 [系统使用说明书](Docs/参赛提交/05_FurniScope系统使用说明书.md)。
 
@@ -338,7 +338,7 @@ HeFeng 现网模型数据默认到 **2026-06-30**。可用 `demo_data/forecast_a
 
 | 文档 | 作用 |
 |---|---|
-| [演示视频](assets/demo/FurniScope-产品演示.mp4) | 仓库内产品演示录像 |
+| [演示视频](https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4) | 产品演示录像（GitHub 请用原始文件地址，文件页无法预览） |
 | [系统使用说明书](Docs/参赛提交/05_FurniScope系统使用说明书.md) | 安装、启动、登录与六块工作台操作（含截图） |
 | [项目开发及阶段成果](Docs/参赛提交/03_项目开发及阶段成果说明.md) | 已完成能力、挑战与后续计划 |
 | [市场洞察测试指南](Docs/参赛提交/04_市场洞察四项功能测试指南.md) | 竞品、舆情、导入与分析联调步骤 |
