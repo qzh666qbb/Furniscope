@@ -274,7 +274,7 @@ async def update_enterprise_user(
         request_id=request.state.request_id)
 
 
-@router.post("/enterprise-users/{tenant_id}:reset-password", operation_id="API-ADM-23")
+@router.post("/enterprise-users/{tenant_id}:reset-password", operation_id="API-ADM-26")
 async def reset_enterprise_password(
     tenant_id: int, body: EnterprisePasswordReset, request: Request, session: DatabaseSession,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_admin)],
