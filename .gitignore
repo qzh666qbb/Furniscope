@@ -27,8 +27,6 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/blob-report/
 forecast_assets/tenants/
-forecast_assets/state/
-forecast_assets/training_data/
 # Historical UI/prototype trees stay local; document archives and their indexes
 # are versioned so moving a tracked document never appears as data loss.
 archive/*
