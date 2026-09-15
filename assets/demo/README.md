@@ -12,7 +12,11 @@ assets/demo/FurniScope-产品演示.mp4
 ./assets/demo/FurniScope-产品演示.mp4
 ```
 
-GitHub 在线地址（推送后可用）：
+B 站在线观看：
+
+https://www.bilibili.com/video/BV1LoeH6VEJX/
+
+GitHub 原始文件（可下载）：
 
 https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4
 

@@ -5,7 +5,7 @@
 > 更新日期：2026 年 9 月 15 日  
 > 公网体验：<http://1.15.68.127:42817>  
 > 本地默认：<http://127.0.0.1:8083>（局域网演示也可能是内网 IP 的同一端口）  
-> 演示视频：[assets/demo/FurniScope-产品演示.mp4](../../assets/demo/FurniScope-产品演示.mp4)
+> 演示视频：[B 站](https://www.bilibili.com/video/BV1LoeH6VEJX/) · [仓库 mp4](../../assets/demo/FurniScope-产品演示.mp4)
 
 本文按**真实页面**说明：每页一张运行截图，并写清这个页面能做什么。截图来自 HeFeng 演示租户，不含 API 密钥。建议窗口宽度 1280px 以上。
 
@@ -16,7 +16,7 @@
 | 企业邮箱 | `hefeng@furniscope.local` |
 | 密码 | `hefeng123456` |
 
-登录页必须填完整企业邮箱。演示视频与代码同仓，GitHub 请用原始文件地址打开（文件页无法预览）：<https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4>。
+登录页必须填完整企业邮箱。演示视频优先在 B 站观看：<https://www.bilibili.com/video/BV1LoeH6VEJX/>。仓库备份与 GitHub 原始文件：<https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4>。
 
 企业用户走左侧六块导航：**首页 → 产品中心 → AI 工作台 → 销量预测 → 市场洞察 → 决策报告**。平台管理员走独立入口，看不到企业工作台。
 

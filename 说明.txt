@@ -28,6 +28,7 @@ GitHub 仓库：https://github.com/qzh666qbb/Furniscope
 
 四、产品演示视频
 
+B 站在线观看：https://www.bilibili.com/video/BV1LoeH6VEJX/
 仓库路径：assets/demo/FurniScope-产品演示.mp4
 GitHub 原始文件（可下载/播放）：https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4
 
