@@ -135,6 +135,7 @@ class AnalysisTaskStatusResponse(BaseModel):
     retryable: bool
     user_confirmation: UserConfirmationProjection | None
     report_uuid: UUID | None
+    analysis_config: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReportSummary(BaseModel):

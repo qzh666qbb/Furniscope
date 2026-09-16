@@ -36,6 +36,9 @@ class WorkspaceListItem(BaseModel):
     source: str
     workspace_status: WorkspaceStatus
     status: str
+    stage: str | None = None
+    progress_percent: float | None = None
+    analysis_config: dict[str, Any] = Field(default_factory=dict)
     analysis_count: int = Field(ge=0)
     product_id: int | None = None
     product_sku: str | None = None
@@ -65,3 +68,28 @@ class WorkspaceArchiveResponse(BaseModel):
     workspace_uuid: UUID
     archived: bool
     archived_tasks: int = Field(ge=0)
+
+
+class WorkbenchChatRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    history: list[dict[str, str]] = Field(default_factory=list, max_length=12)
+    product_id: int | None = Field(default=None, gt=0)
+    dataset_id: int | None = Field(default=None, gt=0)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class WorkbenchChatProduct(BaseModel):
+    product_id: int | None = None
+    sku: str | None = None
+    name: str | None = None
+
+
+class WorkbenchChatResponse(BaseModel):
+    answer: str
+    title: str | None = None
+    suggested_prompts: list[str] = Field(default_factory=list)
+    suggested_action: str | None = None
+    action_label: str | None = None
+    action_href: str | None = None
+    product_candidates: list[WorkbenchChatProduct] = Field(default_factory=list)
+    missing_market: dict[str, Any] | None = None

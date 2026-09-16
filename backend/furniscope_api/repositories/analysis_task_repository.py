@@ -156,7 +156,7 @@ class AnalysisTaskRepository:
         result = await session.execute(text("""
             SELECT t.id,t.task_uuid::text,t.status,t.external_stage AS stage,
                    t.progress_percent,t.checkpoint_stage,t.job_name,t.product_id,
-                   t.failure_message,r.report_uuid::text,
+                   t.failure_message,COALESCE(t.analysis_config, '{}'::jsonb) AS analysis_config,r.report_uuid::text,
                    EXISTS(SELECT 1 FROM workflow_checkpoints w
                            WHERE w.task_id=t.id AND w.tenant_id=t.tenant_id
                              AND w.stage_code=t.checkpoint_stage AND w.is_safe_resume

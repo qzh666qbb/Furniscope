@@ -85,13 +85,11 @@ class AnalysisTaskService:
                 UUID(str(workspace_uuid))
             except ValueError:
                 workspace_uuid = None
-        canonical = await workspaces.find_canonical_for_product(
-            session, tenant_id=tenant_id, product_id=payload["product_id"],
-            source=config.get("source") or "node_workflow_canvas")
-        if canonical:
-            workspace_uuid = canonical
-        elif not workspace_uuid:
-            workspace_uuid = str(uuid4())
+        if not workspace_uuid:
+            workspace_uuid = await workspaces.find_canonical_for_product(
+                session, tenant_id=tenant_id, product_id=payload["product_id"],
+                source=config.get("source") or "node_workflow_canvas",
+            ) or str(uuid4())
         config["workspace_uuid"] = str(workspace_uuid)
         payload = {**payload, "analysis_config": config}
         row = await self.repository.create(session, tenant_id=tenant_id, user_id=user_id,
@@ -164,6 +162,8 @@ class AnalysisTaskService:
         task = await self.repository.status(session, tenant_id=tenant_id, task_uuid=task_uuid)
         if task is None:
             raise BusinessError("TASK_NOT_FOUND", "任务不存在或不可访问", status_code=404)
+        if not isinstance(task.get("analysis_config"), dict):
+            task["analysis_config"] = {}
         if task["stage"] not in {"understanding_product", "researching_market",
                                   "evaluating_opportunity", "generating_recommendation", "completed"}:
             raise BusinessError("WORKFLOW_STATE_INCONSISTENT", "任务展示阶段不一致", status_code=409)

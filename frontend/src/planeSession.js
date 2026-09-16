@@ -21,7 +21,7 @@ export function chatTurn(role, text, extras = {}) {
 export const planeGreeting = (name = "", workspaceUuid = "") => [chatTurn(
   "assistant",
   name
-    ? `这是分析工作台「${name}」。右侧画布查看节点与报告，你可以在同一工作台中发起多次分析。`
+    ? `这是分析工作台「${name}」。直接说出产品名或 SKU 即可开始，例如「分析电竞椅的市场」；目录没有完全同名产品时，我会列出相近品类供你点选。`
     : "告诉我想分析的产品与目标市场，我会载入企业档案并启动分析。后续分析与对话都会保留在当前工作台。",
   {
     kind: "greeting",
@@ -29,14 +29,58 @@ export const planeGreeting = (name = "", workspaceUuid = "") => [chatTurn(
   },
 )];
 
-export function reusePlaneWorkspace(history = [], product, currentId) {
-  const productId = product?.product_id;
-  if (productId) {
-    const existing = history.find((item) => String(item.product_id) === String(productId)
-      && (Number(item.analysis_count || 0) > 0 || item.task_uuid));
-    if (existing) return workspaceId(existing);
+export function reusePlaneWorkspace(history = [], product, currentId, { forceNew = false } = {}) {
+  if (!forceNew) {
+    const productId = product?.product_id;
+    if (productId) {
+      const existing = history.find((item) => String(item.product_id) === String(productId)
+        && (Number(item.analysis_count || 0) > 0 || item.task_uuid));
+      if (existing) return workspaceId(existing);
+    }
   }
   return isUuid(currentId) ? String(currentId) : createUuid();
+}
+
+export function draftWorkspaceEntry({ workspace_uuid, job_name, product } = {}) {
+  return {
+    workspace_uuid,
+    job_name: job_name || "新建产品出海分析",
+    status: "draft",
+    analysis_count: 0,
+    product_id: product?.product_id,
+    product_sku: product?.sku || "",
+    product_name: product?.name || "",
+    target_country: "",
+    target_platform: "",
+    source: PLANE_SOURCE,
+    updated_at: new Date().toISOString(),
+    runs: [],
+    local_only: true,
+  };
+}
+
+export function isEmptyLocalDraft(item) {
+  return Boolean(item?.local_only) && !item?.task_uuid && !(Number(item.analysis_count) > 0);
+}
+
+export function replaceCurrentWorkspace(items = [], next = {}) {
+  const id = workspaceId(next);
+  if (!id) return (items || []).slice(0, 1);
+  const previous = (items || []).find((item) => workspaceId(item) === id) || items?.[0] || {};
+  const previousRuns = previous.runs || (previous.task_uuid ? [previous] : []);
+  const runs = [
+    ...previousRuns.filter((run) => String(run.task_uuid) !== String(next.task_uuid || "")),
+    ...(next.task_uuid ? [{ ...previous, ...next }] : []),
+  ];
+  return [{
+    ...previous,
+    ...next,
+    workspace_uuid: id,
+    analysis_count: Math.max(Number(previous.analysis_count) || 0, Number(next.analysis_count) || 0, runs.length),
+    runs,
+    local_only: false,
+    updated_at: next.updated_at || new Date().toISOString(),
+  }];
 }
 
 export function workspaceId(item) {
@@ -223,11 +267,14 @@ export function withoutFailureNotices(items = []) {
 }
 
 export function toUiMessage(item) {
+  const metadata = item.metadata || {};
   return chatTurn(item.role, item.content || item.text, {
     kind: item.message_kind || item.kind || "text",
     client_message_id: item.client_message_id,
     message_uuid: item.message_uuid,
     evidence_refs: item.evidence_refs || [],
+    thinking: metadata.thinking || item.thinking,
+    thinkingDone: Boolean(metadata.thinking || item.thinkingDone),
   });
 }
 
@@ -284,7 +331,9 @@ function messageKind(item, index) {
 export async function persistWorkspaceMessages(id, messages, extra = {}) {
   const key = planeChatKey(id);
   if (!key) return;
-  const list = withoutFailureNotices(messages || []);
+  const list = withoutFailureNotices(messages || []).filter((item) => (
+    !item.streaming && String(item.text || item.content || "").trim()
+  ));
   savePlaneChat(key, list);
   if (!list.some((item) => item.role === "user")) return;
   if (!isUuid(key)) return;
@@ -308,7 +357,10 @@ export async function persistWorkspaceMessages(id, messages, extra = {}) {
           client_message_id: clientId,
           analysis_task_uuid: extra.task_uuid || undefined,
           evidence_refs: item.evidence_refs || [],
-          metadata: extra.execution_target ? { execution_target: extra.execution_target } : {},
+          metadata: {
+            ...(extra.execution_target ? { execution_target: extra.execution_target } : {}),
+            ...(item.thinking ? { thinking: item.thinking } : {}),
+          },
         }),
       });
     } catch {

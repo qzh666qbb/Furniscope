@@ -21,9 +21,11 @@ from ..repositories.analysis_task_repository import AnalysisTaskRepository
 from ..repositories.insight_repository import InsightRepository
 from ..services.analysis_agent_adapter import AnalysisAgentAdapter
 from ..services.analysis_task_service import AnalysisTaskService
+from ..services.chat_sse import stream_chat_events
 from ..services.job_dispatch import enqueue_job
 from ..services.model_router_client import ServiceModelRouterClient
-from ..services.task_chat import local_task_chat_answer
+from ..services.task_chat import build_task_thinking, local_task_chat_answer
+from ..services.workbench_chat import parse_model_chat_text
 
 router = APIRouter(prefix="/api/v1/analysis-tasks", tags=["Analysis Tasks"])
 
@@ -32,6 +34,50 @@ class TaskChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     history: list[dict[str, str]] = Field(default_factory=list, max_length=12)
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+async def _task_chat_context(task_uuid, body, request, session, principal, *, streaming: bool):
+    service = AnalysisTaskService(request.app.state.settings)
+    try:
+        result = await service.result(
+            session, tenant_id=principal.tenant_id, task_uuid=str(task_uuid),
+            opportunity_limit=10, recommendation_limit=20,
+        )
+    except BusinessError as exc:
+        if exc.code not in {"TASK_RESULT_NOT_READY", "TASK_RESULT_INCOMPLETE"}:
+            raise
+        result = None
+    repository = InsightRepository()
+    projections = {}
+    limits = {"clusters": 12, "opportunities": 10, "recommendations": 20, "evidence": 60, "competitors": 12}
+    for name, limit in limits.items():
+        rows = await repository.task_projection(
+            session, tenant_id=principal.tenant_id,
+            task_uuid=str(task_uuid), projection=name,
+        ) or []
+        projections[name] = rows[:limit]
+    fallback = local_task_chat_answer(body.question, result=result, projections=projections)
+    thinking = build_task_thinking(body.question, result=result, projections=projections)
+    context = json.dumps({"result": result, **projections}, ensure_ascii=False, default=str)
+    output_rule = (
+        "用中文直接回答用户，不要输出 JSON、不要输出思考标签。"
+        if streaming else
+        "输出JSON对象，字段answer为简洁中文答案，evidence_refs为引用的记录ID数组。"
+    )
+    messages = [{
+        "role": "system",
+        "content": (
+            "你是FurniScope任务结果问询助手。只能依据给定任务数据作答；没有依据时明确说数据不足，禁止补造数字或事实。"
+            "若用户问销量预测、未来销量、销售数据或能否预测：必须说明本任务是市场洞察（评论/竞品/机会评分），"
+            "没有订单序列，机会分不能当作未来销量，并引导去「销量预测」模块。不要用评论数或机会分回答销量问题。"
+            f"{output_rule}任务数据："
+            + context
+        ),
+    }]
+    messages.extend({"role": item.get("role", "user"), "content": item.get("content", "")[:2000]}
+                    for item in body.history[-8:] if item.get("content"))
+    messages.append({"role": "user", "content": body.question})
+    return fallback, thinking, messages
 
 
 async def _run_demo_analysis(settings, dispatch: dict) -> None:
@@ -148,46 +194,53 @@ async def stream_analysis_task_events(task_uuid: UUID, request: Request,
 async def chat_about_analysis_task(task_uuid: UUID, body: TaskChatRequest,
     request: Request, session: DatabaseSession,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
-    result = await AnalysisTaskService(request.app.state.settings).result(
-        session, tenant_id=principal.tenant_id, task_uuid=str(task_uuid),
-        opportunity_limit=10, recommendation_limit=20,
+    fallback, _thinking, messages = await _task_chat_context(
+        task_uuid, body, request, session, principal, streaming=False,
     )
-    repository = InsightRepository()
-    projections = {}
-    limits = {"clusters": 12, "opportunities": 10, "recommendations": 20, "evidence": 60}
-    for name, limit in limits.items():
-        rows = await repository.task_projection(
-            session, tenant_id=principal.tenant_id,
-            task_uuid=str(task_uuid), projection=name,
-        ) or []
-        projections[name] = rows[:limit]
-    context = json.dumps({"result": result, **projections}, ensure_ascii=False, default=str)
-    messages = [{
-        "role": "system",
-        "content": (
-            "你是FurniScope任务结果问询助手。只能依据给定任务数据作答；没有依据时明确说数据不足，禁止补造数字或事实。"
-            "若用户问销量预测、未来销量、销售数据或能否预测：必须说明本任务是市场洞察（评论/竞品/机会评分），"
-            "没有订单序列，机会分不能当作未来销量，并引导去「销量预测」模块。不要用评论数或机会分回答销量问题。"
-            "输出JSON对象，字段answer为简洁中文答案，evidence_refs为引用的记录ID数组。任务数据："
-            + context
-        ),
-    }]
-    messages.extend({"role": item.get("role", "user"), "content": item.get("content", "")[:2000]}
-                    for item in body.history[-8:] if item.get("content"))
-    messages.append({"role": "user", "content": body.question})
     client = ServiceModelRouterClient(request.app.state.settings)
     try:
         output = await client.structured(messages=messages, output_type=dict)
     except RuntimeError:
-        output = local_task_chat_answer(body.question, result=result, projections=projections)
+        output = fallback
     finally:
         await client.close()
+    if not isinstance(output, dict) or not isinstance(output.get("answer"), str) or not output["answer"].strip():
+        output = fallback
     if not isinstance(output.get("answer"), str) or not output["answer"].strip():
         raise BusinessError("TASK_CHAT_INVALID", "智能问询返回格式无效", status_code=502)
     payload = {"answer": output["answer"].strip(), "evidence_refs": output.get("evidence_refs") or []}
     if output.get("suggested_action"):
         payload["suggested_action"] = output["suggested_action"]
     return SuccessEnvelope(data=payload, request_id=request.state.request_id)
+
+
+@router.post("/{task_uuid}/chat/stream", summary="基于任务证据的流式问询")
+@router.post("/{task_uuid}/chat:stream", include_in_schema=False)
+async def chat_about_analysis_task_stream(task_uuid: UUID, body: TaskChatRequest,
+    request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    fallback, thinking, messages = await _task_chat_context(
+        task_uuid, body, request, session, principal, streaming=True,
+    )
+    client = ServiceModelRouterClient(request.app.state.settings)
+
+    def finalize(answer_text: str) -> dict:
+        parsed = parse_model_chat_text(answer_text) or {}
+        answer = str(parsed.get("answer") or answer_text or fallback.get("answer") or "").strip()
+        refs = parsed.get("evidence_refs") if isinstance(parsed.get("evidence_refs"), list) else fallback.get("evidence_refs") or []
+        payload = {"answer": answer, "evidence_refs": refs}
+        action = parsed.get("suggested_action") or fallback.get("suggested_action")
+        if action:
+            payload["suggested_action"] = action
+        return payload
+
+    return StreamingResponse(
+        stream_chat_events(
+            thinking=thinking, messages=messages, client=client, fallback=fallback, finalize=finalize,
+        ),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/{task_uuid}", response_model=SuccessEnvelope[AnalysisTaskStatusResponse],

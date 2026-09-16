@@ -63,6 +63,105 @@ class ServiceModelRouterClient:
                 continue
         raise RuntimeError("MODEL_ROUTER_FAILED:ModelQuotaExhausted") from last_error
 
+    async def stream_chat(self, *, messages: list[dict[str, Any]], model_id: str | None = None):
+        routes = self.settings.chat_provider_routes()
+        if not routes:
+            raise RuntimeError("MODEL_ROUTER_KEY_MISSING")
+        last_error: Exception | None = None
+        for route in routes:
+            yielded = False
+            try:
+                async for delta in self._stream_on_route(route, messages=messages, model_id=model_id):
+                    yielded = True
+                    yield delta
+                if yielded:
+                    return
+            except ModelQuotaExhausted as exc:
+                last_error = exc
+                if yielded:
+                    return
+                continue
+            except Exception as exc:
+                last_error = exc
+                if yielded:
+                    return
+                continue
+        raise RuntimeError("MODEL_ROUTER_FAILED") from last_error
+
+    async def _stream_on_route(self, route: dict[str, str], *, messages,
+                               model_id: str | None, enable_thinking: bool = True):
+        api_key = route["api_key"]
+        url = f"{route['base_url'].rstrip('/')}/{route['chat_path'].lstrip('/')}"
+        model = model_id or route["model_id"]
+        timeout = httpx.Timeout(
+            self.settings.aliyun_model_router_timeout_seconds,
+            connect=10.0,
+            read=self.settings.aliyun_model_router_timeout_seconds,
+        )
+        thinking_attempts = (True, False) if enable_thinking and "qwen" in str(model).lower() else (False,)
+        last_error: Exception | None = None
+        for use_thinking in thinking_attempts:
+            payload: dict[str, Any] = {
+                "model": model,
+                "messages": messages,
+                "stream": True,
+            }
+            if use_thinking:
+                payload["enable_thinking"] = True
+            async with _MODEL_CALL_LIMITER:
+                try:
+                    async with self.client.stream(
+                        "POST", url,
+                        headers={"Authorization": f"Bearer {api_key}", "Accept": "text/event-stream"},
+                        json=payload,
+                        timeout=timeout,
+                    ) as response:
+                        if response.status_code >= 400:
+                            body_text = (await response.aread()).decode("utf-8", "ignore")
+                            if is_quota_exhausted(response.status_code, body_text):
+                                raise ModelQuotaExhausted(f"{route['provider']} quota exhausted")
+                            if use_thinking and response.status_code == 400:
+                                last_error = RuntimeError("MODEL_ROUTER_FAILED:HTTP400")
+                                continue
+                            raise RuntimeError(f"MODEL_ROUTER_FAILED:HTTP{response.status_code}")
+                        async for line in response.aiter_lines():
+                            if not line:
+                                continue
+                            raw = line[5:].strip() if line.startswith("data:") else ""
+                            if not raw:
+                                continue
+                            if raw == "[DONE]":
+                                return
+                            try:
+                                chunk = json.loads(raw)
+                            except json.JSONDecodeError:
+                                continue
+                            choices = chunk.get("choices") or []
+                            if not choices:
+                                usage = chunk.get("usage") or {}
+                                if usage:
+                                    self.last_chat_provider = route["provider"]
+                                    self.last_chat_model = chunk.get("model") or model
+                                    self.last_input_tokens = usage.get("prompt_tokens")
+                                    self.last_output_tokens = usage.get("completion_tokens")
+                                continue
+                            delta = choices[0].get("delta") or {}
+                            reasoning = delta.get("reasoning_content") or delta.get("reasoning") or ""
+                            content = delta.get("content") or ""
+                            if reasoning or content:
+                                yield {"reasoning": reasoning, "content": content}
+                        return
+                except ModelQuotaExhausted:
+                    raise
+                except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
+                    last_error = RuntimeError(f"MODEL_ROUTER_FAILED:{type(exc).__name__}")
+                    last_error.__cause__ = exc
+                    if use_thinking:
+                        continue
+                    raise last_error from exc
+        if last_error:
+            raise last_error
+
     async def _structured_on_route(self, route: dict[str, str], *, messages, adapter,
                                   model_id: str | None):
         api_key = route["api_key"]

@@ -22,6 +22,7 @@ def local_task_chat_answer(question: str, *, result: Any, projections: dict[str,
     clusters = list(projections.get("clusters") or [])
     opportunities = list(projections.get("opportunities") or [])
     recommendations = list(projections.get("recommendations") or [])
+    competitors = list(projections.get("competitors") or [])
     summary = {}
     if isinstance(result, dict):
         summary = result.get("report_summary") or {}
@@ -38,6 +39,25 @@ def local_task_chat_answer(question: str, *, result: Any, projections: dict[str,
             ),
             "evidence_refs": [],
             "suggested_action": "forecast",
+        }
+
+    if re.search(r"竞品|价格带|品牌", text) and competitors:
+        parts = []
+        refs = []
+        for item in competitors[:3]:
+            get = item.get if isinstance(item, dict) else lambda key, default=None: getattr(item, key, default)
+            title = _text(get("title"))
+            brand = _text(get("brand")) or "未知品牌"
+            price = get("sale_price")
+            currency = get("currency") or ""
+            price_text = f"{currency} {price}".strip() if price is not None else "价格未给出"
+            parts.append(f"{title}（{brand}，{price_text}）")
+            cid = get("competitor_id")
+            if cid:
+                refs.append(str(cid))
+        return {
+            "answer": "根据本任务已匹配的竞品：" + "；".join(parts) + "。完整名单可在市场研究节点核验。",
+            "evidence_refs": refs,
         }
 
     if re.search(r"痛点|评论|舆情", text) and clusters:
@@ -100,3 +120,36 @@ def local_task_chat_answer(question: str, *, result: Any, projections: dict[str,
         "evidence_refs": [],
         "suggested_action": "forecast" if re.search(r"销量|预测", text) else None,
     }
+
+
+def build_task_thinking(question: str, *, result: Any, projections: dict[str, Any]) -> str:
+    competitors = list(projections.get("competitors") or [])
+    clusters = list(projections.get("clusters") or [])
+    opportunities = list(projections.get("opportunities") or [])
+    recommendations = list(projections.get("recommendations") or [])
+    summary = {}
+    if isinstance(result, dict):
+        summary = result.get("report_summary") or {}
+    elif result is not None:
+        summary = getattr(result, "report_summary", None) or {}
+        if hasattr(summary, "model_dump"):
+            summary = summary.model_dump()
+    steps = ["先看当前任务已经落库的证据，而不是编造新的市场数字。"]
+    if competitors:
+        steps.append(f"已匹配竞品 {len(competitors)} 条，可回答品牌、价格带和可比清单。")
+    else:
+        steps.append("当前任务还没有竞品记录。")
+    if clusters:
+        steps.append(f"已落库评论聚类 {len(clusters)} 条，可回答痛点与舆情。")
+    else:
+        steps.append("当前任务还没有评论聚类。")
+    if opportunities:
+        steps.append("已有机会评分记录，可解释五维得分，但不能把机会分当成未来销量。")
+    if recommendations:
+        steps.append(f"已有改款建议 {len(recommendations)} 条。")
+    if summary.get("executive_summary"):
+        steps.append("报告摘要已生成，可引用结论与置信度。")
+    if is_forecast_question(question or ""):
+        steps.append("用户在问销量预测。本任务是市场洞察，没有订单序列，应引导去销量预测模块。")
+    steps.append("按问题意图组织回答；没有证据时明确说数据不足。")
+    return "\n".join(f"{index}. {step}" for index, step in enumerate(steps, start=1))

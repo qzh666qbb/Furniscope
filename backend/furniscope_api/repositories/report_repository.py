@@ -24,9 +24,17 @@ class ReportRepository:
             SELECT
               (SELECT count(*) FROM products WHERE tenant_id=:tenant_id AND deleted_at IS NULL) products,
               (SELECT count(*) FROM analysis_tasks WHERE tenant_id=:tenant_id
-                 AND status IN ('queued','running','waiting_human','partial_succeeded')) running_tasks,
+                 AND status IN ('queued','running')) running_tasks,
               (SELECT count(*) FROM user_confirmations WHERE tenant_id=:tenant_id
                  AND status='pending' AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP)) pending_confirmations,
+              (SELECT count(*) FROM analysis_tasks WHERE tenant_id=:tenant_id
+                 AND status IN ('waiting_human','failed')) failed_tasks,
+              (SELECT count(*) FROM products p WHERE p.tenant_id=:tenant_id AND p.deleted_at IS NULL
+                 AND EXISTS (
+                   SELECT 1 FROM product_attributes pa
+                    WHERE pa.profile_version_id=p.current_profile_version_id
+                      AND pa.confirmation_status='conflicted'
+                 )) conflicted_products,
               (SELECT count(*) FROM analysis_reports WHERE tenant_id=:tenant_id AND status='draft') reports,
               (SELECT count(*) FROM forecast_jobs WHERE tenant_id=:tenant_id
                  AND status IN ('draft','queued','running','succeeded')) forecast_jobs,
@@ -83,7 +91,8 @@ class ReportRepository:
         row = dict(result.mappings().one())
         return {
             **{key: int(row[key] or 0) for key in (
-                "products", "running_tasks", "pending_confirmations", "reports", "forecast_jobs",
+                "products", "running_tasks", "pending_confirmations", "failed_tasks",
+                "conflicted_products", "reports", "forecast_jobs",
             )},
             "insight_snapshot": row["insight_snapshot"],
         }

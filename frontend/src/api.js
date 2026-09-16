@@ -152,6 +152,73 @@ export function subscribeTaskEvents(taskUuid, onMessage, onError) {
   return () => controller.abort();
 }
 
+export async function postSse(path, body, onEvent) {
+  const controller = new AbortController();
+  const connect = async (retried = false) => {
+    let token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+    };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    let response = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (response.status === 401 && !retried && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+      token = await refreshAccessToken();
+      headers.Authorization = `Bearer ${token}`;
+      response = await fetch(`${API_BASE}${path}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !response.body) {
+      const payload = await response.json().catch(() => null);
+      throw response.status >= 500
+        ? transientFailure(response.status, payload?.error?.message || `请求失败（${response.status}）`)
+        : new Error(payload?.error?.message || `请求失败（${response.status}）`);
+    }
+    if (contentType && !contentType.includes("text/event-stream") && !contentType.includes("octet-stream")) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error?.message || `请求失败（${response.status}）`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let sawDone = false;
+    let errorMessage = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop() || "";
+      for (const block of blocks) {
+        let eventName = "message";
+        const dataLines = [];
+        for (const line of block.split("\n")) {
+          if (line.startsWith("event:")) eventName = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+        }
+        if (!dataLines.length) continue;
+        const data = JSON.parse(dataLines.join("\n"));
+        if (eventName === "done") sawDone = true;
+        if (eventName === "error") errorMessage = data?.message || "暂时无法完成这次问询。";
+        onEvent?.(eventName, data);
+      }
+    }
+    if (errorMessage) throw new Error(errorMessage);
+    if (!sawDone) throw new Error("对话流已中断，请重试");
+  };
+  await connect();
+}
+
 export async function login(email, password) {
   const data = await api("/api/v1/auth/login", {
     method: "POST",

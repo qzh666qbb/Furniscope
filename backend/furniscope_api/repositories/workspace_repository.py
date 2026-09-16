@@ -93,19 +93,23 @@ class WorkspaceRepository:
         return str(row["workspace_uuid"]) if row else None
 
     async def list(self, session: AsyncSession, *, tenant_id: int, offset: int, limit: int,
-                   keyword: str | None = None, workspace_uuid: str | None = None
+                   keyword: str | None = None, workspace_uuid: str | None = None,
+                   include_empty: bool = False
                    ) -> tuple[list[dict[str, Any]], int]:
         params = {
             "tenant_id": tenant_id, "offset": offset, "limit": limit, "keyword": keyword,
             "workspace_uuid": workspace_uuid,
         }
-        where = (
-            "w.tenant_id=:tenant_id AND w.status='active' AND "
+        has_run = "" if include_empty else (
             "(w.last_analysis_task_id IS NOT NULL OR EXISTS ("
             "  SELECT 1 FROM analysis_tasks x"
             "   WHERE x.tenant_id=w.tenant_id AND x.status<>'cancelled'"
             "     AND x.analysis_config->>'workspace_uuid'=w.workspace_uuid::text"
             ")) AND "
+        )
+        where = (
+            "w.tenant_id=:tenant_id AND w.status='active' AND "
+            f"{has_run}"
             "(CAST(:workspace_uuid AS text) IS NULL "
             " OR w.workspace_uuid=CAST(:workspace_uuid AS uuid)) AND "
             "(CAST(:keyword AS text) IS NULL OR w.name ILIKE '%'||CAST(:keyword AS text)||'%' "
@@ -121,10 +125,13 @@ class WorkspaceRepository:
         rows = await session.execute(text(f"""
             SELECT w.workspace_uuid::text, w.name AS job_name, w.source, w.status AS workspace_status,
                    COALESCE(t.status, 'draft') AS status,
+                   t.external_stage AS stage,
+                   t.progress_percent,
                    COALESCE(counts.analysis_count, 0) AS analysis_count,
                    w.product_id, p.sku AS product_sku, p.name AS product_name,
                    trim(t.target_country) AS target_country, t.target_platform,
                    t.task_uuid::text, report.report_uuid::text,
+                   COALESCE(t.analysis_config, '{{}}'::jsonb) AS analysis_config,
                    w.created_at, w.updated_at
               FROM analysis_workspaces w
               LEFT JOIN products p ON p.id=w.product_id AND p.tenant_id=w.tenant_id
@@ -149,6 +156,10 @@ class WorkspaceRepository:
         for row in rows.mappings().all():
             item = dict(row)
             item["analysis_count"] = int(item.get("analysis_count") or 0)
+            if not isinstance(item.get("analysis_config"), dict):
+                item["analysis_config"] = {}
+            if item.get("progress_percent") is not None:
+                item["progress_percent"] = float(item["progress_percent"])
             items.append(item)
         return items, total
 
@@ -156,7 +167,7 @@ class WorkspaceRepository:
                       workspace_uuid: str) -> dict[str, Any] | None:
         rows, _ = await self.list(
             session, tenant_id=tenant_id, offset=0, limit=1, keyword=None,
-            workspace_uuid=workspace_uuid,
+            workspace_uuid=workspace_uuid, include_empty=True,
         )
         return rows[0] if rows else None
 

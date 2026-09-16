@@ -535,16 +535,28 @@ function AdminLogin({ onEnter }) {
   );
 }
 
+function dashboardStageIndex(item) {
+  if (item.status === "succeeded") return stages.length;
+  const index = taskStageIndex[item.stage];
+  if (Number.isInteger(index)) return index;
+  const target = item.analysis_config?.target_node;
+  if (item.status === "partial_succeeded" && target && target !== "report") {
+    return { product: 0, market: 1, score: 2, plan: 3 }[target] ?? 0;
+  }
+  return 0;
+}
+
 function Progress({ active }) {
+  const complete = active >= stages.length;
   return (
-    <div className="progress" aria-label={`当前阶段：${stages[active]}`}>
+    <div className="progress" aria-label={complete ? "已完成全部阶段" : `当前阶段：${stages[active]}`}>
       {stages.map((s, i) => (
         <div
-          className={`step ${i < active ? "done" : ""} ${i === active ? "active" : ""}`}
+          className={`step ${complete || i < active ? "done" : ""} ${!complete && i === active ? "active" : ""}`}
           key={s}
         >
           <span>{s}</span>
-          <i>{i < active ? <Check size={10} weight="bold" /> : ""}</i>
+          <i>{complete || i < active ? <Check size={10} weight="bold" /> : ""}</i>
         </div>
       ))}
     </div>
@@ -612,6 +624,24 @@ function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState("");
   const pending = confirmations.length;
+  const exceptionCount =
+    (summary?.pending_confirmations ?? pending) +
+    (summary?.failed_tasks ?? 0) +
+    (summary?.conflicted_products ?? 0);
+  const openExceptions = () => {
+    if (confirmations[0]) return openConfirmation();
+    if (summary?.failed_tasks) {
+      toast(`待处理失败任务：${summary.failed_tasks}`);
+      location.hash = "analysis";
+      return;
+    }
+    if (summary?.conflicted_products) {
+      toast(`待确认产品冲突：${summary.conflicted_products}`);
+      location.hash = "products";
+      return;
+    }
+    toast("当前没有待确认异常");
+  };
   const loadDashboard = (silent = false) => {
     if (!silent) setLoading(true);
     if (!silent) setDashboardError("");
@@ -626,12 +656,12 @@ function Dashboard({ user, onLogout }) {
         setSummary(nextSummary);
         setConfirmations(nextConfirmations.items);
         setLiveTasks(
-          nextTasks.items.filter((item) => item.report_uuid || ["queued", "running", "waiting_human", "failed", "partial_succeeded", "draft"].includes(item.status)).map((item) => ({
+          nextTasks.items.filter((item) => item.report_uuid || ["queued", "running", "waiting_human", "failed", "partial_succeeded", "succeeded", "draft"].includes(item.status)).map((item) => ({
             id: item.product_sku,
             name: item.product_name,
             detail: `${item.target_country} · ${item.target_platform}`,
             image: productImage(item.product_sku),
-            stage: taskStageIndex[item.stage] ?? 0,
+            stage: dashboardStageIndex(item),
             status: taskStatusLabel[item.status] || item.status,
             rawStatus: item.status,
             activity: item.job_name,
@@ -753,13 +783,13 @@ function Dashboard({ user, onLogout }) {
           <section className="metrics">
             {[
               [SquaresFour, "产品总数", summary?.products ?? "—", "企业产品资产持续更新", () => (location.hash = "products")],
-              [Pulse, "运行中任务", summary?.running_tasks ?? "—", "正在解析产品、挖掘竞品评论", () => toast(`运行中任务：${summary?.running_tasks ?? 0}`)],
+              [Pulse, "运行中任务", summary?.running_tasks ?? "—", "排队或正在执行的分析任务", () => toast(`运行中任务：${summary?.running_tasks ?? 0}`)],
               [
                 WarningCircle,
                 "待确认异常",
-                summary?.pending_confirmations ?? pending,
-                "参数冲突、数据待人工校验",
-                openConfirmation,
+                exceptionCount,
+                "人工确认、失败任务与参数冲突",
+                openExceptions,
               ],
               [FileText, "已生成报告", summary?.reports ?? "—", "已沉淀可落地出海策略", () => (location.hash = "report")],
             ].map(([Icon, label, value, subtitle, action], i) => (

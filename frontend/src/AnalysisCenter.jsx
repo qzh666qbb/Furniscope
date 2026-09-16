@@ -19,8 +19,8 @@ import {
   SquaresFour,
   WarningCircle,
 } from "@phosphor-icons/react";
-import { api, createUuid, idempotencyKey, isUuid, subscribeTaskEvents } from "./api.js";
-import { PLANE_SOURCE, PLANE_TASKS_PATH, TASK_STATUS_LABELS, chatTurn, fetchWorkspaceMessages, fetchWorkspaces, isPlaneTask, loadPlaneChat, mergeWorkspaceLists, persistWorkspace, persistWorkspaceMessages, planeGreeting, removePlaneWorkspace, reusePlaneWorkspace, savePlaneChat, savePlaneWorkspace, withoutFailureNotices, workspaceId } from "./planeSession.js";
+import { api, createUuid, idempotencyKey, isUuid, postSse, subscribeTaskEvents } from "./api.js";
+import { PLANE_SOURCE, PLANE_TASKS_PATH, TASK_STATUS_LABELS, chatTurn, draftWorkspaceEntry, fetchWorkspaceMessages, fetchWorkspaces, isPlaneTask, loadPlaneChat, mergeWorkspaceLists, persistWorkspace, persistWorkspaceMessages, planeGreeting, removePlaneWorkspace, replaceCurrentWorkspace, reusePlaneWorkspace, savePlaneChat, savePlaneWorkspace, withoutFailureNotices, workspaceId } from "./planeSession.js";
 import { WorkDiaryList } from "./WorkDiaryPage.jsx";
 import { ParentPageTab } from "./ParentPageTab.jsx";
 import "./analysis-center.css";
@@ -77,6 +77,9 @@ function forecastChatReply(product) {
 
 function evidenceChatReply(text, { result, insights }) {
   const summary = result?.report_summary;
+  if (/竞品|价格带|品牌/.test(text) && insights.competitors.length) {
+    return `根据本任务已匹配的竞品：${insights.competitors.slice(0, 3).map((item) => `${item.title}（${item.brand || "未知品牌"}，${item.currency || ""} ${item.sale_price ?? "价格未给出"}）`.trim()).join("；")}。完整名单可在市场研究节点核验。`;
+  }
   if (/痛点|评论|舆情/.test(text) && insights.clusters.length) {
     return `根据本任务已落库的评论聚类：${insights.clusters.slice(0, 3).map((item) => `${item.cluster_name}：${item.summary || `重要度 ${item.importance_score}`}`).join("；")}。原始摘录可在节点详情核验。`;
   }
@@ -106,7 +109,7 @@ function failureReason(task) {
 }
 
 function failedNodeId(task) {
-  return nodeDefinitions[stageOrder[task?.stage] || 1]?.id || "product";
+  return nodeDefinitions[reachedNodeIndex(task) || 1]?.id || "product";
 }
 
 function taskStatusLabel(task) {
@@ -116,11 +119,26 @@ function taskStatusLabel(task) {
   return statusLabels[task?.status] || task?.status || "新对话";
 }
 
+const targetNodeIndex = { product: 1, market: 2, score: 3, plan: 4, report: 5 };
+
+function reachedNodeIndex(task) {
+  if (!task) return 0;
+  if (task.status === "succeeded") return 5;
+  const fromStage = stageOrder[task.stage] || 0;
+  const fromTarget = targetNodeIndex[task.analysis_config?.target_node] || 0;
+  if (task.status === "partial_succeeded") return Math.max(fromStage, fromTarget, 1);
+  return fromStage || 1;
+}
+
+function isExplicitRunCommand(text) {
+  return /继续(?:评估|生成|分析|运行|为)|运行至|完整(?:工作流|分析|报告)|重新运行|重试|开始分析|运行完整/.test(text);
+}
+
 function nodeState(nodeIndex, task, product) {
   if (nodeIndex === 0) return product ? "completed" : "ready";
   if (!task) return "pending";
   if (task.status === "succeeded") return "completed";
-  const active = stageOrder[task.stage] || 1;
+  const active = reachedNodeIndex(task);
   if (task.status === "partial_succeeded") return nodeIndex <= active ? "completed" : "pending";
   if (nodeIndex < active) return "completed";
   if (nodeIndex > active) return ["failed", "cancelled"].includes(task.status) ? "blocked" : "pending";
@@ -128,6 +146,78 @@ function nodeState(nodeIndex, task, product) {
   if (task.status === "waiting_human") return "warning";
   if (task.status === "draft") return "ready";
   return "running";
+}
+
+function catalogSearchNeedles(text) {
+  const cleaned = String(text || "")
+    .replace(/我想|请|帮我|一下|分析|研究|看看|说说|当前|怎么样|怎样|如何|好不好|情况|的市场|市场|竞品|评论|痛点|价格带|出海|机会|美国|美固|英国|德国|法国|日本|加拿大|澳大利亚|在/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  const needles = new Set();
+  if (cleaned) needles.add(cleaned);
+  if (/电竞椅|电竞|游戏椅|电脑椅|gaming\s*chair/i.test(text)) {
+    ["电竞", "游戏椅", "电脑椅", "椅", "chair"].forEach((item) => needles.add(item));
+  }
+  if (/扶手椅|armchair/i.test(text)) needles.add("扶手椅");
+  if (/休闲椅|lounge/i.test(text)) needles.add("休闲椅");
+  return [...needles].filter((item) => item.length >= 2 || ["椅", "桌", "床", "柜", "灯", "几"].includes(item));
+}
+
+function requestedProductLabel(text) {
+  const needles = catalogSearchNeedles(text);
+  return needles.find((item) => item.length >= 2) || needles[0] || "该产品";
+}
+
+function isStrongCatalogMatch(item, text) {
+  const query = String(text || "").toLowerCase();
+  const name = String(item?.name || "").toLowerCase();
+  const sku = String(item?.sku || "").toLowerCase();
+  const label = requestedProductLabel(text).toLowerCase();
+  if (sku && query.includes(sku)) return true;
+  if (name && query.includes(name)) return true;
+  return Boolean(label.length >= 2 && (name === label || sku === label || name.includes(label)));
+}
+
+function catalogOfferReply(text, related) {
+  const label = requestedProductLabel(text);
+  const lines = related.map((item, index) => `${index + 1}. ${item.name}（${item.sku}）`).join("\n");
+  if (related.some((item) => isStrongCatalogMatch(item, text))) {
+    return `目录里找到与「${label}」相关的产品。选一个我就能开始美国市场的竞品、价格带和评论痛点分析：\n${lines}`;
+  }
+  return `目录里没有完全叫「${label}」的产品。下面是相近的已建档产品，点击下方建议或直接回复产品名 / SKU，我就能开始美国市场的竞品、价格带和评论痛点分析：\n${lines}\n如果要分析的就是「${label}」这一款，可以先到产品中心建档后再回来。`;
+}
+
+function findCatalogCandidates(list, text, limit = 5) {
+  const needles = catalogSearchNeedles(text);
+  if (!needles.length || !list?.length) return [];
+  const scored = list.map((item) => {
+    const name = String(item.name || "").toLowerCase();
+    const sku = String(item.sku || "").toLowerCase();
+    const category = String(item.category_code || "").toLowerCase();
+    let score = 0;
+    needles.forEach((needle) => {
+      if (name === needle || sku === needle) score += 100;
+      if (name.includes(needle)) score += Math.min(40, needle.length * 5);
+      if (sku.includes(needle)) score += 60;
+      if (category.includes(needle)) score += 24;
+    });
+    if (/椅/.test(text) && /椅/.test(name)) score += 12;
+    if (item.analysis_status === "ready") score += 4;
+    return { item, score };
+  }).filter((row) => row.score >= 12).sort((a, b) => b.score - a.score);
+  const unique = [];
+  const seen = new Set();
+  scored.forEach((row) => {
+    if (seen.has(row.item.product_id) || unique.length >= limit) return;
+    seen.add(row.item.product_id);
+    unique.push(row.item);
+  });
+  return unique;
+}
+
+function candidateStartPrompt(item, marketLabel = "美国") {
+  return `分析${item.name}（${item.sku}）在${marketLabel}的竞品、价格带和用户评论痛点`;
 }
 
 function matchCatalogProduct(list, ...texts) {
@@ -265,23 +355,31 @@ function DetailContent({ node, product, dataset, task, result, insights, onProdu
 
 function WorkflowChatLog({ messages }) {
   const endRef = useRef(null);
-  const items = withoutFailureNotices(messages || []).filter((item) => item?.text);
+  const items = withoutFailureNotices(messages || []).filter((item) => (
+    String(item?.text || "").trim() || item.streaming || String(item?.thinking || "").trim()
+  ));
   useEffect(() => {
     const root = endRef.current?.parentElement;
     if (root) root.scrollTop = root.scrollHeight;
-  }, [items.length, items.at(-1)?.text, items.at(-1)?.client_message_id]);
+  }, [items.length, items.at(-1)?.text, items.at(-1)?.thinking, items.at(-1)?.client_message_id]);
   return (
     <div className="vertical-chat-messages">
       {items.map((item, index) => (
-        <div className={`${item.role} ${item.kind || "text"}`} key={item.client_message_id || index}>
-          {item.role === "assistant" && <Pulse />}
+        <div className={`chat-turn ${item.role} ${item.kind || "text"} ${item.streaming ? "streaming" : ""}`} key={item.client_message_id || index}>
+          {item.role === "assistant" && <Pulse className={item.streaming && !item.thinkingDone ? "spinning" : ""} />}
           <div>
-            <p>{item.text}</p>
+            {item.thinking ? (
+              <details className={`chat-thinking ${item.thinkingDone ? "done" : "active"}`} open={!item.thinkingDone}>
+                <summary>{item.thinkingDone ? "已思考，点击展开" : "思考中…"}</summary>
+                <p>{item.thinking}</p>
+              </details>
+            ) : null}
+            {String(item.text || "").trim() ? <p className="chat-answer">{item.text}</p> : null}
             {item.action?.href && <button type="button" className="chat-inline-action" onClick={() => { location.hash = item.action.href; }}>{item.action.label || "打开"}</button>}
           </div>
         </div>
       ))}
-      <div ref={endRef} />
+      <div className="chat-scroll-end" ref={endRef} />
     </div>
   );
 }
@@ -298,6 +396,7 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
     return params;
   }, []);
   const fromProducts = query.get("from") === "products";
+  const startFresh = query.get("new") === "1" && !fromProducts;
   const [products, setProducts] = useState([]);
   const [datasets, setDatasets] = useState([]);
   const [product, setProduct] = useState(null);
@@ -306,12 +405,11 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
   const [result, setResult] = useState(null);
   const [insights, setInsights] = useState({ competitors: [], reviewAspects: [], clusters: [], opportunities: [], recommendations: [], evidence: [] });
   const [historyTasks, setHistoryTasks] = useState([]);
-  const [conversationSearch, setConversationSearch] = useState("");
   const [activeConversationId, setActiveConversationId] = useState(() => query.get("workspace") || query.get("task") || createUuid());
   const [aiCollapsed, setAiCollapsed] = useState(false);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
-  const [nextGuideCollapsed, setNextGuideCollapsed] = useState(true);
-  const [contextSetupCollapsed, setContextSetupCollapsed] = useState(true);
+  const [nextGuideCollapsed, setNextGuideCollapsed] = useState(() => !(query.get("new") === "1" && query.get("from") !== "products"));
+  const [offerPrompts, setOfferPrompts] = useState([]);
   const [paneSizes, setPaneSizes] = useState(readStoredPaneSizes);
   const [resizeTarget, setResizeTarget] = useState(null);
   const workflowBodyRef = useRef(null);
@@ -434,7 +532,7 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
       setPreviewMode("report");
     } else if (detail.status === "partial_succeeded") {
       await loadInsights(uuid);
-      const reached = nodeDefinitions[stageOrder[detail.stage] || 1];
+      const reached = nodeDefinitions[reachedNodeIndex(detail)];
       setSelectedNode(reached.id);
       setExecutionTarget(reached.id);
       setPreviewMode("node");
@@ -464,17 +562,24 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
         setProducts(nextProducts);
         setDatasets(nextDatasets);
         const workspaces = mergeWorkspaceLists(workspacePage, (taskPage.items || []).filter(isPlaneTask));
-        setHistoryTasks(workspaces);
         const requestedTask = query.get("task");
         const requestedWorkspace = query.get("workspace");
         const requestedProduct = query.get("product");
         const requestedDataset = query.get("dataset");
         const requestedName = query.get("name") || "";
         if (requestedName) setTaskName(requestedName);
-        if (requestedWorkspace) {
+        if (startFresh && requestedWorkspace) {
+          const draft = draftWorkspaceEntry({ workspace_uuid: requestedWorkspace, job_name: requestedName || "新建产品出海分析" });
+          setHistoryTasks([draft]);
+          setActiveConversationId(requestedWorkspace);
+          setMessages(planeGreeting(draft.job_name, requestedWorkspace));
+          setNextGuideCollapsed(false);
+          setOfferPrompts([]);
+        } else if (requestedWorkspace) {
           const listed = workspaces.find((item) => workspaceId(item) === requestedWorkspace);
           const stored = await fetchWorkspaceMessages(requestedWorkspace);
           if (listed) {
+            setHistoryTasks([listed]);
             setActiveConversationId(requestedWorkspace);
             setTaskName(listed.job_name || requestedName || "产品出海机会分析");
             setMessages(stored.length ? stored : planeGreeting(listed.job_name, requestedWorkspace));
@@ -484,7 +589,6 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
               || listed;
             if (uuid) await loadTask(uuid, run, nextDatasets);
           } else {
-            setActiveConversationId(requestedWorkspace);
             const hinted = matchCatalogProduct(nextProducts, requestedName);
             if (hinted) {
               const detail = await api(`/api/v1/products/${hinted.product_id}`);
@@ -492,16 +596,14 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
               setProduct(detail);
               setDataset(readyDatasetFor(detail, nextDatasets));
             }
-            const draft = {
+            const draft = draftWorkspaceEntry({
               workspace_uuid: requestedWorkspace,
               job_name: requestedName || "未命名工作台",
-              product_id: hinted?.product_id,
-              product_sku: hinted?.sku || "",
-              product_name: hinted?.name || "",
-              status: "draft",
-              source: PLANE_SOURCE,
-            };
+              product: hinted,
+            });
             savePlaneWorkspace(draft);
+            setHistoryTasks([draft]);
+            setActiveConversationId(requestedWorkspace);
             setMessages(stored.length ? stored : planeGreeting(draft.job_name, requestedWorkspace));
             if (requestedTask) {
               const listedTask = (taskPage.items || []).find((item) => String(item.task_uuid) === requestedTask);
@@ -511,20 +613,27 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
         } else if (requestedTask) {
           const listed = (taskPage.items || []).find((item) => String(item.task_uuid) === requestedTask);
           const id = workspaceId(listed) || requestedTask;
+          setHistoryTasks([listed || draftWorkspaceEntry({ workspace_uuid: id, job_name: listed?.job_name })]);
           setActiveConversationId(id);
           const stored = await fetchWorkspaceMessages(id);
           setMessages(stored.length ? stored : planeGreeting(listed?.job_name, id));
           await loadTask(requestedTask, listed, nextDatasets);
-        }
-        else if (requestedProduct) {
+        } else if (requestedProduct) {
           const detail = await api(`/api/v1/products/${requestedProduct}`);
           if (!active) return;
           setProduct(detail);
           setTaskName(`${detail.name} 出海机会分析`);
           setDataset(nextDatasets.find((item) => item.status === "ready" && (!item.category_code || item.category_code === detail.category_code)) || nextDatasets.find((item) => item.status === "ready") || null);
-          const existingId = reusePlaneWorkspace(workspaces, detail, query.get("workspace"));
+          const existingId = reusePlaneWorkspace(workspaces, detail, query.get("workspace"), { forceNew: !fromProducts });
+          const current = workspaces.find((item) => workspaceId(item) === existingId)
+            || draftWorkspaceEntry({ workspace_uuid: existingId, job_name: `${detail.name} 出海机会分析`, product: detail });
+          setHistoryTasks([current]);
           setActiveConversationId(existingId);
           window.history.replaceState(null, "", `#workflow?workspace=${existingId}&product=${requestedProduct}${fromProducts ? "&from=products" : ""}`);
+        } else {
+          const current = workspaces.find((item) => workspaceId(item) === activeConversationId)
+            || draftWorkspaceEntry({ workspace_uuid: activeConversationId, job_name: requestedName || "产品出海机会分析" });
+          setHistoryTasks([current]);
         }
         if (requestedDataset) {
           setDataset(nextDatasets.find((item) => String(item.dataset_id) === String(requestedDataset) && item.status === "ready") || null);
@@ -562,11 +671,11 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
         setMessages((items) => [...items, chatTurn("assistant", "本次分析已完成。报告在右侧预览，你可以继续追问，或在当前工作台发起下一次分析。", { kind: "run_event" })]);
       } else if (current.status === "partial_succeeded") {
         await loadInsights(uuid);
-        const reached = nodeDefinitions[stageOrder[current.stage] || 1];
+        const reached = nodeDefinitions[reachedNodeIndex(current)];
         setSelectedNode(reached.id);
         setExecutionTarget(reached.id);
         setPreviewMode("node");
-        setMessages((items) => [...items, chatTurn("assistant", `已完成到“${reached.title}”的指定范围。结果已同步到右侧节点详情；如需继续，可选择下游节点发起新的范围分析。`, { kind: "run_event" })]);
+        setMessages((items) => [...items, chatTurn("assistant", `已完成到“${reached.title}”的指定范围。结果已同步到右侧节点详情；如需继续，可选择下游节点发起新的范围分析，或直接追问已产出的证据。`, { kind: "run_event" })]);
       } else if (current.status === "waiting_human") setSelectedNode(nodeDefinitions[stageOrder[current.stage] || 1].id);
       else {
         const node = failedNodeId(current);
@@ -594,7 +703,10 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
     if (!chosenDataset) throw new Error("没有可用的已授权市场数据集");
     if (overrideProduct) setProduct(overrideProduct);
     if (!dataset || overrideDataset) setDataset(chosenDataset);
-    const workspace = reusePlaneWorkspace(historyTasks, chosenProduct, activeConversationId);
+    const currentWorkspace = historyTasks.find((item) => workspaceId(item) === activeConversationId);
+    const workspace = reusePlaneWorkspace(historyTasks, chosenProduct, activeConversationId, {
+      forceNew: startFresh || (!fromProducts && !task && !currentWorkspace?.task_uuid),
+    });
     if (workspace !== activeConversationId) setActiveConversationId(workspace);
     const jobName = taskName.trim() || `${chosenProduct.name} 出海机会分析`;
     const created = await api("/api/v1/analysis-tasks", {
@@ -627,10 +739,20 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
       product_id: chosenProduct.product_id,
       source: PLANE_SOURCE,
     });
-    window.history.replaceState(null, "", `#workflow?workspace=${boundWorkspace}${fromProducts ? "&from=products" : ""}`);
-    setTask(created); setResult(null); setInsights({ competitors: [], reviewAspects: [], clusters: [], opportunities: [], recommendations: [], evidence: [] }); setSelectedNode("product"); setExecutionTarget(chosenTarget);
-    const createdSummary = { ...created, source: "node_workflow_canvas", workspace_uuid: boundWorkspace, product_id: chosenProduct.product_id, product_sku: chosenProduct.sku, product_name: chosenProduct.name, target_country: chosenDataset.market_country, target_platform: chosenDataset.platform, updated_at: new Date().toISOString() };
-    setHistoryTasks((items) => mergeWorkspaceLists(items, [createdSummary, ...items.flatMap((item) => item.runs || (item.task_uuid ? [item] : []))]));
+    window.history.replaceState(null, "", `#workflow?${startFresh ? "new=1&" : ""}workspace=${boundWorkspace}${fromProducts ? "&from=products" : ""}`);
+    const createdTask = {
+      ...created,
+      analysis_config: {
+        source: "node_workflow_canvas",
+        workspace_uuid: boundWorkspace,
+        include_forecast: chosenTarget === "report",
+        trace_evidence: true,
+        target_node: chosenTarget,
+      },
+    };
+    setTask(createdTask); setResult(null); setInsights({ competitors: [], reviewAspects: [], clusters: [], opportunities: [], recommendations: [], evidence: [] }); setSelectedNode("product"); setExecutionTarget(chosenTarget);
+    const createdSummary = { ...createdTask, source: "node_workflow_canvas", workspace_uuid: boundWorkspace, product_id: chosenProduct.product_id, product_sku: chosenProduct.sku, product_name: chosenProduct.name, target_country: chosenDataset.market_country, target_platform: chosenDataset.platform, updated_at: new Date().toISOString() };
+    setHistoryTasks((items) => replaceCurrentWorkspace(items, createdSummary));
     setMessages((items) => {
       savePlaneChat(boundWorkspace, items);
       return items;
@@ -657,6 +779,52 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
     finally { setBusy(false); }
   };
 
+  const streamAssistantReply = async (path, body, extras = {}) => {
+    const streamId = createUuid();
+    setMessages((items) => [...items, chatTurn("assistant", "", {
+      kind: extras.kind || "task_chat",
+      client_message_id: streamId,
+      thinking: "正在核对企业产品目录和市场数据…",
+      thinkingDone: false,
+      streaming: true,
+    })]);
+    let finalPayload = null;
+    await postSse(path, body, (eventName, data) => {
+      if (eventName === "done") finalPayload = data;
+      setMessages((items) => items.map((item) => {
+        if (item.client_message_id !== streamId) return item;
+        if (eventName === "thinking") {
+          const placeholder = "正在核对企业产品目录和市场数据…";
+          const current = item.thinking || "";
+          const next = data?.delta || "";
+          return { ...item, thinking: current === placeholder ? next : `${current}${next}` };
+        }
+        if (eventName === "thinking_done") {
+          return { ...item, thinking: data?.text || item.thinking, thinkingDone: true };
+        }
+        if (eventName === "token") {
+          return { ...item, text: `${item.text || ""}${data?.delta || ""}`, thinkingDone: true, streaming: true };
+        }
+        if (eventName === "done") {
+          return {
+            ...item,
+            text: data?.answer || item.text,
+            thinking: data?.thinking || item.thinking,
+            thinkingDone: true,
+            streaming: false,
+            action: extras.actionFrom?.(data),
+            evidence_refs: data?.evidence_refs || item.evidence_refs || [],
+          };
+        }
+        if (eventName === "error") {
+          return { ...item, text: data?.message || item.text || "暂时无法完成这次问询。", kind: "error", thinkingDone: true, streaming: false };
+        }
+        return item;
+      }));
+    });
+    return finalPayload;
+  };
+
   const sendChat = async () => {
     const text = chatInput.trim();
     if (!text || busy) return;
@@ -666,28 +834,39 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
       setMessages((items) => [...items, chatTurn("assistant", reply.text, { kind: "task_chat", action: reply.action })]);
       return;
     }
-    const inferredTarget = inferExecutionTarget(text);
-    setSelectedNode(inferredTarget);
-    setExecutionTarget(inferredTarget);
-    setPreviewMode(inferredTarget === "report" && result ? "report" : "node");
     const namedInMessage = matchCatalogProduct(products, text);
+    const catalogCandidates = namedInMessage ? [namedInMessage] : findCatalogCandidates(products, text);
+    const uniqueStrong = catalogCandidates.length === 1 && isStrongCatalogMatch(catalogCandidates[0], text)
+      ? catalogCandidates[0]
+      : null;
+    const resolvedProduct = namedInMessage || uniqueStrong;
+    const askedForOtherProduct = Boolean(catalogSearchNeedles(text).length) && !resolvedProduct;
+    const switchingProduct = Boolean(resolvedProduct && product && resolvedProduct.product_id !== product.product_id);
+    const inferredTarget = inferExecutionTarget(text);
     const inferredIndex = nodeDefinitions.findIndex((node) => node.id === inferredTarget);
-    const reachedIndex = stageOrder[task?.stage] || 1;
+    const reachedIndex = reachedNodeIndex(task);
     const continuePartialRun = task?.status === "partial_succeeded"
       && inferredIndex > reachedIndex
-      && /继续|评估|评分|方案|建议|报告|完整/.test(text);
+      && isExplicitRunCommand(text);
     const retryFromChat = ["failed", "cancelled"].includes(task?.status) && /重试|重新|继续/.test(text);
-    if (!task || namedInMessage || continuePartialRun || retryFromChat) {
+    const country = [["美国", "US"], ["美固", "US"], ["英国", "GB"], ["德国", "DE"], ["法国", "FR"], ["日本", "JP"], ["加拿大", "CA"], ["澳大利亚", "AU"]].find(([label]) => text.includes(label))?.[1];
+    const marketReady = datasets.filter((item) => item.status === "ready" && (!country || item.market_country === country));
+    const startFirstRun = !task && Boolean(resolvedProduct || (product && !askedForOtherProduct)) && (/分析|评估|生成|运行/.test(text) || isExplicitRunCommand(text));
+    const canStartRun = startFirstRun && marketReady.length > 0;
+    if (canStartRun || continuePartialRun || retryFromChat || (switchingProduct && marketReady.length > 0)) {
+      setSelectedNode(inferredTarget);
+      setExecutionTarget(inferredTarget);
+      setPreviewMode(inferredTarget === "report" && result ? "report" : "node");
       setBusy(true);
       try {
-        const hinted = namedInMessage || product || matchCatalogProduct(products, taskName);
+        const hinted = resolvedProduct || product || matchCatalogProduct(products, taskName);
         const matched = hinted?.product_id && hinted.current_profile_version_id
           ? hinted
           : hinted ? await api(`/api/v1/products/${hinted.product_id}`) : null;
         if (!matched) throw new Error("没有匹配到产品，请输入产品名称或 SKU，或先在开始节点选择产品");
-        const country = [["美国", "US"], ["英国", "GB"], ["德国", "DE"], ["法国", "FR"], ["日本", "JP"], ["加拿大", "CA"], ["澳大利亚", "AU"]].find(([label]) => text.includes(label))?.[1];
-        const instructedDataset = datasets.find((item) => item.status === "ready" && (!country || item.market_country === country) && (!item.category_code || item.category_code === matched.category_code)) || datasets.find((item) => item.status === "ready" && (!country || item.market_country === country));
+        const instructedDataset = marketReady.find((item) => !item.category_code || item.category_code === matched.category_code) || marketReady[0];
         if (country && !instructedDataset) throw new Error(`没有匹配到 ${country} 市场的已授权数据集`);
+        setOfferPrompts([]);
         await runWorkflow(matched, instructedDataset || null, inferredTarget);
         const targetTitle = nodeDefinitions.find((node) => node.id === inferredTarget)?.title;
         setMessages((items) => [...items, chatTurn("assistant", `已载入 ${matched.name} 的企业产品档案${instructedDataset ? `与 ${instructedDataset.market_country} 市场数据` : ""}，并运行至“${targetTitle}”。画布已同步标出运行终点。`, { kind: "run_event" })]);
@@ -695,22 +874,101 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
       finally { setBusy(false); }
       return;
     }
+    if (!task) {
+      setBusy(true);
+      try {
+        const marketName = country ? (marketNames[country] || country) : "美国";
+        const answer = await streamAssistantReply("/api/v1/analysis-workspaces/chat/stream", {
+          question: text,
+          history: withoutFailureNotices(messages).slice(-6).map((item) => ({ role: item.role, content: item.text })),
+          product_id: product?.product_id || undefined,
+          dataset_id: dataset?.dataset_id || undefined,
+        }, {
+          actionFrom: (payload) => payload?.action_href
+            ? { href: payload.action_href, label: payload.action_label || "打开" }
+            : payload?.suggested_action === "insights"
+              ? { href: "insights", label: "去市场洞察补数据" }
+              : undefined,
+        });
+        const prompts = (answer?.suggested_prompts || []).filter(Boolean);
+        const candidatePrompts = (answer?.product_candidates || []).map((item) => candidateStartPrompt(item, marketName));
+        setOfferPrompts(prompts.length ? prompts : candidatePrompts);
+        setNextGuideCollapsed(false);
+        if (answer?.title) setTaskName(answer.title);
+      } catch (reason) {
+        const label = requestedProductLabel(text);
+        const marketName = country ? (marketNames[country] || country) : "目标市场";
+        if (country && !marketReady.length) {
+          setOfferPrompts([`打开市场洞察导入${marketName}${label}数据`, `去市场洞察获取${marketName}评论舆情`]);
+          setNextGuideCollapsed(false);
+          setTaskName(`${label} ${marketName}出海机会分析`);
+          setMessages((items) => {
+            const last = items.at(-1);
+            if (last?.role === "assistant" && (last.streaming || last.thinking || !String(last.text || "").trim())) {
+              return [...items.slice(0, -1), chatTurn("assistant", `你想看「${label}」在${marketName}的情况，但当前没有该市场的已授权数据集，我不能编造竞品或痛点。请先到市场洞察导入数据，或把授权评论页拿到那里采集。`, { kind: "context", action: { href: "insights", label: "去市场洞察补数据" } })];
+            }
+            return [...items, chatTurn("assistant", `你想看「${label}」在${marketName}的情况，但当前没有该市场的已授权数据集，我不能编造竞品或痛点。请先到市场洞察导入数据，或把授权评论页拿到那里采集。`, { kind: "context", action: { href: "insights", label: "去市场洞察补数据" } })];
+          });
+        } else if (catalogCandidates.length) {
+          setOfferPrompts(catalogCandidates.map((item) => candidateStartPrompt(item)));
+          setNextGuideCollapsed(false);
+          setTaskName(`${label} 出海机会分析`);
+          setMessages((items) => {
+            const last = items.at(-1);
+            const reply = catalogOfferReply(text, catalogCandidates);
+            if (last?.role === "assistant" && (last.streaming || last.thinking || !String(last.text || "").trim())) {
+              return [...items.slice(0, -1), chatTurn("assistant", reply, { kind: "context" })];
+            }
+            return [...items, chatTurn("assistant", reply, { kind: "context" })];
+          });
+        } else {
+          setMessages((items) => {
+            const last = items.at(-1);
+            const reply = messageOf(reason) || "暂时无法完成这次问询。请告诉我产品名 / SKU 和目标市场。";
+            if (last?.role === "assistant" && (last.streaming || last.thinking || !String(last.text || "").trim())) {
+              return [...items.slice(0, -1), { ...last, text: reply, kind: "error", streaming: false, thinkingDone: true }];
+            }
+            return [...items, chatTurn("assistant", reply, { kind: "error" })];
+          });
+        }
+      } finally { setBusy(false); }
+      return;
+    }
     const grounded = evidenceChatReply(text, { result, insights });
     setBusy(true);
     try {
-      const answer = await api(`/api/v1/analysis-tasks/${task.task_uuid}/chat`, { method: "POST", body: JSON.stringify({ question: text, history: withoutFailureNotices(messages).slice(-6).map((item) => ({ role: item.role, content: item.text })) }) });
-      const forecastAction = answer.suggested_action === "forecast" || isForecastQuestion(text)
-        ? forecastChatReply(product).action
-        : undefined;
-      setMessages((items) => [...items, chatTurn("assistant", `${answer.answer}${answer.evidence_refs?.length ? `（证据引用 ${answer.evidence_refs.length} 项）` : ""}`, { kind: "task_chat", evidence_refs: answer.evidence_refs || [], action: forecastAction })]);
+      const answer = await streamAssistantReply(`/api/v1/analysis-tasks/${task.task_uuid}/chat/stream`, {
+        question: text,
+        history: withoutFailureNotices(messages).slice(-6).map((item) => ({ role: item.role, content: item.text })),
+      }, {
+        actionFrom: (payload) => payload?.suggested_action === "forecast" || isForecastQuestion(text)
+          ? forecastChatReply(product).action
+          : undefined,
+      });
+      if (answer?.evidence_refs?.length) {
+        setMessages((items) => {
+          const last = items.at(-1);
+          if (last?.role !== "assistant" || last.kind === "error") return items;
+          if (String(last.text || "").includes("证据引用")) return items;
+          return [...items.slice(0, -1), { ...last, text: `${last.text}（证据引用 ${answer.evidence_refs.length} 项）` }];
+        });
+      }
     } catch (reason) {
       const fallback = grounded || "这个问题超出当前任务已落库的市场洞察证据。我可以回答竞品、评论痛点、机会评分和改款建议；未来销量请使用「销量预测」。";
-      setMessages((items) => [...items, chatTurn("assistant", fallback, { kind: grounded ? "task_chat" : "error", action: /销量|预测/.test(text) ? forecastChatReply(product).action : undefined })]);
+      setMessages((items) => {
+        const last = items.at(-1);
+        const next = { text: fallback, kind: grounded ? "task_chat" : "error", streaming: false, thinkingDone: true, action: /销量|预测/.test(text) ? forecastChatReply(product).action : undefined };
+        if (last?.role === "assistant" && (last.streaming || last.thinking || !String(last.text || "").trim())) {
+          return [...items.slice(0, -1), { ...last, ...next }];
+        }
+        return [...items, chatTurn("assistant", fallback, next)];
+      });
     } finally { setBusy(false); }
   };
 
   useEffect(() => {
     savePlaneChat(activeConversationId, withoutFailureNotices(messages));
+    if (messages.some((item) => item.streaming)) return undefined;
     const timer = window.setTimeout(() => {
       persistWorkspaceMessages(activeConversationId, withoutFailureNotices(messages), {
         job_name: taskName,
@@ -746,10 +1004,13 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
     setTask(null); setResult(null); setProduct(null); setDataset(null);
     setInsights({ competitors: [], reviewAspects: [], clusters: [], opportunities: [], recommendations: [], evidence: [] });
     setTaskName("新建产品出海分析"); setSelectedNode("start"); setExecutionTarget("report"); setPreviewMode("node");
+    setNextGuideCollapsed(false);
+    setOfferPrompts([]);
     const id = createUuid();
+    const draft = draftWorkspaceEntry({ workspace_uuid: id, job_name: "新建产品出海分析" });
     setActiveConversationId(id);
-    setMessages(planeGreeting("新建产品出海分析", id));
-    savePlaneWorkspace({ workspace_uuid: id, job_name: "新建产品出海分析", status: "draft", source: PLANE_SOURCE });
+    setMessages(planeGreeting(draft.job_name, id));
+    setHistoryTasks([draft]);
     window.history.replaceState(null, "", `#workflow?new=1&workspace=${id}`);
   };
 
@@ -761,9 +1022,11 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
     setTaskName(item.job_name || "产品出海机会分析");
     const stored = await fetchWorkspaceMessages(id);
     setMessages(stored.length ? stored : planeGreeting(item.job_name, id));
-    window.history.replaceState(null, "", `#workflow?workspace=${id}${fromProducts ? "&from=products" : ""}`);
+    window.history.replaceState(null, "", `#workflow?workspace=${id}`);
     if (!item.task_uuid) {
-      setTask(null); setResult(null); setProduct(null);
+      setTask(null); setResult(null); setProduct(null); setDataset(null);
+      setNextGuideCollapsed(false);
+      setOfferPrompts([]);
       return;
     }
     try {
@@ -773,7 +1036,7 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
 
   const selectedDefinition = nodeDefinitions.find((node) => node.id === selectedNode) || nodeDefinitions[0];
   const targetDefinition = nodeDefinitions.find((node) => node.id === executionTarget) || nodeDefinitions.at(-1);
-  const activeWorkspace = historyTasks.find((item) => workspaceId(item) === activeConversationId);
+  const visibleHistory = historyTasks.filter((item) => workspaceId(item) === activeConversationId);
   const taskRunning = ["queued", "running"].includes(task?.status);
   const readyDatasets = datasets.filter((item) => item.status === "ready");
   const marketLabel = marketNames[dataset?.market_country] || dataset?.market_country || "目标市场";
@@ -784,8 +1047,11 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
   ] : [];
   const nextStepPrompts = (() => {
     if (!task) {
+      if (offerPrompts.length) return offerPrompts;
       if (product) return guidedPrompts;
-      return ["告诉我想分析的产品名称或 SKU", "分析指定产品在美国市场的竞品、价格带和用户评论痛点"];
+      const catalogStarts = products.slice(0, 3).map((item) => candidateStartPrompt(item));
+      if (catalogStarts.length) return catalogStarts;
+      return ["先去产品中心创建要分析的产品，再回到这里开始", "在对话里输入已建档产品的名称或 SKU"];
     }
     if (taskRunning) return ["当前分析运行到哪一步？", "本次分析将输出哪些结果？"];
     if (task.status === "waiting_human") return ["说明当前需要我确认什么，以及不同选择的影响"];
@@ -794,7 +1060,7 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
       "说明刚才失败的节点和可以采取的修复措施",
     ];
     if (task.status === "partial_succeeded") {
-      const reached = stageOrder[task.stage] || 1;
+      const reached = reachedNodeIndex(task);
       if (reached <= 2) return [
         "总结当前发现的三大评论痛点并列出证据",
         `继续评估${product?.name || "该产品"}的市场机会并给出五维评分`,
@@ -820,12 +1086,19 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
   })();
   const chooseChatProduct = async (id) => {
     setError("");
-    if (!id) { setProduct(null); setDataset(null); return; }
+    if (!id) {
+      setProduct(null);
+      setDataset(null);
+      setOfferPrompts([]);
+      return;
+    }
     try {
       const detail = await loadProductDetail(id);
       if (!detail) return;
       setTaskName(`${detail.name} 出海机会分析`);
-      setMessages((items) => [...items, chatTurn("assistant", `已选择产品“${detail.name}”（${detail.sku}）。可不填市场数据；直接在下方提问，或展开建议开始分析。`, { kind: "context" })]);
+      setOfferPrompts([]);
+      setNextGuideCollapsed(false);
+      setMessages((items) => [...items, chatTurn("assistant", `已选择产品“${detail.name}”（${detail.sku}）。市场数据可自动匹配；直接在对话里提问或运行分析。`, { kind: "context" })]);
     } catch (reason) { setError(messageOf(reason)); }
   };
   return <main className="workspace workflow-studio-page">
@@ -840,58 +1113,62 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
         <div ref={workflowBodyRef} className={`workflow-body ${aiCollapsed ? "ai-collapsed" : ""} ${historyCollapsed ? "history-collapsed" : ""} ${resizeTarget ? "is-resizing" : ""}`} style={{ "--history-pane": `${paneSizes.history}px`, "--chat-pane": `${paneSizes.chat}px`, "--preview-pane": `${paneSizes.preview}px` }}>
           {aiCollapsed ? <aside className="ai-conversation-collapsed"><button onClick={() => setAiCollapsed(false)} title="展开 AI 对话"><ChatCircleText /><span>展开 AI 对话</span><CaretRight /></button></aside> : <>
             <aside className="workflow-conversation-history-pane">
-              <header><div><ChatCircleText /><span><strong>{historyCollapsed ? "" : "分析工作台"}</strong><small>{historyCollapsed ? "" : `${historyTasks.length} 个工作台`}</small></span></div><div><button onClick={newConversation} title="新建工作台"><Plus /></button><button onClick={() => setHistoryCollapsed((value) => !value)} title={historyCollapsed ? "展开工作台列表" : "折叠工作台列表"}>{historyCollapsed ? <CaretRight /> : <CaretLeft />}</button><button onClick={() => setAiCollapsed(true)} title="折叠整个 AI 对话"><ChatCircleText /></button></div></header>
-              {!historyCollapsed && <><label className="conversation-search"><MagnifyingGlass /><input value={conversationSearch} onChange={(event) => setConversationSearch(event.target.value)} placeholder="搜索分析工作台" /></label><div className="conversation-history"><small>按工作台归档分析</small>{historyTasks.filter((item) => `${item.job_name} ${item.product_sku} ${item.product_name}`.toLowerCase().includes(conversationSearch.trim().toLowerCase())).map((item) => <button className={workspaceId(item) === activeConversationId ? "active" : ""} key={workspaceId(item)} onClick={() => openConversation(item)}><span><ChatCircleText /><i className={item.status} /></span><div><strong>{item.job_name}</strong><small>{item.analysis_count} 次分析 · {item.product_sku || "待选择产品"}</small></div><time>{new Date(item.updated_at).toLocaleDateString("zh-CN")}</time></button>)}{!historyTasks.length && <p className="conversation-empty">还没有分析工作台。新建后可在同一工作台中进行多次分析。</p>}</div></>}
+              <header><div><ChatCircleText /><span><strong>{historyCollapsed ? "" : "当前工作台"}</strong><small>{historyCollapsed ? "" : (task ? `${historyTasks.find((item) => workspaceId(item) === activeConversationId)?.analysis_count || 1} 次分析` : "尚未运行")}</small></span></div><div><button onClick={newConversation} title="新建工作台"><Plus /></button><button onClick={() => setHistoryCollapsed((value) => !value)} title={historyCollapsed ? "展开当前工作台" : "折叠当前工作台"}>{historyCollapsed ? <CaretRight /> : <CaretLeft />}</button><button onClick={() => setAiCollapsed(true)} title="折叠整个 AI 对话"><ChatCircleText /></button></div></header>
+              {!historyCollapsed && <>
+                <div className="conversation-history">
+                  <small>本会话</small>
+                  {visibleHistory.map((item) => <button className={workspaceId(item) === activeConversationId ? "active" : ""} key={workspaceId(item)} onClick={() => openConversation(item)}><span><ChatCircleText /><i className={item.status} /></span><div><strong>{item.job_name}</strong><small>{item.local_only && !item.task_uuid ? "尚未运行" : `${item.analysis_count || 1} 次分析 · ${item.product_sku || product?.sku || "待选择产品"}`}</small></div><time>{new Date(item.updated_at || Date.now()).toLocaleDateString("zh-CN")}</time></button>)}
+                  <p className="conversation-open-diary"><button type="button" onClick={() => { location.hash = "work-diary"; }}>打开已有工作日记</button></p>
+                </div>
+                <section className={`conversation-context-setup ${product ? "ready" : ""}`}>
+                  <header>
+                    <div>
+                      <span>分析对象</span>
+                      <strong>{product ? `${product.sku} · ${product.name}` : "对话里说产品名，或在此选择"}</strong>
+                    </div>
+                    <b>{product ? (dataset ? "已就绪" : "将自动匹配") : "待选择"}</b>
+                  </header>
+                  <label><span><i>1</i>产品</span><select aria-label="对话分析产品" value={product?.product_id || ""} onChange={(event) => chooseChatProduct(event.target.value)}><option value="">选择已建档产品</option>{products.map((item) => <option value={item.product_id} key={item.product_id}>{item.sku} · {item.name}</option>)}</select></label>
+                  <label><span><i>2</i>市场数据</span><select aria-label="对话市场数据集" value={dataset?.dataset_id || ""} disabled={!product} onChange={(event) => setDataset(readyDatasets.find((item) => String(item.dataset_id) === event.target.value) || null)}><option value="">{product ? "自动匹配（可不选）" : "选产品后自动匹配"}</option>{readyDatasets.map((item) => <option value={item.dataset_id} key={item.dataset_id}>{item.name} · {marketNames[item.market_country] || item.market_country}</option>)}</select></label>
+                  {!products.length && <button type="button" onClick={() => { location.hash = "products"; }}><Plus />先去产品中心创建产品</button>}
+                  {product && !dataset && !readyDatasets.length && <p><WarningCircle />当前没有可用数据集。请先到市场洞察导入数据，或在对话里指定市场。</p>}
+                  {product && !dataset && readyDatasets.length > 0 && <p className="ready"><Check />未指定时将自动匹配可用市场数据。</p>}
+                  {product && dataset && <p className="ready"><Check />将使用“{product.name}”和“{dataset.name}”作为本次分析输入。</p>}
+                </section>
+              </>}
             </aside>
             <div className={`pane-resizer ${resizeTarget?.pane === "history" ? "active" : ""}`} role="separator" aria-orientation="vertical" aria-label="拖动调整历史栏宽度" title="拖动调整宽度" onPointerDown={(event) => beginResize("history", event)} />
             <aside className="workflow-active-chat-pane">
-              <header><div><Pulse /><span><strong>AI 分析对话</strong><small>选择对象、表达目标并启动真实工作流</small></span></div></header>
+              <header><div><Pulse /><span><strong>AI 分析对话</strong><small>可追问已落库证据；要分段继续运行时请明确说「继续评估 / 运行至…」</small></span></div></header>
               <section className="active-conversation">
-                <header><div><strong>{task?.job_name || taskName}</strong><small>{product ? `${product.sku} · ${product.name}${dataset ? ` · ${marketLabel}` : " · 市场数据将自动匹配"}` : "可不选产品，直接在对话里说名称或 SKU"}</small></div><span className={task?.status || "draft"} title={["failed", "cancelled"].includes(task?.status) ? failureReason(task) : undefined}>{taskStatusLabel(task)}</span></header>
+                <header><div><strong>{task?.job_name || taskName}</strong><small>{product ? `${product.sku} · ${product.name}${dataset ? ` · ${marketLabel}` : " · 市场数据将自动匹配"}` : "在左侧选择产品，或直接输入产品名 / SKU"}</small></div><span className={task?.status || "draft"} title={["failed", "cancelled"].includes(task?.status) ? failureReason(task) : undefined}>{taskStatusLabel(task)}</span></header>
                 <div className="conversation-main">
                   <WorkflowChatLog messages={messages} />
                 </div>
                 <div className="conversation-dock">
-                  <section className={`conversation-context-setup ${product ? "ready" : ""} ${contextSetupCollapsed ? "collapsed" : ""}`}>
-                    <header>
-                      <div>
-                        <span>分析对象</span>
-                        <strong>{product ? `${product.sku} · ${product.name}` : "你想分析哪个产品？"}</strong>
-                        {contextSetupCollapsed && <small>{product ? (dataset ? `${marketLabel} · ${dataset.name}` : "市场数据将自动匹配，也可在对话里指定") : "可不填，对话里直接说产品名或 SKU 即可"}</small>}
-                      </div>
-                      <b>{product ? (dataset ? "已就绪" : "将自动匹配") : "可不填"}</b>
-                      <button type="button" className="conversation-next-toggle" onClick={() => setContextSetupCollapsed((value) => !value)} aria-expanded={!contextSetupCollapsed} aria-label={contextSetupCollapsed ? "展开分析对象" : "收起分析对象"}>
-                        {contextSetupCollapsed ? <CaretDown /> : <CaretUp />}
-                        {contextSetupCollapsed ? "展开" : "收起"}
-                      </button>
-                    </header>
-                    {!contextSetupCollapsed && <>
-                      <label><span><i>1</i>产品</span><select aria-label="对话分析产品" value={product?.product_id || ""} onChange={(event) => chooseChatProduct(event.target.value)}><option value="">选择已建档产品（可不选）</option>{products.map((item) => <option value={item.product_id} key={item.product_id}>{item.sku} · {item.name}</option>)}</select></label>
-                      <label><span><i>2</i>市场数据</span><select aria-label="对话市场数据集" value={dataset?.dataset_id || ""} disabled={!product} onChange={(event) => setDataset(readyDatasets.find((item) => String(item.dataset_id) === event.target.value) || null)}><option value="">{product ? "自动匹配（可不选）" : "选产品后自动匹配"}</option>{readyDatasets.map((item) => <option value={item.dataset_id} key={item.dataset_id}>{item.name} · {marketNames[item.market_country] || item.market_country}</option>)}</select></label>
-                      {!products.length && <button type="button" onClick={() => { location.hash = "products"; }}><Plus />先去产品中心创建产品</button>}
-                      {product && !dataset && !readyDatasets.length && <p><WarningCircle />当前没有可用数据集。请先到市场洞察导入数据，或在对话里指定市场。</p>}
-                      {product && !dataset && readyDatasets.length > 0 && <p className="ready"><Check />未指定时将自动匹配可用市场数据。</p>}
-                      {product && dataset && <p className="ready"><Check />将使用“{product.name}”和“{dataset.name}”作为本次分析输入。</p>}
-                      {!product && <p className="ready"><Check />不填也可以，在下方直接输入产品名或 SKU。</p>}
-                    </>}
-                  </section>
                   {nextStepPrompts.length > 0 && (
                     <div className={`conversation-next-guide ${taskRunning ? "running" : ""} ${nextGuideCollapsed ? "collapsed" : ""}`}>
                       <header>
                         <Pulse />
                         <span>
                           <strong>{taskRunning ? "分析正在运行" : "建议下一步"}</strong>
-                          {!nextGuideCollapsed && <small>{taskRunning ? "可以询问进度，完成后这里会自动更新" : task ? "根据当前已完成节点生成，可点击后发送" : "可不选分析对象，点击后发送或直接输入问题"}</small>}
+                          {!nextGuideCollapsed && <small>{taskRunning ? "可以询问进度，完成后这里会自动更新" : task ? "根据当前已完成节点生成，可点击后发送" : "直接提问或点击建议；没有精确同名产品时会列出相近品类"}</small>}
                         </span>
                         <button type="button" className="conversation-next-toggle" onClick={() => setNextGuideCollapsed((value) => !value)} aria-expanded={!nextGuideCollapsed} aria-label={nextGuideCollapsed ? "展开建议下一步" : "收起建议下一步"}>
                           {nextGuideCollapsed ? <CaretDown /> : <CaretUp />}
                           {nextGuideCollapsed ? "展开" : "收起"}
                         </button>
                       </header>
-                      {!nextGuideCollapsed && <div>{nextStepPrompts.map((text) => <button type="button" key={text} onClick={() => setChatInput(text)}>{text}<ArrowRight /></button>)}</div>}
+                      {!nextGuideCollapsed && <div>{nextStepPrompts.map((text) => <button type="button" key={text} onClick={() => {
+                        if (/打开市场洞察|去市场洞察/.test(text)) {
+                          location.hash = /获取|舆情/.test(text) ? "competitor-tracking" : "insights";
+                          return;
+                        }
+                        setChatInput(text);
+                      }}>{text}<ArrowRight /></button>)}</div>}
                     </div>
                   )}
-                  <div className="vertical-chat-composer"><textarea aria-label="分析问题" value={chatInput} onChange={(event) => setChatInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendChat(); } }} placeholder={product ? `例如：分析${product.name}在${marketLabel}的竞品和评论痛点` : "输入产品名称、SKU 和分析目标，分析对象可不填"} /><button aria-label="发送并执行" onClick={sendChat} disabled={!chatInput.trim() || busy}><PaperPlaneRight weight="fill" /></button></div>
+                  <div className="vertical-chat-composer"><textarea aria-label="分析问题" value={chatInput} onChange={(event) => setChatInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); sendChat(); } }} placeholder={product ? `例如：分析${product.name}在${marketLabel}的竞品和评论痛点` : "例如：分析电竞椅的市场，或输入产品名 / SKU"} /><button aria-label="发送并执行" onClick={sendChat} disabled={!chatInput.trim() || busy}><PaperPlaneRight weight="fill" /></button></div>
                 </div>
               </section>
             </aside>
@@ -926,7 +1203,7 @@ export function WorkflowCanvas({ Sidebar, Topbar }) {
           <div className={`pane-resizer ${resizeTarget?.pane === "preview" ? "active" : ""}`} role="separator" aria-orientation="vertical" aria-label="拖动调整报告预览栏宽度" title="拖动调整宽度" onPointerDown={(event) => beginResize("preview", event)} />
           <aside className="node-detail-panel result-preview-panel"><header><div><span>{previewMode === "report" ? "预览" : selectedDefinition.step}</span><h2>{previewMode === "report" ? "分析报告预览" : selectedDefinition.title}</h2></div><div className="preview-tabs"><button className={previewMode === "node" ? "active" : ""} onClick={() => setPreviewMode("node")}>节点详情</button><button className={previewMode === "report" ? "active" : ""} disabled={!result} onClick={() => setPreviewMode("report")}>报告预览</button></div></header><div className="node-detail-scroll">{previewMode === "report" && result ? <section className="inline-report-preview"><span>AI DECISION REPORT</span><h3>{result.report_summary.title}</h3><div><strong>{result.report_summary.overall_opportunity_score}</strong><small>综合机会分</small><strong>{Math.round((result.report_summary.overall_confidence || 0) * 100)}%</strong><small>报告置信度</small></div><em>{result.report_summary.decision_recommendation}</em><p>{result.report_summary.executive_summary}</p><h4>核心建议</h4>{insights.recommendations.slice(0, 4).map((item) => <article key={item.recommendation_id}><b>{item.priority}</b><span>{item.recommended_action}</span></article>)}<button onClick={() => { location.hash = `report-detail?id=${result.report_uuid}&from=workbench`; }}>打开完整报告 <ArrowRight /></button></section> : <>
             {task && ["failed", "cancelled"].includes(task.status) && selectedDefinition.id === failedNodeId(task) && <section className="node-detail-section node-error"><WarningCircle /><strong>{failureReason(task)}</strong><button onClick={start}><ArrowClockwise />重新执行</button></section>}
-            {task && ["failed", "cancelled"].includes(task.status) && nodeDefinitions.findIndex((node) => node.id === selectedDefinition.id) > (stageOrder[task.stage] || 1) && <section className="node-detail-section node-blocked"><WarningCircle /><strong>该节点尚未执行</strong><p>上游“{nodeDefinitions[stageOrder[task.stage] || 1]?.title}”执行失败。修复并重试上游后，数据会继续流入当前节点。</p></section>}
+            {task && ["failed", "cancelled"].includes(task.status) && nodeDefinitions.findIndex((node) => node.id === selectedDefinition.id) > reachedNodeIndex(task) && <section className="node-detail-section node-blocked"><WarningCircle /><strong>该节点尚未执行</strong><p>上游“{nodeDefinitions[reachedNodeIndex(task)]?.title}”执行失败。修复并重试上游后，数据会继续流入当前节点。</p></section>}
             <DetailContent node={selectedDefinition} product={product} dataset={dataset} task={task} result={result} insights={insights} products={products} datasets={datasets} onProduct={(id) => loadProductDetail(id).catch((reason) => setError(messageOf(reason)))} onDataset={(id) => setDataset(datasets.find((item) => String(item.dataset_id) === id) || null)} onRetry={start} />
             {task?.user_confirmation && <section className="node-detail-section confirmation-detail"><WarningCircle /><h3>需要人工确认</h3><p>{task.user_confirmation.question}</p><div>{task.user_confirmation.options.map((option) => <button key={option.code} disabled={busy} onClick={() => answerConfirmation(option.code)}>{option.label || option.code}<small>{option.description}</small></button>)}</div></section>}
             <section className="node-detail-section execution-log"><h3>执行日志</h3>{task?.stage_runs?.length ? task.stage_runs.slice().reverse().map((run) => <div key={`${run.stage_code}-${run.attempt_no}`}><span className={run.status} /><p><strong>{run.stage_code.replaceAll("_", " ")}</strong><small>第 {run.attempt_no} 次执行 · {run.status}</small>{run.error_message && <em>{run.error_message}</em>}</p></div>) : <p className="detail-placeholder">启动任务后，这里会实时记录节点执行状态与异常原因。</p>}</section>
@@ -961,7 +1238,6 @@ export function AnalysisCenter({ Sidebar, Topbar }) {
   const enterNewWorkspace = () => {
     const id = createUuid();
     const name = taskName.trim() || "产品出海机会分析";
-    savePlaneWorkspace({ workspace_uuid: id, job_name: name, status: "draft", source: PLANE_SOURCE });
     location.hash = `workflow?new=1&workspace=${id}&name=${encodeURIComponent(name)}`;
   };
 
@@ -976,6 +1252,6 @@ export function AnalysisCenter({ Sidebar, Topbar }) {
       {error && <div className="workflow-error inline"><WarningCircle />{error}</div>}
       <section className="workbench-recent"><header><div><h2>工作日记</h2><p>最近 10 条分析工作台</p></div><button type="button" className="section-more" onClick={() => { location.hash = "work-diary"; }}>更多 <ArrowRight /></button></header>{!loading && !workspaces.length ? <div className="workbench-empty"><Pulse /><strong>还没有工作日记</strong><p>新建工作台后，分析记录会按时间沉淀在这里。</p></div> : <WorkDiaryList items={workspaces.slice(0, 10)} />}</section>
     </div></section>
-    {launcher && <div className="modal-backdrop" onClick={() => setLauncher(false)}><section className="modal workbench-launcher-modal" onClick={(event) => event.stopPropagation()}><button className="close" onClick={() => setLauncher(false)}>×</button><span className="launcher-icon"><Pulse /></span><h3>新建分析工作台</h3><p>工作台用于归档同一分析目标的对话与多次运行结果。</p><label className="plane-task-name">工作台名称<div><input value={taskName} onChange={(event) => setTaskName(event.target.value)} placeholder="例如：HF-A0396 美国市场机会分析" /><button onClick={enterNewWorkspace}>新建并进入</button></div></label><div className="plane-history-title"><strong>已有工作台</strong><span>{workspaces.length} 个</span></div><div className="plane-history-list">{workspaces.length ? workspaces.map((item) => <article key={workspaceId(item)}><img src={productImage(item.product_sku)} onError={imageFallback} alt="" /><div><strong>{item.job_name}</strong><span>{item.product_sku} · {item.target_country} / {item.target_platform}</span><small>{item.analysis_count} 次分析 · {statusLabels[item.status] || item.status}</small></div><button onClick={() => { location.hash = `workflow?workspace=${workspaceId(item)}`; }}>进入工作台</button><button disabled={!item.report_uuid} onClick={() => { location.hash = `report-detail?id=${item.report_uuid}&from=workbench`; }}>最近报告</button></article>) : <div className="plane-history-empty">暂无分析工作台，可以直接新建。</div>}</div></section></div>}
+    {launcher && <div className="modal-backdrop" onClick={() => setLauncher(false)}><section className="modal workbench-launcher-modal" onClick={(event) => event.stopPropagation()}><button className="close" onClick={() => setLauncher(false)}>×</button><span className="launcher-icon"><Pulse /></span><h3>新建分析工作台</h3><p>从这里进入的是空白会话，可直接在对话里说产品名。已有记录请到工作日记打开，不要和新建混在一起。</p><label className="plane-task-name">工作台名称<div><input value={taskName} onChange={(event) => setTaskName(event.target.value)} placeholder="例如：HF-A0396 美国市场机会分析" /><button onClick={enterNewWorkspace}>新建并进入</button></div></label><button type="button" className="launcher-open-diary" onClick={() => { location.hash = "work-diary"; }}>打开已有工作日记</button></section></div>}
   </main>;
 }
