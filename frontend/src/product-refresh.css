@@ -35,6 +35,15 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+/* Borderless fields already sit inside a framed composer; skip the inner focus box. */
+.vertical-chat-composer textarea:focus-visible,
+.analysis-starter textarea:focus-visible,
+.workflow-toolbar input:focus-visible {
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+}
+
 button:disabled {
   cursor: not-allowed;
 }
