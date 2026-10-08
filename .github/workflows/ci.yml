@@ -44,6 +44,21 @@ jobs:
       - name: Initialize database
         run: |
           psql "$FURNISCOPE_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f furniscope_postgresql_v3.sql
+      - name: Provision database login roles
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGPASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: furniscope_test
+          POSTGRES_APP_PASSWORD: ci-app-password
+          POSTGRES_ADMIN_PASSWORD: ci-admin-password
+          POSTGRES_WORKER_PASSWORD: ci-worker-password
+          POSTGRES_LANGGRAPH_PASSWORD: ci-langgraph-password
+          POSTGRES_BACKUP_PASSWORD: ci-backup-password
+          POSTGRES_MONITOR_PASSWORD: ci-monitor-password
+          POSTGRES_REPLICATION_PASSWORD: ci-replication-password
+        run: scripts/provision_database_roles.sh
       - name: Scan production files for committed credentials
         run: scripts/security_audit.sh
       - run: PYTHONPATH=.:backend pytest -q
