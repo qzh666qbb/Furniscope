@@ -32,6 +32,13 @@ jobs:
       FURNISCOPE_TEST_REDIS_URL: redis://127.0.0.1:6379/15
       APP_ENV: test
       POSTGRES_PASSWORD: postgres
+      POSTGRES_APP_PASSWORD: ci-app-password
+      POSTGRES_ADMIN_PASSWORD: ci-admin-password
+      POSTGRES_WORKER_PASSWORD: ci-worker-password
+      POSTGRES_LANGGRAPH_PASSWORD: ci-langgraph-password
+      POSTGRES_BACKUP_PASSWORD: ci-backup-password
+      POSTGRES_MONITOR_PASSWORD: ci-monitor-password
+      POSTGRES_REPLICATION_PASSWORD: ci-replication-password
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,13 +58,6 @@ jobs:
           PGPASSWORD: postgres
           POSTGRES_USER: postgres
           POSTGRES_DB: furniscope_test
-          POSTGRES_APP_PASSWORD: ci-app-password
-          POSTGRES_ADMIN_PASSWORD: ci-admin-password
-          POSTGRES_WORKER_PASSWORD: ci-worker-password
-          POSTGRES_LANGGRAPH_PASSWORD: ci-langgraph-password
-          POSTGRES_BACKUP_PASSWORD: ci-backup-password
-          POSTGRES_MONITOR_PASSWORD: ci-monitor-password
-          POSTGRES_REPLICATION_PASSWORD: ci-replication-password
         run: scripts/provision_database_roles.sh
       - name: Scan production files for committed credentials
         run: scripts/security_audit.sh
