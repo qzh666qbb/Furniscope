@@ -89,7 +89,7 @@
 
 ## 6. 已知限制与下一步
 
-1. 当前 development/test Agent 调度使用 FastAPI `BackgroundTasks` 和合成工具箱，仅适合 Demo；生产环境必须配置独立持久化 Worker/队列；
+1. development可选择进程内后台任务；生产强制使用Redis Streams和独立Worker。外部工具模式读取授权数据，AI员工Runtime及其触发器本期保持关闭；
 2. 真实阿里云 Model Router 业务工具尚未替换合成工具箱；合成报告已明确标记 `synthetic_demo`；
 3. 本轮未实现 API-CFM-01/02、洞察下钻、报告详情、Dashboard、Admin 和前端；
 4. 下一轮应实现统一 `user_confirmation` 查询、回答和 Outbox 恢复 API。

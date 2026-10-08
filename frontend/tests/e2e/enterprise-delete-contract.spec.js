@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("企业账号删除需要确认并携带资源版本", async ({ page }) => {
+test("关闭企业租户需要确认并携带资源版本", async ({ page }) => {
   let deleteRequest = null;
   let deleted = false;
   const enterprise = {
@@ -38,12 +38,12 @@ test("企业账号删除需要确认并携带资源版本", async ({ page }) => 
   });
 
   await page.goto("/#admin");
-  await expect(page.getByText("删除流程测试企业")).toBeVisible();
-  await page.getByRole("button", { name: "删除", exact: true }).click();
+  await expect(page.locator(".control-table").getByText("删除流程测试企业")).toBeVisible();
+  await page.getByRole("button", { name: "关闭企业", exact: true }).click();
 
-  const dialog = page.getByRole("dialog", { name: "删除企业账号？" });
+  const dialog = page.getByRole("dialog", { name: "关闭企业租户？" });
   await expect(dialog).toContainText("业务数据与审计记录会保留");
-  await dialog.getByRole("button", { name: "确认删除" }).click();
+  await dialog.getByRole("button", { name: "确认关闭" }).click();
 
   await expect.poll(() => deleteRequest).toEqual({ method: "DELETE", ifMatch: "tenant-version-12" });
   await expect(page.getByText("删除流程测试企业")).toHaveCount(0);

@@ -54,10 +54,12 @@ export function WorkDiaryList({ items, onDelete, from = "workbench" }) {
               <small>{workspaceId(item).slice(0, 8)}</small>
             </span>
           </div>
-          <span>{item.product_sku} · {item.target_country} / {item.target_platform}</span>
-          <b>{item.analysis_count} 次</b>
-          <span className={`workbench-task-status ${item.status}`}>{TASK_STATUS_LABELS[item.status] || item.status}</span>
-          <time>{new Date(item.updated_at).toLocaleString("zh-CN")}</time>
+          <span data-label="产品与市场">{item.product_sku} · {item.target_country} / {item.target_platform}</span>
+          <b data-label="分析次数">{item.analysis_count} 次</b>
+          <div className="work-diary-field" data-label="最近状态">
+            <span className={`workbench-task-status ${item.status}`}>{TASK_STATUS_LABELS[item.status] || item.status}</span>
+          </div>
+          <time data-label="最后更新">{new Date(item.updated_at).toLocaleString("zh-CN")}</time>
           <div className="workbench-list-actions">
             <button type="button" onClick={() => {
               const plane = item.local_only || item.source === PLANE_SOURCE || isPlaneTask(item) || (item.runs || []).some(isPlaneTask);

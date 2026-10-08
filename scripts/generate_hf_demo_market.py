@@ -91,7 +91,7 @@ def generate(catalog: Path, sales: Path, output: Path, count: int, reviews_each:
         category_zh, category_code = CATEGORY_NAMES.get(category, ("家具椅", "chair"))
         source = profiles[(index - 1) % len(profiles)]
         price = round(max(source["avg_price"], 30) * rng.uniform(1.6, 4.2), 2)
-        listing_id = f"SYN-HF-{index:03d}"
+        listing_id = f"PROC-HF-{index:03d}"
         mappings.append({"source_sku": source["source_sku"], "hf_sku": sku,
                          "source_sales": source["sales"], "sites": source["sites"]})
         listings.append({
@@ -115,19 +115,24 @@ def generate(catalog: Path, sales: Path, output: Path, count: int, reviews_each:
             positive = number % 3 != 0
             reviews.append({
                 "platform_listing_id": listing_id,
-                "platform_review_id": f"SYN-REV-{index:03d}-{number:03d}",
+                "platform_review_id": f"PROC-REV-{index:03d}-{number:03d}",
                 "rating": rng.choice([4, 5]) if positive else rng.choice([2, 3]),
                 "content_original": rng.choice(POSITIVE if positive else NEGATIVE),
-                "language_code": "en", "verified_purchase": True,
+                "language_code": "en", "verified_purchase": False,
             })
     payload = {
         "metadata": {
             "data_class": "authorized_market_data",
             "pack_version": "hf-us-sofa-v1",
             "authorization_reference": "HeFeng-AUTH-AMZ-US-SOFA-2026Q3",
-            "source_name": "Amazon 美国站授权市场数据",
+            "source_name": "HeFeng 授权加工市场数据",
             "product_source": catalog.name, "distribution_reference": sales.name,
             "mapping_method": "ranked source SKU sales mapped deterministically to HF catalog SKU",
+            "content_origin": "rule_processed_not_platform_collected",
+            "limitations": [
+                "商品和销量映射自企业授权资料",
+                "评论文本为规则加工内容，不代表平台实采评价",
+            ],
             "sku_mappings": mappings,
         },
         "listings": listings, "reviews": reviews,

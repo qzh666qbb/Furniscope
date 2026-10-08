@@ -154,10 +154,39 @@ class NotificationService:
     async def update_channel(self, session: AsyncSession, *, tenant_id: int, channel_id: int,
                              payload: dict[str, Any]) -> dict[str, Any]:
         current = await self.get_channel(session, tenant_id=tenant_id, channel_id=channel_id)
-        enabled = current["enabled"] if payload.get("enabled") is None else bool(payload["enabled"])
+        target_url = (
+            self._validate_target_url(payload["target_url"])
+            if payload.get("target_url") is not None
+            else current["target_url"]
+        )
+        values = {
+            "name": payload.get("name", current["name"]),
+            "channel_type": payload.get("channel_type", current["channel_type"]),
+            "target_url": target_url,
+            "secret_env": (
+                payload["secret_env"]
+                if "secret_env" in payload
+                else current["secret_env"]
+            ),
+            "events": (
+                payload["events"]
+                if payload.get("events") is not None
+                else current["events"]
+            ),
+            "enabled": (
+                bool(payload["enabled"])
+                if payload.get("enabled") is not None
+                else current["enabled"]
+            ),
+            "id": channel_id,
+            "tenant": tenant_id,
+        }
         await session.execute(text("""
-            UPDATE notification_channels SET enabled=:enabled WHERE id=:id AND tenant_id=:tenant
-        """), {"enabled": enabled, "id": channel_id, "tenant": tenant_id})
+            UPDATE notification_channels
+               SET name=:name,channel_type=:channel_type,target_url=:target_url,
+                   secret_env=:secret_env,events=CAST(:events AS jsonb),enabled=:enabled
+             WHERE id=:id AND tenant_id=:tenant
+        """), {**values, "events": json.dumps(values["events"], ensure_ascii=False)})
         return await self.get_channel(session, tenant_id=tenant_id, channel_id=channel_id)
 
     async def delete_channel(self, session: AsyncSession, *, tenant_id: int, channel_id: int) -> None:
@@ -193,19 +222,70 @@ class NotificationService:
             INSERT INTO notification_events(tenant_id,channel_id,event_type,title,content,payload)
             VALUES (:tenant,:channel,'test',:title,:content,'{}'::jsonb) RETURNING id
         """), {"tenant": tenant_id, "channel": channel_id,
-               "title": f"FurniScope 通知测试：{channel['name']}",
-               "content": "这是一条用于验证通知渠道连通性的测试消息。"}))
+               "title": f"FurniScope 通知验证：{channel['name']}",
+               "content": "这是一条用于确认通知渠道连通性的验证消息。"}))
         return {"event_id": event_id, "channel_id": channel_id, "status": "pending"}
 
     async def list_events(self, session: AsyncSession, *, tenant_id: int, limit: int = 50) -> list[dict[str, Any]]:
         rows = (await session.execute(text("""
-            SELECT e.id AS event_id,e.channel_id,e.event_type,e.title,e.content,e.status,e.attempts,
-                   e.last_error,e.created_at,e.delivered_at,c.name AS channel_name,c.channel_type
+            SELECT e.id AS event_id,e.channel_id,e.event_type,e.title,e.content,e.payload,
+                   e.status,e.attempts,e.last_error,e.created_at,e.delivered_at,
+                   c.name AS channel_name,c.channel_type
               FROM notification_events e
               JOIN notification_channels c ON c.id=e.channel_id AND c.tenant_id=e.tenant_id
              WHERE e.tenant_id=:tenant ORDER BY e.created_at DESC,e.id DESC LIMIT :limit
         """), {"tenant": tenant_id, "limit": limit})).mappings().all()
         return [dict(row) for row in rows]
+
+    async def get_event(self, session: AsyncSession, *, tenant_id: int,
+                        event_id: int, for_update: bool = False) -> dict[str, Any]:
+        lock = " FOR UPDATE OF e" if for_update else ""
+        row = (await session.execute(text("""
+            SELECT e.id AS event_id,e.channel_id,e.event_type,e.title,e.content,e.payload,
+                   e.status,e.attempts,e.last_error,e.created_at,e.delivered_at,
+                   c.name AS channel_name,c.channel_type,c.enabled AS channel_enabled
+              FROM notification_events e
+              JOIN notification_channels c ON c.id=e.channel_id AND c.tenant_id=e.tenant_id
+             WHERE e.id=:id AND e.tenant_id=:tenant
+        """ + lock), {"id": event_id, "tenant": tenant_id})).mappings().one_or_none()
+        if not row:
+            raise BusinessError(
+                "NOTIFICATION_EVENT_NOT_FOUND",
+                "投递记录不存在或不可访问",
+                status_code=404,
+            )
+        return dict(row)
+
+    async def retry_event(self, session: AsyncSession, *, tenant_id: int,
+                          event_id: int) -> dict[str, Any]:
+        event = await self.get_event(
+            session,
+            tenant_id=tenant_id,
+            event_id=event_id,
+            for_update=True,
+        )
+        if event["status"] != "failed":
+            raise BusinessError(
+                "NOTIFICATION_EVENT_NOT_RETRYABLE",
+                "只有失败的投递记录可以重新投递",
+                status_code=409,
+            )
+        if not event["channel_enabled"]:
+            raise BusinessError(
+                "NOTIFICATION_CHANNEL_DISABLED",
+                "请先启用对应通知渠道再重新投递",
+                status_code=409,
+            )
+        await session.execute(text("""
+            UPDATE notification_events
+               SET status='pending',attempts=0,last_error=NULL,delivered_at=NULL
+             WHERE id=:id AND tenant_id=:tenant
+        """), {"id": event_id, "tenant": tenant_id})
+        return await self.get_event(
+            session,
+            tenant_id=tenant_id,
+            event_id=event_id,
+        )
 
     def _signed_url(self, channel: dict[str, Any]) -> str:
         if channel["channel_type"] != "dingtalk" or not channel.get("secret_env"):

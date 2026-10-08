@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import ApiSettings
 from ..errors import BusinessError
-from .demo_storage import DemoStorage
+from .demo_storage import create_object_storage
 from .idempotency_service import IdempotencyService
 from .audit_service import AuditService
 from .review_cleaning import (
@@ -62,7 +62,7 @@ class DatasetImportService:
     }
 
     def __init__(self, settings: ApiSettings) -> None:
-        self.storage=DemoStorage(settings)
+        self.storage=create_object_storage(settings)
         self.idempotency=IdempotencyService()
         self.audit=AuditService()
 
@@ -187,7 +187,6 @@ class DatasetImportService:
         """),{"dataset":dataset_id,"tenant":tenant_id})).mappings().one_or_none()
         if not dataset:
             raise ValueError("dataset category unavailable")
-        await self._ensure_preview_columns(session)
         await self._replace_dataset_rows(session, tenant_id=tenant_id, dataset_id=dataset_id)
         listing_ids = await self._insert_listings(
             session, tenant_id=tenant_id, dataset_id=dataset_id,
@@ -230,11 +229,6 @@ class DatasetImportService:
         await CompetitorTrackingService().capture_dataset(
             session, tenant_id=tenant_id, dataset_id=dataset_id, source="dataset_import",
         )
-
-    @staticmethod
-    async def _ensure_preview_columns(session: AsyncSession) -> None:
-        await session.execute(text("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reviewer_location VARCHAR(100)"))
-        await session.execute(text("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS sentiment VARCHAR(16)"))
 
     @staticmethod
     async def _replace_dataset_rows(session: AsyncSession, *, tenant_id: int, dataset_id: int) -> None:

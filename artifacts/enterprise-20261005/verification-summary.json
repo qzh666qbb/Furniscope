@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-10-05T11:12:56.512546+00:00",
+  "git_head_reference_only": "38db917e39ac0de26c9f6290b10a3c1692356ffb",
+  "uncommitted_workspace": true,
+  "source_scope": "backend/scripts/tests/migrations/frontend source and contracts; changed Markdown and dependency locks",
+  "python_tests": {
+    "passed": 172,
+    "skipped": 2
+  },
+  "playwright": {
+    "passed": 23,
+    "skipped": 1,
+    "enterprise_live_passed": 7
+  },
+  "sites_passed": 5,
+  "build": "passed",
+  "migrations": "fresh+upgrade+repeat+startup RLS passed",
+  "sigkill": "actual worker and child, natural lease expiry, attempt 2 published, orphan cleaned",
+  "synthetic_only": true,
+  "production_deployed": false,
+  "manifest_excludes": [
+    "SHA256SUMS itself",
+    "credentials/identities files",
+    "model binary artifacts",
+    "frontend compiled output",
+    "unrelated binary documents"
+  ]
+}

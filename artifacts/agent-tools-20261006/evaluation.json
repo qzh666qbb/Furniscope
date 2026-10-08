@@ -1,0 +1,206 @@
+{
+  "protocol": "agent-tool-eval-v1",
+  "passed": true,
+  "metrics": {
+    "intent_route_accuracy": 1.0,
+    "query_plan_exact_match": 1.0,
+    "rag_threshold_decision_accuracy": 1.0,
+    "unsafe_sql_generation_rate": 0.0
+  },
+  "cases": {
+    "intent": [
+      {
+        "id": "historical-sales",
+        "expected": "data_query",
+        "actual": "data_query",
+        "passed": true
+      },
+      {
+        "id": "historical-inventory",
+        "expected": "data_query",
+        "actual": "data_query",
+        "passed": true
+      },
+      {
+        "id": "future-forecast",
+        "expected": "forecast",
+        "actual": "forecast",
+        "passed": true
+      },
+      {
+        "id": "knowledge-policy",
+        "expected": "rag",
+        "actual": "rag",
+        "passed": true
+      },
+      {
+        "id": "workflow-market",
+        "expected": "workflow",
+        "actual": "workflow",
+        "passed": true
+      },
+      {
+        "id": "conversation-followup",
+        "expected": "conversation",
+        "actual": "conversation",
+        "passed": true
+      }
+    ],
+    "query_plan": [
+      {
+        "id": "monthly-all-sku-sales",
+        "expected": {
+          "metrics": [
+            "sales_units"
+          ],
+          "grain": "monthly",
+          "group_by": [
+            "sku"
+          ],
+          "skus": [],
+          "sites": [
+            "US"
+          ],
+          "relative_days": 90
+        },
+        "actual": {
+          "metrics": [
+            "sales_units"
+          ],
+          "grain": "monthly",
+          "group_by": [
+            "sku"
+          ],
+          "skus": [],
+          "sites": [
+            "US"
+          ],
+          "relative_days": 90
+        },
+        "passed": true
+      },
+      {
+        "id": "current-sku-average",
+        "expected": {
+          "metrics": [
+            "average_daily_sales"
+          ],
+          "grain": "total",
+          "group_by": [],
+          "skus": [
+            "HF-A0590"
+          ],
+          "sites": [
+            "US"
+          ],
+          "date_from": "2025-01-01",
+          "date_to": "2025-01-31"
+        },
+        "actual": {
+          "metrics": [
+            "average_daily_sales"
+          ],
+          "grain": "total",
+          "group_by": [],
+          "skus": [
+            "HF-A0590"
+          ],
+          "sites": [
+            "US"
+          ],
+          "date_from": "2025-01-01",
+          "date_to": "2025-01-31"
+        },
+        "passed": true
+      },
+      {
+        "id": "weekly-stockout",
+        "expected": {
+          "metrics": [
+            "stockout_days"
+          ],
+          "grain": "weekly",
+          "group_by": [
+            "sku"
+          ],
+          "skus": [],
+          "sites": [
+            "DE"
+          ]
+        },
+        "actual": {
+          "metrics": [
+            "stockout_days"
+          ],
+          "grain": "weekly",
+          "group_by": [
+            "sku"
+          ],
+          "skus": [],
+          "sites": [
+            "DE"
+          ]
+        },
+        "passed": true
+      },
+      {
+        "id": "known-revenue",
+        "expected": {
+          "metrics": [
+            "sales_revenue"
+          ],
+          "grain": "total",
+          "group_by": [],
+          "skus": [
+            "HF-A0590"
+          ],
+          "sites": [
+            "US"
+          ],
+          "relative_days": 7
+        },
+        "actual": {
+          "metrics": [
+            "sales_revenue"
+          ],
+          "grain": "total",
+          "group_by": [],
+          "skus": [
+            "HF-A0590"
+          ],
+          "sites": [
+            "US"
+          ],
+          "relative_days": 7
+        },
+        "passed": true
+      }
+    ],
+    "rag_threshold": [
+      {
+        "id": "strong-match",
+        "expected": "accepted",
+        "actual": "accepted",
+        "passed": true
+      },
+      {
+        "id": "boundary-match",
+        "expected": "accepted",
+        "actual": "accepted",
+        "passed": true
+      },
+      {
+        "id": "weak-match",
+        "expected": "rejected",
+        "actual": "rejected",
+        "passed": true
+      }
+    ]
+  },
+  "integration_evidence": {
+    "deterministic_metric_values": "tests/test_data_query.py",
+    "cross_tenant_leakage_rate": 0.0,
+    "atomic_turn_persistence": "tests/test_data_query.py",
+    "browser_tool_orchestration": "frontend/tests/e2e/data-query-rag-orchestration.spec.js"
+  }
+}

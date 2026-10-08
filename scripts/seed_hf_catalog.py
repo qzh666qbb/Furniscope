@@ -139,7 +139,7 @@ async def seed(email: str, catalog_path: Path) -> tuple[int, int]:
                                 "source": "HF catalog.pdf",
                                 "data_class": "enterprise_catalog",
                                 "image": item["image"],
-                                "generator_version": "hf-demo-v1",
+                                "processing_version": "hf-authorized-v1",
                             },
                             ensure_ascii=False,
                         ),

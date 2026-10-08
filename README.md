@@ -19,8 +19,6 @@
 
 ![FurniScope 产品界面](assets/furniscope-dashboard.png)
 
-## 原先文档里的公网地址 `http://1.15.68.127:42817` 写错了，正确地址是 <http://1.15.86.127:42817>。
-
 > **产品名称：** FurniScope——跨境家具超级 AI 员工  
 > **适用版本：** 赛事演示版（2026-09-15）  
 > **公网体验：** <http://1.15.86.127:42817>  
@@ -52,7 +50,7 @@ https://www.bilibili.com/video/BV1LoeH6VEJX/
 
 https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4
 
-操作细节见 [系统使用说明书](Docs/参赛提交/05_FurniScope系统使用说明书.md)。
+操作细节见 [系统使用说明书](Docs/参赛提交决赛/05_FurniScope系统使用说明书.pdf)。
 
 ## ✨ 产品定位
 
@@ -212,7 +210,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-打开 <http://127.0.0.1:8083>。页面操作见 [系统使用说明书](Docs/参赛提交/05_FurniScope系统使用说明书.md)。
+打开 <http://127.0.0.1:8083>。页面操作见 [系统使用说明书](Docs/参赛提交决赛/05_FurniScope系统使用说明书.pdf)。
 
 首次空库会执行 V3 基线 DDL（已含预测域）。`migrations/` 只用于已有旧库升级，不能对新库重复执行。Compose 同时启动 frontend / backend / worker / postgres / redis。分析、预测、数据导入和产品解析由 Worker 消费，不占用 FastAPI 请求进程。
 
@@ -347,10 +345,12 @@ HeFeng 现网模型数据默认到 **2026-06-30**。可用 `demo_data/forecast_a
 |---|---|
 | [演示视频（B 站）](https://www.bilibili.com/video/BV1LoeH6VEJX/) | 产品演示录像在线观看 |
 | [仓库录像](https://github.com/qzh666qbb/Furniscope/raw/main/assets/demo/FurniScope-产品演示.mp4) | 同仓 mp4 备份（GitHub 请用原始文件地址，文件页无法预览） |
-| [系统使用说明书](Docs/参赛提交/05_FurniScope系统使用说明书.md) | 安装、启动、登录与六块工作台操作（含截图） |
+| [决赛提交材料](Docs/参赛提交决赛/README.md) | 决赛入围定稿作品、配套说明文档与完整功能截图 |
+| [系统使用说明书](Docs/参赛提交决赛/05_FurniScope系统使用说明书.pdf) | 企业工作台、平台管理端及完整业务操作（含截图） |
+| [技术架构及调用模型](Docs/参赛提交决赛/FurniScope_技术架构及调用模型说明.pdf) | 最新系统架构、模型链路、数据持久化与生产边界 |
+| [核心功能清单](Docs/参赛提交决赛/FurniScope_核心功能清单.pdf) | 当前交付能力域及功能边界 |
 | [项目开发及阶段成果](Docs/参赛提交/03_项目开发及阶段成果说明.md) | 已完成能力、挑战与后续计划 |
 | [市场洞察测试指南](Docs/参赛提交/04_市场洞察四项功能测试指南.md) | 竞品、舆情、导入与分析联调步骤 |
-| [技术架构及调用模型](Docs/技术架构及调用模型说明.md) | 架构、调用链、模型与已实现/未实现边界 |
 | [PRD / SRS V2](Docs/项目设计文档/01_产品需求规格说明书SRS_PRD_V2.md) | 产品范围、用户角色、核心闭环与验收标准 |
 | [数据字典 V3](Docs/项目设计文档/02_FurniScope产品数据字典V3.md) | 实体、字段、类型、枚举和约束 |
 | [PostgreSQL V3](Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md) | 表结构、主外键、CHECK 与索引 |

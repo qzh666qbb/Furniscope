@@ -1,0 +1,157 @@
+/* Shared field insets: regular controls use one readable rhythm across modules. */
+body #root
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"], [type="range"], [type="color"]) {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+body #root select:not([multiple]) {
+  padding-right: 36px;
+  padding-left: 12px;
+}
+
+body #root textarea {
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+/* Framed search fields already get their inset from the outer icon wrapper. */
+body #root
+  :is(
+    .catalog-search,
+    .dataset-toolbar label,
+    .dataset-preview-toolbar label,
+    .tracking-catalog-toolbar label,
+    .forecast-history-filters label,
+    .control-toolbar form,
+    .diagnosis-toolbar label,
+    .work-diary-toolbar label,
+    .kb-library-list > label,
+    .search
+  )
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]) {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+body #root
+  :is(.model-catalog header label, .admin-toolbar label)
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]) {
+  padding-right: 4px;
+  padding-left: 4px;
+}
+
+body #root .conversation-search
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]),
+body #root .signal-search-field
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]) {
+  padding-right: 2px;
+  padding-left: 2px;
+}
+
+body #root .workflow-toolbar
+  input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]) {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+body #root .signal-filter-row label select:not([multiple]) {
+  padding-left: 2px;
+}
+
+/* Composite fields own the focus ring; their borderless child control must not draw a second frame. */
+body #root
+  :is(
+    .catalog-search,
+    .dataset-toolbar label,
+    .dataset-preview-toolbar label,
+    .tracking-catalog-toolbar label,
+    .signal-filter-row label:not(.signal-check),
+    .forecast-history-filters label,
+    .control-toolbar form,
+    .diagnosis-toolbar label,
+    .work-diary-toolbar label,
+    .kb-library-list > label,
+    .model-catalog header label,
+    .admin-toolbar label,
+    .conversation-search,
+    .signal-search-field,
+    .session-search,
+    .search,
+    .report-filter-select,
+    .chat-composer,
+    .conversation-composer,
+    .analysis-starter,
+    .vertical-chat-composer
+  )
+  :is(input, select, textarea):focus-visible {
+  outline: 0;
+  outline-offset: 0;
+  box-shadow: none;
+}
+
+body #root
+  :is(
+    .catalog-search,
+    .dataset-toolbar label,
+    .dataset-preview-toolbar label,
+    .tracking-catalog-toolbar label,
+    .signal-filter-row label:not(.signal-check),
+    .forecast-history-filters label,
+    .control-toolbar form,
+    .diagnosis-toolbar label,
+    .work-diary-toolbar label,
+    .model-catalog header label,
+    .admin-toolbar label,
+    .conversation-search,
+    .signal-search-field,
+    .session-search,
+    .search,
+    .report-filter-select,
+    .chat-composer
+  ):focus-within {
+  border-color: var(--fs-teal-600, #0b9290);
+  box-shadow: 0 0 0 3px rgba(11, 146, 144, 0.1);
+}
+
+body #root .kb-library-list > label:focus-within {
+  border-bottom-color: var(--fs-teal-600, #0b9290);
+  box-shadow: inset 0 -1px var(--fs-teal-600, #0b9290);
+}
+
+body #root :is(.conversation-composer, .analysis-starter, .vertical-chat-composer):focus-within {
+  border-color: var(--fs-teal-600, #0b9290);
+}
+
+/* These text areas sit inside a separately framed composer. */
+body #root .conversation-composer textarea {
+  padding-right: 3px;
+  padding-left: 3px;
+}
+
+body #root .analysis-starter textarea {
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+body #root .vertical-chat-composer textarea {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+body #root .password-field input {
+  padding-right: 62px;
+}
+
+/* Dense mapping tables stay compact without letting text touch the border. */
+body #root
+  :is(
+    .import-source-controls,
+    .import-field-mapping,
+    .import-value-mappings,
+    .import-preview-table
+  )
+  select:not([multiple]) {
+  padding-right: 28px;
+  padding-left: 10px;
+}

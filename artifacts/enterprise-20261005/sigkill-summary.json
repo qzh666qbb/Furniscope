@@ -1,0 +1,43 @@
+{
+  "protocol": "training-sigkill-drill-v1",
+  "synthetic": true,
+  "tenant_id": 2,
+  "training_uuid": "c8aa0c7e-1cbe-4a0e-930e-3eeed5ccd92c",
+  "events": [
+    {
+      "event": "actual_child_paused",
+      "at": "2026-10-05T11:05:23.830029+00:00",
+      "worker_pid": 11845,
+      "child_pid": 12060,
+      "execution_token": "31ca555a-240d-4ecc-abd5-0c54c7a054c1",
+      "lease_expires_at": "2026-10-05 11:05:33.696497+00:00"
+    },
+    {
+      "event": "worker_sigkill",
+      "at": "2026-10-05T11:05:23.840254+00:00",
+      "returncode": -9
+    },
+    {
+      "event": "recovery_worker_started",
+      "at": "2026-10-05T11:05:33.916569+00:00",
+      "pid": 12161
+    },
+    {
+      "event": "recovered_and_published",
+      "at": "2026-10-05T11:05:43.342925+00:00",
+      "attempts": 2,
+      "model_id": 1,
+      "execution_token": "07921d05-dde5-45a6-be23-0df1032a7e5e"
+    },
+    {
+      "event": "orphan_reconciled",
+      "at": "2026-10-05T11:05:46.008394+00:00",
+      "published_model_retained": true,
+      "pending_messages": 0
+    }
+  ],
+  "passed": true,
+  "lease_ms": 10000,
+  "fault": "SIGSTOP child then SIGKILL worker; natural lease expiry; real restart",
+  "cleanup_age_accelerated_after_child_completion": true
+}

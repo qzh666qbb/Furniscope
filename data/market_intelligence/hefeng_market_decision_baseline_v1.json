@@ -1,0 +1,278 @@
+{
+  "schema_version": "market-decision-baseline-v1",
+  "package_id": "hefeng-market-decision-baseline",
+  "package_version": "1.2.0",
+  "issued_at": "2026-10-08T00:00:00Z",
+  "tenant_selector": {
+    "email": "hefeng@furniscope.local"
+  },
+  "dataset_selector": {
+    "market_country": "US",
+    "platform": "amazon",
+    "category_code": "sofa",
+    "allowed_source_types": [
+      "enterprise_export",
+      "licensed_provider",
+      "public_authorized"
+    ],
+    "minimum_listing_count": 20,
+    "minimum_valid_review_count": 5
+  },
+  "source_contract": {
+    "observation_source": "tenant_authorized_market_dataset",
+    "accepted_data_class": "authorized_market_data",
+    "require_authorization_reference": true,
+    "preserve_review_original": true,
+    "allow_invented_history": false
+  },
+  "capabilities": {
+    "review_mining": {
+      "rule_version": "evidence-taxonomy-v2",
+      "maximum_quote_characters": 240,
+      "taxonomies": [
+        {
+          "code": "comfort",
+          "name": "坐感与支撑",
+          "keywords": [
+            "comfort",
+            "comfortable",
+            "cushion",
+            "padding",
+            "support",
+            "舒适",
+            "坐感",
+            "软",
+            "硬"
+          ]
+        },
+        {
+          "code": "durability",
+          "name": "结构与耐用性",
+          "keywords": [
+            "durable",
+            "sturdy",
+            "stable",
+            "broken",
+            "crack",
+            "quality",
+            "耐用",
+            "牢固",
+            "破损",
+            "质量"
+          ]
+        },
+        {
+          "code": "assembly",
+          "name": "组装体验",
+          "keywords": [
+            "assemble",
+            "assembly",
+            "install",
+            "instruction",
+            "fastener",
+            "组装",
+            "安装",
+            "说明书"
+          ]
+        },
+        {
+          "code": "dimension",
+          "name": "尺寸适配",
+          "keywords": [
+            "size",
+            "small",
+            "large",
+            "height",
+            "width",
+            "narrow",
+            "尺寸",
+            "偏小",
+            "偏大",
+            "高度",
+            "宽度"
+          ]
+        },
+        {
+          "code": "material",
+          "name": "面料与材质",
+          "keywords": [
+            "material",
+            "fabric",
+            "wood",
+            "metal",
+            "leather",
+            "材质",
+            "面料",
+            "木",
+            "金属",
+            "皮"
+          ]
+        },
+        {
+          "code": "packaging",
+          "name": "包装防护",
+          "keywords": [
+            "package",
+            "packaging",
+            "box",
+            "damaged",
+            "corner",
+            "protection",
+            "包装",
+            "箱",
+            "磕碰"
+          ]
+        },
+        {
+          "code": "odor",
+          "name": "气味控制",
+          "keywords": [
+            "smell",
+            "odor",
+            "chemical",
+            "气味",
+            "异味",
+            "味道"
+          ]
+        },
+        {
+          "code": "appearance",
+          "name": "外观与颜色",
+          "keywords": [
+            "color",
+            "style",
+            "look",
+            "beautiful",
+            "photo",
+            "颜色",
+            "款式",
+            "外观",
+            "好看"
+          ]
+        }
+      ],
+      "positive_terms": [
+        "good",
+        "great",
+        "excellent",
+        "love",
+        "easy",
+        "comfortable",
+        "sturdy",
+        "stable",
+        "smoothly",
+        "well",
+        "好",
+        "满意",
+        "喜欢",
+        "容易",
+        "舒适",
+        "牢固"
+      ],
+      "negative_terms": [
+        "not ",
+        "bad",
+        "poor",
+        "broken",
+        "hard",
+        "difficult",
+        "damage",
+        "damaged",
+        "smell",
+        "narrow",
+        "差",
+        "不好",
+        "破",
+        "难",
+        "异味",
+        "失望"
+      ]
+    },
+    "smart_selection": {
+      "rule_version": "opportunity-score-baseline-v3",
+      "maximum_items": 5,
+      "weights": {
+        "demand_heat": 0.3,
+        "demand_growth": 0.15,
+        "unmet_need": 0.25,
+        "competition_space": 0.2,
+        "profit_space": 0.1
+      },
+      "factor_defaults": {
+        "demand_growth": null,
+        "profit_space": null
+      },
+      "recommendation_thresholds": {
+        "prioritize_validate_score": 65,
+        "minimum_confidence": 0.6
+      }
+    },
+    "competitor_tracking": {
+      "rule_version": "authorized-listing-baseline-v1",
+      "watch_count": 6,
+      "ranking": [
+        "review_count_desc",
+        "rating_desc",
+        "listing_id_asc"
+      ],
+      "register_baseline_event": true
+    },
+    "pricing": {
+      "rule_version": "market-planning-anchor-v1",
+      "cost_ratio_of_market_median": 0.48,
+      "target_margin": 0.35,
+      "currency": "USD",
+      "effective_at": "2026-10-07",
+      "valid_until": "2027-10-06",
+      "classification": "planning_assumption"
+    },
+    "compliance": {
+      "rule_version": "official-source-registry-v1",
+      "schedule_minutes": 1440,
+      "keywords": [
+        "furniture",
+        "sofa",
+        "chair",
+        "recliner",
+        "recall",
+        "safety",
+        "cpsc",
+        "tariff",
+        "duty",
+        "customs",
+        "certification",
+        "reach",
+        "prop 65",
+        "家具",
+        "沙发",
+        "召回",
+        "认证"
+      ],
+      "sources": [
+        {
+          "name": "美国 CPSC 产品召回",
+          "source_type": "official_rss",
+          "source_url": "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS",
+          "market_country": "US",
+          "category_code": "sofa",
+          "authorization_reference": "CPSC 官方公开 RSS"
+        },
+        {
+          "name": "美国联邦公报 CPSC 公告",
+          "source_type": "official_json",
+          "source_url": "https://www.federalregister.gov/api/v1/documents.json?per_page=100&order=newest&conditions%5Bagencies%5D%5B%5D=consumer-product-safety-commission",
+          "market_country": "US",
+          "category_code": "sofa",
+          "authorization_reference": "FederalRegister.gov 官方公开 API"
+        }
+      ]
+    }
+  },
+  "governance": {
+    "lineage_granularity": "record",
+    "hash_algorithm": "sha256",
+    "raw_content_storage": "authoritative_domain_tables",
+    "planning_values_require_confirmation_before_commitment": true,
+    "retention_days": 2555
+  }
+}

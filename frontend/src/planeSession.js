@@ -5,6 +5,7 @@ export const PLANE_TASKS_PATH = `/api/v1/analysis-tasks?page_size=100&source=${P
 export const WORKSPACES_PATH = "/api/v1/analysis-workspaces?page_size=100";
 
 const CHAT_KEY = "furniscope-plane-chats-v2";
+const DRAFT_KEY = "furniscope-plane-chat-drafts-v1";
 const WORKSPACE_KEY = "furniscope-plane-workspaces";
 const LEGACY_CHAT_KEYS = ["furniscope-plane-chats"];
 
@@ -121,6 +122,7 @@ export function planeChatKey(id) {
 export function loadPlaneChat(id) {
   const key = planeChatKey(id);
   if (!key) return null;
+  if (isUuid(key)) return null;
   const messages = withoutFailureNotices(readStore()[key]);
   return Array.isArray(messages) && messages.length ? messages : null;
 }
@@ -128,6 +130,7 @@ export function loadPlaneChat(id) {
 export function savePlaneChat(id, messages) {
   const key = planeChatKey(id);
   if (!key) return;
+  if (isUuid(key)) return;
   const list = withoutFailureNotices(messages || []);
   const hasUserTurn = list.some((item) => item.role === "user");
   if (!hasUserTurn && list.length <= 1) return;
@@ -141,6 +144,30 @@ export function savePlaneChat(id, messages) {
     source: PLANE_SOURCE,
     status: "draft",
   });
+}
+
+export function loadPlaneDraft(id) {
+  const key = planeChatKey(id);
+  if (!key) return "";
+  try {
+    const drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+    return typeof drafts?.[key] === "string" ? drafts[key] : "";
+  } catch {
+    return "";
+  }
+}
+
+export function savePlaneDraft(id, value) {
+  const key = planeChatKey(id);
+  if (!key) return;
+  try {
+    const drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}");
+    if (String(value || "").trim()) drafts[key] = String(value);
+    else delete drafts[key];
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+  } catch {
+    /* local drafts are best effort */
+  }
 }
 
 function readWorkspaceStore() {
@@ -272,9 +299,14 @@ export function toUiMessage(item) {
     kind: item.message_kind || item.kind || "text",
     client_message_id: item.client_message_id,
     message_uuid: item.message_uuid,
+    turn_uuid: item.turn_uuid,
     evidence_refs: item.evidence_refs || [],
     thinking: metadata.thinking || item.thinking,
     thinkingDone: Boolean(metadata.thinking || item.thinkingDone),
+    citations: metadata.citations || item.citations || [],
+    tool_results: metadata.tool_results || item.tool_results || [],
+    memory_candidates: metadata.memory_candidates || item.memory_candidates || [],
+    suggested_actions: metadata.suggested_actions || item.suggested_actions || [],
   });
 }
 
@@ -311,14 +343,30 @@ export async function fetchWorkspaceMessages(id) {
   if (!key) return loadPlaneChat(id) || [];
   if (!isUuid(key)) return loadPlaneChat(key) || [];
   try {
-    const page = await api(`/api/v1/analysis-workspaces/${key}/messages?page_size=100`);
-    const items = withoutFailureNotices((page.items || []).map(toUiMessage));
-    const local = withoutFailureNotices(loadPlaneChat(key) || []);
-    const merged = items.length ? items : local;
-    if (merged.length) savePlaneChat(key, merged);
-    return merged;
+    const [page, memoryPage] = await Promise.all([
+      api(`/api/v1/analysis-workspaces/${key}/messages?page_size=100`),
+      api(`/api/v1/customer-memories?page_size=100&workspace_uuid=${encodeURIComponent(key)}`).catch(() => ({ items: [] })),
+    ]);
+    const memoryById = new Map((memoryPage.items || []).map((item) => [item.memory_uuid, item]));
+    const items = withoutFailureNotices((page.items || []).map(toUiMessage)).map((item) => ({
+      ...item,
+      memory_candidates: (item.memory_candidates || []).map((memory) => (
+        memoryById.has(memory.memory_uuid) ? { ...memory, ...memoryById.get(memory.memory_uuid) } : memory
+      )),
+      suggested_actions: (item.suggested_actions || []).map((action) => (
+        action.action !== "forget_memory"
+          ? action
+          : {
+              ...action,
+              targets: (action.targets || []).filter((target) => (
+                memoryById.get(target.memory_uuid)?.status === "confirmed"
+              )),
+            }
+      )),
+    }));
+    return items;
   } catch {
-    return loadPlaneChat(key) || [];
+    return [];
   }
 }
 
@@ -388,7 +436,7 @@ export async function archiveWorkspace(item) {
 
 if (typeof localStorage !== "undefined") {
   try {
-    LEGACY_CHAT_KEYS.forEach((key) => localStorage.removeItem(key));
+    [...LEGACY_CHAT_KEYS, CHAT_KEY].forEach((key) => localStorage.removeItem(key));
   } catch {
     /* ignore */
   }

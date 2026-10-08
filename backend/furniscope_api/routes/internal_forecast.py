@@ -9,10 +9,12 @@ from fastapi import APIRouter, Header, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 
-from ..dependencies import DatabaseSession
+from ..dependencies import AdminDatabaseSession
 from ..errors import BusinessError
 from ..repositories.forecast_repository import ForecastRepository
 from ..schemas import SuccessEnvelope
+from ..services.forecast_catalog import ForecastCatalog
+from ..services.forecast_publication import ForecastPublication
 from ..services.forecast_runtime import coerce_training_date
 from .internal_model import _authorize
 
@@ -31,7 +33,7 @@ class ForecastDeploymentCreate(BaseModel):
 
 @router.post("/tenants/{tenant_id}/deploy", operation_id="API-IFRC-01")
 async def deploy_forecast_model(tenant_id: int, body: ForecastDeploymentCreate,
-                                request: Request, session: DatabaseSession,
+                                request: Request, session: AdminDatabaseSession,
                                 token: str | None = Header(default=None, alias="X-Internal-Token")):
     _authorize(request, token)
     tenant_exists = (await session.execute(text(
@@ -61,6 +63,13 @@ async def deploy_forecast_model(tenant_id: int, body: ForecastDeploymentCreate,
         "sku_count", "granularities", "trained_at", "reported_backtest", "data_quality")}
     data_through = coerce_training_date(metadata.get("data_through"))
     try:
+        await session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
+                              {"key": 7_040_000 + tenant_id})
+        current = await ForecastRepository().active_deployment(session, tenant_id=tenant_id)
+        catalog_service = ForecastCatalog()
+        preview = await catalog_service.preview(session, tenant_id, sku_rows, context=body.state_uri)
+        if body.model_scope == "tenant_private" or preview["conflicts"]:
+            catalog_service.require_valid(preview)
         model = (await session.execute(text("""INSERT INTO furniscope.forecast_models
             (model_code,owner_tenant_id,model_scope,version,engine,state_uri,state_checksum,
              status,training_data_through,metrics)
@@ -75,19 +84,11 @@ async def deploy_forecast_model(tenant_id: int, body: ForecastDeploymentCreate,
             })).mappings().one()
         if model["owner_tenant_id"] != owner_tenant_id or model["model_scope"] != body.model_scope:
             raise BusinessError("FORECAST_MODEL_SCOPE_CONFLICT", "同版本模型的归属范围冲突", status_code=409)
-        await session.execute(text("""UPDATE furniscope.forecast_model_deployments
-            SET status='inactive',retired_at=now()
-            WHERE tenant_id=:tenant AND scenario_code='sales_forecast' AND status='active'"""),
-            {"tenant": tenant_id})
-        deployment = (await session.execute(text("""INSERT INTO furniscope.forecast_model_deployments
-            (tenant_id,model_id,scenario_code,status,route_policy)
-            VALUES(:tenant,:model,'sales_forecast','active',CAST(:policy AS jsonb))
-            RETURNING deployment_uuid::text,status,deployed_at"""), {
-                "tenant": tenant_id, "model": model["id"],
-                "policy": json.dumps(body.route_policy),
-            })).mappings().one()
-        catalog_skus, catalog_pairs = await ForecastRepository().replace_catalog_from_engine(
-            session, tenant_id=tenant_id, sku_rows=sku_rows)
+        deployment = await ForecastPublication().activate(
+            session, tenant_id=tenant_id, model_id=model["id"], user_id=None,
+            catalog=preview["items"],
+            expected_deployment_id=current["deployment_id"] if current else None,
+            source="platform_deployment")
         await session.execute(text("""INSERT INTO furniscope.audit_logs
             (tenant_id,action_code,resource_type,resource_id,request_id,after_snapshot)
             VALUES(:tenant,'platform.forecast.deploy','forecast_model_deployment',:resource,
@@ -105,9 +106,9 @@ async def deploy_forecast_model(tenant_id: int, body: ForecastDeploymentCreate,
         raise
     return SuccessEnvelope(data={
         "tenant_id": tenant_id, "deployment_uuid": deployment["deployment_uuid"],
-        "status": deployment["status"], "model_uuid": model["model_uuid"],
+        "status": "active", "model_uuid": model["model_uuid"],
         "version": model["version"], "model_scope": model["model_scope"],
         "state_checksum": model["state_checksum"],
-        "catalog_skus": catalog_skus,
-        "catalog_pairs": catalog_pairs,
+        "catalog_skus": deployment["catalog_skus"],
+        "catalog_pairs": deployment["catalog_pairs"],
     }, request_id=request.state.request_id)

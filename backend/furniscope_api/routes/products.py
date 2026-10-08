@@ -7,12 +7,15 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, Que
 from fastapi.responses import JSONResponse
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict
 
-from ..auth import AuthenticatedPrincipal, require_user
+from ..auth import AuthenticatedPrincipal, require_permission, require_user
+from ..database import bind_tenant_session
 from ..dependencies import DatabaseSession, Pagination
 from ..repositories.product_repository import ProductRepository
 from ..repositories.parse_repository import ParseRepository
 from ..schemas import ErrorBody, ErrorEnvelope, PageData, SuccessEnvelope
 from ..schemas.products import (ProductCreateRequest, ProductCreateResponse, ProductDetail,
+    ProductArchiveResponse, ProductInventorySummary, ProductRelationsResponse,
+    ProductRelationsUpdateRequest,
     ProductListItem, ProductProfileConfirmRequest, ProductProfileConfirmResponse,
     ProductUpdateRequest, ProductUpdateResponse)
 from ..services.product_service import ProductService
@@ -30,7 +33,7 @@ class ProductUrlParseRequest(BaseModel):
 
 @router.post("", operation_id="API-PRD-01", status_code=201, summary="创建产品")
 async def create_product(body: ProductCreateRequest, request: Request, session: DatabaseSession,
-    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("product.write"))],
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]):
     def envelope(data):
         return SuccessEnvelope(data=ProductCreateResponse(**data), request_id=request.state.request_id).model_dump(mode="json")
@@ -39,7 +42,8 @@ async def create_product(body: ProductCreateRequest, request: Request, session: 
     try:
         status, response = await ProductService().create(session, tenant_id=principal.tenant_id,
             user_id=principal.user_id, idempotency_key=idempotency_key,
-            payload=body.model_dump(), response_envelope=envelope, error_envelope=error_envelope)
+            payload=body.model_dump(), response_envelope=envelope, error_envelope=error_envelope,
+            request_id=request.state.request_id)
         await session.commit()
     except Exception:
         await session.rollback()
@@ -72,11 +76,13 @@ async def get_product(product_id: int, request: Request, response: Response, ses
 
 @router.patch("/{product_id}", response_model=SuccessEnvelope[ProductUpdateResponse], operation_id="API-PRD-04", summary="更新产品与草稿画像")
 async def update_product(product_id: int, body: ProductUpdateRequest, request: Request, response: Response,
-    session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("product.write"))],
     if_match: Annotated[str, Header(alias="If-Match")]):
     try:
         data = await ProductService().update(session, tenant_id=principal.tenant_id,
-            product_id=product_id, if_match=if_match, payload=body.model_dump())
+            product_id=product_id, user_id=principal.user_id, if_match=if_match,
+            payload=body.model_dump(exclude_unset=True), request_id=request.state.request_id)
         await session.commit()
     except Exception:
         await session.rollback()
@@ -85,10 +91,104 @@ async def update_product(product_id: int, body: ProductUpdateRequest, request: R
     return SuccessEnvelope(data=ProductUpdateResponse(**data), request_id=request.state.request_id)
 
 
+@router.delete(
+    "/{product_id}",
+    response_model=SuccessEnvelope[ProductArchiveResponse],
+    operation_id="API-PRD-09",
+    summary="归档产品",
+)
+async def archive_product(
+    product_id: int, request: Request, session: DatabaseSession,
+    principal: Annotated[
+        AuthenticatedPrincipal, Depends(require_permission("product.write"))
+    ],
+    if_match: Annotated[str, Header(alias="If-Match")],
+):
+    try:
+        data = await ProductService().archive(
+            session, tenant_id=principal.tenant_id, user_id=principal.user_id,
+            product_id=product_id, if_match=if_match,
+            request_id=request.state.request_id,
+        )
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    return SuccessEnvelope(
+        data=ProductArchiveResponse(**data), request_id=request.state.request_id
+    )
+
+
+@router.get(
+    "/{product_id}/relations",
+    response_model=SuccessEnvelope[ProductRelationsResponse],
+    operation_id="API-PRD-10",
+    summary="查询产品 SPU、变体、套装和 BOM 关系",
+)
+async def get_product_relations(
+    product_id: int, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+):
+    data = await ProductService().relations(
+        session, tenant_id=principal.tenant_id, product_id=product_id
+    )
+    return SuccessEnvelope(
+        data=ProductRelationsResponse(**data), request_id=request.state.request_id
+    )
+
+
+@router.put(
+    "/{product_id}/relations",
+    response_model=SuccessEnvelope[ProductRelationsResponse],
+    operation_id="API-PRD-11",
+    summary="替换产品 SPU、变体、套装和 BOM 关系",
+)
+async def update_product_relations(
+    product_id: int, body: ProductRelationsUpdateRequest, request: Request,
+    session: DatabaseSession,
+    principal: Annotated[
+        AuthenticatedPrincipal, Depends(require_permission("product.write"))
+    ],
+):
+    try:
+        data = await ProductService().replace_relations(
+            session, tenant_id=principal.tenant_id, user_id=principal.user_id,
+            product_id=product_id,
+            items=[item.model_dump() for item in body.items],
+            request_id=request.state.request_id,
+        )
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    return SuccessEnvelope(
+        data=ProductRelationsResponse(**data), request_id=request.state.request_id
+    )
+
+
+@router.get(
+    "/{product_id}/inventory-summary",
+    response_model=SuccessEnvelope[ProductInventorySummary],
+    operation_id="API-PRD-12",
+    summary="查询产品当前库存摘要",
+)
+async def get_product_inventory_summary(
+    product_id: int, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+):
+    data = await ProductService().inventory_summary(
+        session, tenant_id=principal.tenant_id, product_id=product_id
+    )
+    return SuccessEnvelope(
+        data=ProductInventorySummary(**data), request_id=request.state.request_id
+    )
+
+
 @router.post("/{product_id}/profile:confirm", response_model=SuccessEnvelope[ProductProfileConfirmResponse],
              operation_id="API-PRD-07", summary="确认产品画像")
 async def confirm_product_profile(product_id: int, body: ProductProfileConfirmRequest, request: Request,
-    session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("product.write"))],
     if_match: Annotated[str, Header(alias="If-Match")],
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]):
     def envelope(data):
@@ -107,6 +207,7 @@ async def confirm_product_profile(product_id: int, body: ProductProfileConfirmRe
 
 async def _run_parse(database, settings, tenant_id: int, parse_job_id: str) -> None:
     async with database.session_factory() as session:
+        await bind_tenant_session(session, tenant_id)
         try:
             await ParseService(settings).run_job(session, tenant_id=tenant_id, parse_job_id=parse_job_id)
             await session.commit()
@@ -118,7 +219,8 @@ async def _run_parse(database, settings, tenant_id: int, parse_job_id: str) -> N
 @router.post("/{product_id}/assets:parse", response_model=SuccessEnvelope[ParseAccepted], status_code=202,
              operation_id="API-PRD-05", summary="上传并解析产品资料")
 async def parse_product_assets(product_id: int, request: Request, background_tasks: BackgroundTasks,
-    session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("product.write"))],
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)],
     source_type: Annotated[str, Form()], files: Annotated[list[UploadFile], File()],
     parse_config: Annotated[str | None, Form()] = None):
@@ -155,7 +257,8 @@ async def parse_product_assets(product_id: int, request: Request, background_tas
 @router.post("/{product_id}/assets:url-parse", operation_id="API-PRD-08",
              summary="预留官网产品页解析入口")
 async def parse_product_url(product_id: int, body: ProductUrlParseRequest, request: Request,
-    session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("product.write"))]):
     if not await ParseRepository().product_exists(
         session, tenant_id=principal.tenant_id, product_id=product_id,
     ):

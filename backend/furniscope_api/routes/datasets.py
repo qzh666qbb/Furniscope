@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from ..auth import AuthenticatedPrincipal, require_user
+from ..auth import AuthenticatedPrincipal, require_permission, require_user
+from ..database import bind_tenant_session
 from ..dependencies import DatabaseSession, Pagination
 from ..errors import BusinessError
 from ..repositories.dataset_repository import DatasetRepository
@@ -23,7 +24,7 @@ router = APIRouter(prefix="/api/v1/market-datasets", tags=["Market Datasets"])
 
 @router.post("", operation_id="API-DAT-01", status_code=201, summary="创建授权数据集")
 async def create_dataset(body: DatasetCreateRequest, request: Request, session: DatabaseSession,
-    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("dataset.write"))],
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key", min_length=1, max_length=128)]):
     def envelope(data):
         return SuccessEnvelope(data=DatasetCreateResponse(**data), request_id=request.state.request_id).model_dump(mode="json")
@@ -42,6 +43,7 @@ async def create_dataset(body: DatasetCreateRequest, request: Request, session: 
 async def _run_dataset_import(database,settings,tenant_id:int,dataset_id:int,content:bytes,
                               filename:str,mime:str)->None:
     async with database.session_factory() as session:
+        await bind_tenant_session(session, tenant_id)
         try:
             await DatasetImportService(settings).run_import(session,tenant_id=tenant_id,dataset_id=dataset_id,
                                                             content=content,filename=filename,mime=mime)
@@ -50,6 +52,7 @@ async def _run_dataset_import(database,settings,tenant_id:int,dataset_id:int,con
             await session.rollback()
             async with database.session_factory() as failure_session:
                 from sqlalchemy import text
+                await bind_tenant_session(failure_session, tenant_id)
                 await failure_session.execute(text("""
                     UPDATE market_datasets SET status='rejected',limitations='["market_data_import_failed"]'::jsonb
                      WHERE id=:dataset AND tenant_id=:tenant
@@ -59,7 +62,7 @@ async def _run_dataset_import(database,settings,tenant_id:int,dataset_id:int,con
 
 @router.post("/{dataset_id}/imports",operation_id="API-DAT-02",status_code=202,summary="导入竞品和评论")
 async def import_dataset(dataset_id:int,request:Request,background_tasks:BackgroundTasks,session:DatabaseSession,
-    principal:Annotated[AuthenticatedPrincipal,Depends(require_user)],
+    principal:Annotated[AuthenticatedPrincipal,Depends(require_permission("dataset.write"))],
     idempotency_key:Annotated[str,Header(alias="Idempotency-Key",min_length=1,max_length=128)],
     deduplication_strategy:Annotated[str,Form()],files:Annotated[list[UploadFile],File()],
     field_mapping:Annotated[str|None,Form()]=None):
@@ -188,7 +191,7 @@ async def list_dataset_bound_tasks(dataset_id: int, request: Request, session: D
 
 @router.delete("/{dataset_id}", response_model=SuccessEnvelope[dict], summary="软删除市场数据集")
 async def delete_dataset(dataset_id: int, request: Request, session: DatabaseSession,
-    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_permission("dataset.write"))]):
     deleted = await DatasetRepository().soft_delete(session, tenant_id=principal.tenant_id, dataset_id=dataset_id)
     if not deleted:
         raise BusinessError("DATASET_NOT_FOUND", "数据集不存在或不可访问", status_code=404)

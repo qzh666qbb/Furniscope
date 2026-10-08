@@ -63,6 +63,7 @@ button:disabled {
 .sidebar .side-sofa {
   bottom: 92px;
   opacity: 0.2;
+  pointer-events: none;
 }
 
 .sidebar-connection {
@@ -477,6 +478,7 @@ button:disabled {
     padding: 7px 8px;
     overflow: visible;
     box-shadow: 0 -8px 24px rgba(0, 24, 43, 0.13);
+    transition: none;
   }
 
   .sidebar-brand,
@@ -489,7 +491,7 @@ button:disabled {
   .sidebar.collapsed nav {
     height: 54px;
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 2px;
     margin: 0;
   }
@@ -503,7 +505,7 @@ button:disabled {
     gap: 2px;
     padding: 0;
     border-radius: 7px;
-    font-size: 10px;
+    font-size: 8px;
   }
 
   .sidebar nav button span,
@@ -527,6 +529,7 @@ button:disabled {
   .sidebar.collapsed + .workspace-main {
     width: 100%;
     margin-left: 0;
+    transition: none;
   }
 
   .topbar {

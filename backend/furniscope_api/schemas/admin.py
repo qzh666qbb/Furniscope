@@ -46,6 +46,27 @@ class AdminUserUpdate(BaseModel):
     role_code: Literal["user", "admin"] | None = None
 
 
+class TenantMemberRolesUpdate(BaseModel):
+    role_codes: list[Literal[
+        "tenant_owner", "data_admin", "analyst", "operator", "auditor", "viewer"
+    ]] = Field(min_length=1, max_length=6)
+
+    @model_validator(mode="after")
+    def unique_roles(self):
+        if len(set(self.role_codes)) != len(self.role_codes):
+            raise ValueError("role_codes must be unique")
+        return self
+
+
+class TenantLegalHoldCreate(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
+    reference_code: str = Field(min_length=1, max_length=160)
+
+
+class TenantLegalHoldRelease(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
 class ModelRouteUpdate(BaseModel):
     primary_model_id: str = Field(min_length=1, max_length=200)
     fallback_model_ids: list[str] = Field(default_factory=list, max_length=5)

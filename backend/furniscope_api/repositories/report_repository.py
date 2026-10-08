@@ -28,7 +28,9 @@ class ReportRepository:
               (SELECT count(*) FROM user_confirmations WHERE tenant_id=:tenant_id
                  AND status='pending' AND (expires_at IS NULL OR expires_at>CURRENT_TIMESTAMP)) pending_confirmations,
               (SELECT count(*) FROM analysis_tasks WHERE tenant_id=:tenant_id
-                 AND status IN ('waiting_human','failed')) failed_tasks,
+                 AND status='waiting_human') pending_confirmation_tasks,
+              (SELECT count(*) FROM analysis_tasks WHERE tenant_id=:tenant_id
+                 AND status='failed') failed_tasks,
               (SELECT count(*) FROM products p WHERE p.tenant_id=:tenant_id AND p.deleted_at IS NULL
                  AND EXISTS (
                    SELECT 1 FROM product_attributes pa
@@ -91,8 +93,9 @@ class ReportRepository:
         row = dict(result.mappings().one())
         return {
             **{key: int(row[key] or 0) for key in (
-                "products", "running_tasks", "pending_confirmations", "failed_tasks",
-                "conflicted_products", "reports", "forecast_jobs",
+                "products", "running_tasks", "pending_confirmations",
+                "pending_confirmation_tasks", "failed_tasks", "conflicted_products",
+                "reports", "forecast_jobs",
             )},
             "insight_snapshot": row["insight_snapshot"],
         }
@@ -140,14 +143,71 @@ class ReportRepository:
         """), params)
         return [dict(row) for row in rows.mappings().all()], total
 
+    async def filter_options(
+        self, session: AsyncSession, *, tenant_id: int,
+    ) -> dict[str, Any]:
+        products = (await session.execute(text("""
+            SELECT DISTINCT p.id product_id,p.sku product_sku,p.name product_name
+              FROM analysis_reports r
+              JOIN analysis_tasks t
+                ON t.id=r.analysis_job_id AND t.tenant_id=r.tenant_id
+              JOIN products p ON p.id=t.product_id AND p.tenant_id=t.tenant_id
+             WHERE r.tenant_id=:tenant_id AND r.status='draft'
+             ORDER BY p.sku,p.id
+        """), {"tenant_id": tenant_id})).mappings().all()
+        countries = (await session.execute(text("""
+            SELECT DISTINCT trim(t.target_country) target_country
+              FROM analysis_reports r
+              JOIN analysis_tasks t
+                ON t.id=r.analysis_job_id AND t.tenant_id=r.tenant_id
+             WHERE r.tenant_id=:tenant_id AND r.status='draft'
+             ORDER BY target_country
+        """), {"tenant_id": tenant_id})).scalars().all()
+        return {
+            "products": [dict(row) for row in products],
+            "countries": [str(code) for code in countries if code],
+        }
+
     async def archive_reports(self, session: AsyncSession, *, tenant_id: int,
                               report_uuids: list[str]) -> int:
         params = {"tenant_id": tenant_id, "uuids": report_uuids}
+        targets = (await session.execute(text("""
+            SELECT DISTINCT r.analysis_job_id task_id,
+                   NULLIF(t.analysis_config->>'workspace_uuid','') workspace_uuid
+              FROM analysis_reports r
+              JOIN analysis_tasks t
+                ON t.id=r.analysis_job_id AND t.tenant_id=r.tenant_id
+             WHERE r.tenant_id=:tenant_id AND r.status='draft'
+               AND CAST(r.report_uuid AS text)=ANY(:uuids)
+        """), params)).mappings().all()
+        task_ids = [int(row["task_id"]) for row in targets]
+        workspace_uuids = sorted({
+            str(row["workspace_uuid"]) for row in targets if row["workspace_uuid"]
+        })
         result = await session.execute(text("""
             UPDATE analysis_reports SET status='superseded',updated_at=CURRENT_TIMESTAMP
              WHERE tenant_id=:tenant_id AND status='draft'
                AND CAST(report_uuid AS text) = ANY(:uuids)
         """), params)
+        if task_ids:
+            await session.execute(text("""
+                UPDATE analysis_tasks SET status='cancelled',updated_at=CURRENT_TIMESTAMP
+                 WHERE tenant_id=:tenant_id AND id=ANY(:task_ids) AND status<>'cancelled'
+            """), {"tenant_id": tenant_id, "task_ids": task_ids})
+        if workspace_uuids:
+            await session.execute(text("""
+                UPDATE analysis_workspaces w
+                   SET status='archived',archived_at=CURRENT_TIMESTAMP,
+                       updated_at=CURRENT_TIMESTAMP
+                 WHERE w.tenant_id=:tenant_id AND w.status='active'
+                   AND CAST(w.workspace_uuid AS text)=ANY(:workspace_uuids)
+                   AND NOT EXISTS(
+                     SELECT 1 FROM analysis_tasks t
+                      WHERE t.tenant_id=w.tenant_id
+                        AND t.analysis_config->>'workspace_uuid'=CAST(w.workspace_uuid AS text)
+                        AND t.status<>'cancelled'
+                   )
+            """), {"tenant_id": tenant_id, "workspace_uuids": workspace_uuids})
         return int(result.rowcount or 0)
 
     async def detail(self, session: AsyncSession, *, tenant_id: int,

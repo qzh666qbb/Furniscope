@@ -41,7 +41,7 @@ async def create_channel(body: NotificationChannelCreateRequest, request: Reques
     return SuccessEnvelope(data=NotificationChannelItem.model_validate(item), request_id=request.state.request_id)
 
 
-@router.patch("/{channel_id}", response_model=SuccessEnvelope[NotificationChannelItem], summary="启停通知渠道")
+@router.patch("/{channel_id}", response_model=SuccessEnvelope[NotificationChannelItem], summary="更新通知渠道")
 async def update_channel(channel_id: int, body: NotificationChannelUpdateRequest, request: Request,
     session: DatabaseSession, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
     item = await _service(request).update_channel(session, tenant_id=principal.tenant_id,
@@ -59,7 +59,7 @@ async def delete_channel(channel_id: int, request: Request, session: DatabaseSes
 
 
 @router.post("/{channel_id}/test", response_model=SuccessEnvelope[NotificationTestResult], status_code=202,
-             summary="发送通知渠道测试")
+             summary="发送通知渠道连通性验证")
 async def test_channel(channel_id: int, request: Request, session: DatabaseSession,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
     result = await _service(request).queue_test(session, tenant_id=principal.tenant_id, channel_id=channel_id)
@@ -73,4 +73,32 @@ async def list_events(request: Request, session: DatabaseSession,
     limit: Annotated[int, Query(ge=1, le=100)] = 50):
     items = await _service(request).list_events(session, tenant_id=principal.tenant_id, limit=limit)
     return SuccessEnvelope(data=[NotificationEventItem.model_validate(item) for item in items],
+                           request_id=request.state.request_id)
+
+
+@router.get(
+    "/events/{event_id}",
+    response_model=SuccessEnvelope[NotificationEventItem],
+    summary="读取通知投递详情",
+)
+async def get_event(event_id: int, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    item = await _service(request).get_event(
+        session, tenant_id=principal.tenant_id, event_id=event_id)
+    return SuccessEnvelope(data=NotificationEventItem.model_validate(item),
+                           request_id=request.state.request_id)
+
+
+@router.post(
+    "/events/{event_id}:retry",
+    response_model=SuccessEnvelope[NotificationEventItem],
+    status_code=202,
+    summary="重新投递失败通知",
+)
+async def retry_event(event_id: int, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    item = await _service(request).retry_event(
+        session, tenant_id=principal.tenant_id, event_id=event_id)
+    await session.commit()
+    return SuccessEnvelope(data=NotificationEventItem.model_validate(item),
                            request_id=request.state.request_id)

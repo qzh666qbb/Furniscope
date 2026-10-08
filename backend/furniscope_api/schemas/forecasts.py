@@ -75,9 +75,14 @@ class ForecastPairSummary(BaseModel):
     site: str
     total: float
     daily_average: float
-    lower: float
-    upper: float
+    lower: float | None
+    upper: float | None
     reliability: Literal["A", "B", "C", "D"]
+    method: str | None = None
+    segment: str | None = None
+    validation_status: str | None = None
+    validation_scope: str | None = None
+    data_through: date | None = None
 
 
 class ForecastResultResponse(BaseModel):

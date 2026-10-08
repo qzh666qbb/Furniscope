@@ -1,0 +1,182 @@
+{
+  "protocol": "memory-agent-eval-v1",
+  "passed": true,
+  "metrics": {
+    "product_market_identification_accuracy": 1.0,
+    "context_reference_accuracy": 1.0,
+    "intent_accuracy": 1.0,
+    "memory_write_accuracy": 1.0,
+    "memory_false_write_rate": 0.0,
+    "prompt_injection_guard_pass_rate": 1.0
+  },
+  "cases": {
+    "state": [
+      {
+        "id": "reference-and-market-switch",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 2,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "DE",
+          "compared_markets": [],
+          "current_dataset_id": 9,
+          "current_task_uuid": null,
+          "current_analysis_stage": null,
+          "pending_confirmation": null,
+          "last_user_intent": "analyze",
+          "resolved_references": [
+            {
+              "expression": "产品指代",
+              "resolved_to": 12,
+              "source": "workspace_state"
+            }
+          ]
+        }
+      },
+      {
+        "id": "explicit-sku-correction",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 4,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "US",
+          "compared_markets": [],
+          "current_dataset_id": null,
+          "current_task_uuid": null,
+          "current_analysis_stage": null,
+          "pending_confirmation": null,
+          "last_user_intent": "correct_context",
+          "resolved_references": [
+            {
+              "expression": "省略的目标市场",
+              "resolved_to": "US",
+              "source": "workspace_state"
+            }
+          ]
+        }
+      },
+      {
+        "id": "turn-dataset-overrides-workspace-market",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 4,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "DE",
+          "compared_markets": [],
+          "current_dataset_id": 9,
+          "current_task_uuid": null,
+          "current_analysis_stage": null,
+          "pending_confirmation": null,
+          "last_user_intent": "analyze",
+          "resolved_references": []
+        }
+      },
+      {
+        "id": "multi-market-comparison",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 1,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "US",
+          "compared_markets": [
+            "US",
+            "DE"
+          ],
+          "current_dataset_id": null,
+          "current_task_uuid": null,
+          "current_analysis_stage": null,
+          "pending_confirmation": null,
+          "last_user_intent": "compare_markets",
+          "resolved_references": []
+        }
+      },
+      {
+        "id": "pause-task",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 5,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "DE",
+          "compared_markets": [],
+          "current_dataset_id": null,
+          "current_task_uuid": null,
+          "current_analysis_stage": "pause_requested",
+          "pending_confirmation": null,
+          "last_user_intent": "pause_task",
+          "resolved_references": []
+        }
+      },
+      {
+        "id": "resume-task",
+        "passed": true,
+        "resolved": {
+          "state_uuid": null,
+          "revision": 6,
+          "current_product_id": 12,
+          "current_product_label": "HF-A0590 · 云感沙发",
+          "current_market": "DE",
+          "compared_markets": [],
+          "current_dataset_id": null,
+          "current_task_uuid": null,
+          "current_analysis_stage": "resume_requested",
+          "pending_confirmation": null,
+          "last_user_intent": "continue_task",
+          "resolved_references": [
+            {
+              "expression": "产品指代",
+              "resolved_to": 12,
+              "source": "workspace_state"
+            },
+            {
+              "expression": "省略的目标市场",
+              "resolved_to": "DE",
+              "source": "workspace_state"
+            }
+          ]
+        }
+      }
+    ],
+    "memory": [
+      {
+        "id": "write-cost-limit",
+        "passed": true,
+        "predicted_keys": [
+          "unit_cost_limit"
+        ]
+      },
+      {
+        "id": "temporary-cost-filter",
+        "passed": true,
+        "predicted_keys": []
+      },
+      {
+        "id": "ordinary-analysis-no-write",
+        "passed": true,
+        "predicted_keys": []
+      }
+    ],
+    "security": [
+      {
+        "id": "knowledge-instruction-is-data",
+        "passed": true
+      }
+    ]
+  },
+  "integration_metrics": {
+    "citation_correctness": "covered_by_postgresql_lifecycle_test",
+    "cross_tenant_leakage_rate": "covered_by_tenant_boundary_tests",
+    "sse_recovery_success_rate": "covered_by_contract_e2e",
+    "response_latency_ms": "requires_deployed_model_run",
+    "token_cost": "requires_deployed_model_run"
+  }
+}

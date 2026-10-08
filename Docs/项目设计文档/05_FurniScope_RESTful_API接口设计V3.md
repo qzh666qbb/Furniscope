@@ -1,5 +1,11 @@
 # FurniScope RESTful API 接口设计 V3.2
 
+> 2026-10-04企业闭环增量接口见[企业决策与标准数据API实现说明](../开发文档/FurniScope_企业决策与标准数据API实现说明V1.md)，受[15总体设计](./15_FurniScope_企业决策与数据闭环总体设计V1.md)统一约束。新增`/enterprise/opportunity-policy`、机会反馈/导出、`/forecast/data-imports`及预检/确认/审计/修订、`/forecast/training-preview`、标准数据训练任务。该域以`expected_version/expected_revision/preview_sha256`进行显式并发校验，是通用If-Match约定的新增特例；训练创建仍需Idempotency-Key。
+
+2026-10-05增加`/enterprise/fact-vocabulary`、机会`outcomes`修订及`opportunity-ranking/export`、`/forecast/sku-mappings`、`import-templates`及模板应用/辅助表对账；详见上述API实现说明。产品修改/确认继续使用If-Match；SKU映射使用摘要`expected_revision`，模板/实施用数字修订。排序导出固定`as_of`并按任务整组分页，保留缺标签及排除原因。
+
+新增训练状态`rejected`表示未达标并保留旧部署。管理员Python直接替换返回409 `FORECAST_STANDARD_TRAINING_REQUIRED`。企业引擎`tenant-xgb-v2`按SKU滚动评测，兼容旧v1制品；两者均不接受价格/促销/库存弹性情景。未验证预测区间和自动库存/生产建议允许为空。普通企业API仅user可用；管理员从独立平台入口执行管理操作。
+
 ## 1. 文档说明
 
 本文定义“跨境家具超级 AI 员工”V3 核心 API。接口字段以《FurniScope产品数据字典V3》为唯一口径，工作流语义以《FurniScope Agent工作流设计V2》为准，数据持久化以《FurniScope PostgreSQL数据库设计V3》为准。
@@ -623,13 +629,264 @@ V3 只提供在线报告，不提供发布审批、文件导出或导出历史�
 | V3.0 | 2026-08-09 | 按超级AI员工简化基线重构为user/admin、五阶段、统一确认和综合结果聚合接口 |
 | V3.1 | 2026-08-10 | 锁定Refresh Token轮换、updated_at强ETag及确认事务Outbox/服务端Checkpoint恢复语义 |
 | V3.2 | 2026-08-10 | 统一字段与枚举，新增持久化HTTP幂等契约，锁定RS256认证及阿里云Embedding/qwen3-rerank正式协议 |
+| V3.3 | 2026-09-29 | 增加五项市场智能聚合、定价试算与官方政策源安装接口 |
+
+### 16.1 决赛市场智能增量接口
+
+| 编号 | 方法与路径 | 说明 |
+|---|---|---|
+| API-MKT-01 | `GET /api/v1/market-intelligence/overview` | 按可选 `dataset_id`、`product_id` 聚合智能选品、竞品追踪、评论深挖、定价与合规预警 |
+| API-MKT-02 | `POST /api/v1/market-intelligence/pricing` | 输入数据集、可选结构化可比竞品组、单位成本和目标毛利，返回组内价格带、建议售价、促销底线、单位利润、实际毛利、主导约束、场景方案、弹性状态与置信度 |
+| API-MKT-03 | `GET /api/v1/market-intelligence/opportunities` | 按 `dataset_id/page/page_size` 分页查询候选机会方向；每条是需求主题形成的验证方向，不是商品或 SKU |
+| API-MKT-04 | `GET /api/v1/market-intelligence/opportunities/{opportunity_id}` | 查询机会评分、企业适配、证据主题和处理状态详情 |
+| API-MKT-05 | `GET /api/v1/market-intelligence/competitor-alerts` | 按 `dataset_id/page/page_size` 分页查询竞品价格、标题、图片、促销和上新动态 |
+| API-MKT-06 | `GET /api/v1/market-intelligence/competitor-alerts/{alert_id}` | 查询竞品变更前后值、监控范围和最近快照 |
+| API-MKT-07 | `GET /api/v1/market-intelligence/review-clusters` | 按 `dataset_id/page/page_size` 分页查询评论需求主题 |
+| API-MKT-08 | `GET /api/v1/market-intelligence/review-clusters/{cluster_id}` | 查询主题情绪分布及最多 30 条关联原文证据 |
+| API-POL-01 | `POST /api/v1/market-signals/policy-sources:install-defaults` | 幂等安装 CPSC 与 Federal Register 官方政策源 |
+
+上述接口继续由服务端注入 `tenant_id`。三个概览列表均使用稳定排序并通过 URL 保留
+`page/page_size` 和详情返回位置；API-MKT-01 只返回轻量预览及总数。没有成本时
+API-MKT-02 默认选择样本最多且不少于3个价格的
+`market_listings.normalized_attributes.category.value`可比组，禁止把不同结构化商品类目
+混入同一价格分布；请求可通过`comparator_group`切换组。没有成本时必须返回
+`market_anchor_only`，没有足够历史变化样本时`elasticity_status`必须为
+`insufficient_history`。API-POL-01 只安装官方公开 URL，不写入预制政策事件。
 
 ## 17. 本次变更摘要
 
-- 权限收敛为user/admin，删除动态RBAC、岗位分配和多人审批语义。
+- 登录身份收敛为user/admin，删除旧岗位Token、岗位分配和多人审批语义；v3.27租户内权限映射只控制业务操作，不改变身份枚举。
 - 新增统一确认查询与提交接口，明确Checkpoint、Outbox和`Command(resume=...)`恢复事务边界。
 - API-INS-03只投影五阶段，同时保留脱敏stage_runs供受控诊断。
 - 新增API-INS-04综合结果入口，把竞品、评论、机会、建议和证据接口降为下钻能力。
 - 将手工阶段重试和安全停止收口到admin诊断；user不操作内部节点。
 - 从核心文档删除Listing、报告文件导出、验证任务、多人评审与发布审批接口。
 - 提供V2→V3逐项废弃、替代和兼容映射。
+
+## 18. 工作台上下文生命周期增量（V3.4）
+
+### 18.1 原子 Turn
+
+| 方法与路径 | 说明 |
+|---|---|
+| `POST /api/v1/analysis-workspaces/{workspace_uuid}/turns` | 非流式提交完整Turn |
+| `POST /api/v1/analysis-workspaces/{workspace_uuid}/turns:stream` | 标准SSE提交；必须传`Idempotency-Key` |
+| `GET /api/v1/analysis-workspaces/{workspace_uuid}/turns` | 分页查询Turn |
+| `GET /api/v1/analysis-workspaces/{workspace_uuid}/turns/{turn_uuid}` | 查询完整Turn |
+| `POST /api/v1/analysis-workspaces/{workspace_uuid}/turns/{turn_uuid}:regenerate` | 保留原回答并创建关联新Turn |
+| `POST /api/v1/analysis-workspaces/{workspace_uuid}/turns/{turn_uuid}:cancel` | 仅取消未完成Turn |
+
+请求字段为`client_turn_id/question/product_id/dataset_id/task_uuid`；兼容字段
+`memory_mode`仍接受`policy/temporary/workspace/user`，但当前前端不再发送。工作台问询与任务问询只由可选
+`task_uuid`区分。完成响应固定包含`turn_uuid`、两条消息UUID、`answer`、`citations`、
+`memory_candidates`、`context_sources`、`tool_results`、`suggested_actions`、`context_snapshot_uuid`、
+`resolved_state`、`context_conflicts`和`resolution_log`。SSE事件只允许：
+
+```text
+turn_started -> progress -> answer_delta -> citation
+             -> tool_result -> memory_candidate -> action -> done
+error
+```
+
+`answer_delta`只在完成事务提交成功后释放；`progress`是可展示执行摘要，不是私有思维链。
+每个事件带稳定`id`。客户端最多自动重连一次，复用原`Idempotency-Key`并按事件ID去重；
+服务端对已完成Turn重放持久化结果，不重新调用模型。同一工作台已有`pending` Turn时返回
+409 `WORKSPACE_TURN_IN_PROGRESS`。旧工作台和任务聊天路由仅保留隐藏兼容，不进入
+OpenAPI，也不得维护独立上下文逻辑。
+
+### 18.2 客户记忆
+
+| 方法与路径 | 说明 |
+|---|---|
+| `GET /api/v1/customer-memories` | 按状态、作用域、工作台、类型分页 |
+| `GET/PATCH/DELETE /api/v1/customer-memories/{memory_uuid}` | 读取、修改候选或归档指定版本 |
+| `POST /api/v1/customer-memories/{memory_uuid}:confirm` | 确认新版本并将旧确认版本标为`superseded` |
+| `POST /api/v1/customer-memories/{memory_uuid}:reject` | 将候选归档 |
+| `GET /api/v1/customer-memories/{memory_uuid}/history` | 查询同类型版本链 |
+| `POST /api/v1/customer-memories:batch-confirm` | 批量确认UUID |
+| `GET/PUT /api/v1/customer-memory-policy` | 查询或更新提取、确认、作用域、保留期和允许类型 |
+
+状态为`candidate/confirmed/superseded/archived/invalidated`，作用域为
+`workspace/user/tenant`，敏感级别为`internal/confidential/restricted`。资源包含
+`effective_at/expires_at/source_message_uuid/supersedes_memory_uuid/confirmed_by`；
+依赖画像的记忆在来源版本变化后记录失效原因。`restricted`记忆不得进入模型上下文。
+自然语言“忘记”只返回`forget_memory`确认动作；客户端确认后才调用DELETE。所有操作
+以`memory_uuid`寻址，禁止按`memory_key`覆盖或模糊删除。当前版本通过
+`MEMORY_AUTO_EXTRACT_ENABLED=false`关闭所有新记忆自动抽取入口；策略接口固定返回并
+保存`auto_extract=false`，已有记忆的读取、确认、归档和历史查询保持可用。
+
+### 18.3 Context 与 Citation
+
+| 方法与路径 | 说明 |
+|---|---|
+| `GET/PUT /api/v1/analysis-workspaces/{workspace_uuid}/context` | 读取或创建上下文配置版本 |
+| `POST /api/v1/analysis-workspaces/{workspace_uuid}/context:preview` | 返回来源、估算Token和裁剪来源 |
+| `GET /api/v1/analysis-workspaces/{workspace_uuid}/state` | 读取服务端维护的多轮语义状态 |
+| `GET /api/v1/citations/{citation_uuid}` | 解析来源类型、版本、定位器、摘录和分数 |
+| `GET /api/v1/analysis-workspaces/{workspace_uuid}/messages` | 支持`before_seq/after_seq/limit/message_kind/task_uuid` |
+
+Context显式绑定`product_id/dataset_ids/knowledge_base_uuids/memory_scope/task_uuids`
+和`retrieval_policy`。Preview同时返回`resolved_state/conflicts/resolution_log`。
+服务端状态显式记录当前产品、市场、比较市场、数据集、任务、分析阶段、待确认项、
+上一意图和指代解析。每轮只能引用实际装配并冻结到快照的来源。
+
+### 18.4 企业文档知识库
+
+知识库提供`POST/GET/PATCH/DELETE /api/v1/knowledge-bases`及详情接口；文档提供上传、
+列表、详情、状态、删除和`:reindex`。同一文档的版本接口为：
+
+| 方法与路径 | 说明 |
+|---|---|
+| `POST /api/v1/knowledge-bases/{kb}/documents/{document}/versions` | 上传同文件类型的新版本并异步索引 |
+| `GET /api/v1/knowledge-bases/{kb}/documents/{document}/versions` | 分页查询SHA、大小、索引状态和当前版本标记 |
+| `GET /api/v1/knowledge-bases/{kb}/documents/{document}/versions/{version}/preview` | 预览已提取文本和页/工作表信息 |
+| `POST /api/v1/knowledge-bases/{kb}/documents/{document}/versions/{version}:restore` | 克隆历史内容为最新版本并重新索引，不改写旧版本 |
+
+上传支持PDF、XLSX、JPG/JPEG和PNG，返回
+`document_uuid/version/sha256/index_job_uuid/status`。索引状态按
+`uploaded -> parsing -> chunking -> embedding -> ready|failed`推进。
+
+`POST /api/v1/knowledge-bases:search`接收查询、知识库UUID、可选工作台、`top_k`和
+文档类型过滤，返回带`citation_uuid/document_uuid/page/chunk_text/score/
+document_version`的匹配项。缺少Embedding或Rerank模型配置时明确失败，不生成伪向量。
+知识库可见性为`tenant/user`；文档内容按不可信数据处理，不能覆盖系统规则。所有绑定、
+检索、重索引、删除和Citation解析均校验租户及用户可见性。
+
+### 18.5 权限、审计与删除治理
+
+`user/admin`仍是登录身份。认证后的企业成员操作再按v3.27权限目录校验；内置
+`tenant_owner/data_admin/analyst/operator/auditor/viewer`不是JWT角色枚举。
+
+| 方法与路径 | 说明 |
+|---|---|
+| `GET /api/v1/admin/tenant-roles` | 查询当前企业角色及权限 |
+| `GET /api/v1/admin/tenant-members` | 查询企业成员角色 |
+| `PUT /api/v1/admin/tenant-members/{user_id}/roles` | 替换成员角色；禁止移除最后一个tenant_owner |
+| `GET /api/v1/admin/audit-events` | 查询脱敏审计事件 |
+| `GET /api/v1/admin/audit-chain:verify` | 验证租户审计哈希链 |
+| `GET /api/v1/admin/tenant-deletions` | 查询保留期内、受法务保留阻断或已完成的租户删除请求 |
+| `POST /api/v1/admin/enterprise-users/{tenant_id}/legal-holds` | 设置法务保留 |
+| `POST /api/v1/admin/enterprise-users/{tenant_id}/legal-holds/{hold_uuid}:release` | 释放法务保留 |
+
+删除企业先关闭租户、禁用账号并撤销会话，再按`data_retention_days`创建异步删除请求；
+保留期内恢复租户会取消未执行请求。到期物理清理由独立Migrator/Superuser工具执行，
+必须二次确认租户编码；法务保留会阻断执行，完成后生成不可变删除证明。审计日志保留
+脱敏事件和哈希链，不保留被删除业务正文。
+
+### 18.6 版本记录补充
+
+| 版本 | 日期 | 说明 |
+|---|---|---|
+| V3.4 | 2026-10-06 | 统一Turn、版本化记忆、Context快照、Citation及企业知识库资源 |
+| V3.5 | 2026-10-06 | 增加租户内RBAC、append-only审计链及带保留期/法务保留的租户删除生命周期 |
+| V3.6 | 2026-10-06 | 增加受控智能问数、服务端工具编排、RAG阈值拒答和`tool_result`事件 |
+| V3.7 | 2026-10-07 | 增加知识文档版本上传、预览与回溯接口；全局关闭自动记忆抽取 |
+
+## 19. 受控智能问数与工具编排（V3.6）
+
+### 19.1 数据查询资源
+
+| 方法与路径 | 权限 | 说明 |
+|---|---|---|
+| `GET /api/v1/data-queries/metrics` | `dataset.read` | 返回当前启用的受控指标目录 |
+| `POST /api/v1/data-queries:execute` | `dataset.read` | 执行结构化`DataQueryPlan`并持久化审计结果 |
+| `GET /api/v1/data-queries/{query_uuid}` | `dataset.read` | 按租户读取已执行查询、数据版本和结果SHA |
+
+`DataQueryPlan`只允许`metrics/grain/group_by/filters/data_version_uuid/limit`。指标为：
+
+```text
+sales_units, average_daily_sales, sales_revenue, average_selling_price,
+active_days, sku_count, site_count,
+inventory_units, average_inventory, stockout_days
+```
+
+`grain`只允许`total/daily/weekly/monthly`，`group_by`只允许`sku/site`，`limit`最大500。
+请求不能携带SQL、表名、列名或表达式，不能混合销量和库存指标。服务端只执行固定、
+参数化SQL模板；响应固定披露`query_uuid/source_version/resolved_filters/result_sha256/
+duration_ms/limitations`。
+
+### 19.2 Turn 内工具结果
+
+Turn在模型调用前执行服务端Intent Router。确定性问数不调用LLM；RAG只有达到相关性阈值
+才把证据交给模型；预测请求只返回预测入口；工作流请求只返回`run_workflow`动作。
+
+`tool_results[]`结构为：
+
+```json
+{
+  "tool": "data_query",
+  "status": "succeeded",
+  "data": {
+    "query_uuid": "uuid",
+    "source_version": {"version_uuid": "uuid", "canonical_sha256": "sha256"},
+    "resolved_filters": {},
+    "rows": [],
+    "result_sha256": "sha256"
+  }
+}
+```
+
+`tool`只允许`data_query/rag/workflow/forecast`；`status`只允许
+`succeeded/rejected/needs_input`。流式和完成Turn重放都必须返回相同`tool_result`，
+不能因断线重新执行查询。
+
+### 19.3 知识检索拒答契约
+
+`POST /api/v1/knowledge-bases:search`响应增加`relevance_threshold`和`refused`。
+没有可访问知识库、没有匹配或最高分低于阈值时，`refused=true`，Agent必须明确说明
+证据不足。知识读取/搜索要求`knowledge.read`，创建、上传、修改、删除和重索引要求
+`knowledge.write`。
+
+### 19.4 NL2SQL边界
+
+当前版本不接受自由SQL或模型生成SQL。未来NL2SQL接口不得复用
+`/api/v1/data-queries:execute`绕过`DataQueryPlan`；须另行完成只读AST、表列白名单、
+RLS、timeout、LIMIT、成本控制、审计和对抗测试后再登记新版本。
+
+## 20. 产品主档与批量导入增量（V3.7）
+
+### 20.1 产品主档
+
+| ID | 方法与路径 | 权限 | 说明 |
+|---|---|---|---|
+| API-PRD-09 | `DELETE /api/v1/products/{product_id}` | `product.write` | 使用`If-Match`归档产品 |
+| API-PRD-10 | `GET /api/v1/products/{product_id}/relations` | 登录企业用户 | 查询SPU、变体、套装、BOM关系 |
+| API-PRD-11 | `PUT /api/v1/products/{product_id}/relations` | `product.write` | 全量替换关系；同一事务删除孤立组 |
+| API-PRD-12 | `GET /api/v1/products/{product_id}/inventory-summary` | 登录企业用户 | 返回非实时库存摘要、站点快照、来源版本和导入状态 |
+
+API-PRD-01/04 的`category_code`扩为
+`sofa/chair/table/bed/storage/other`，并支持`lifecycle_status`。API-PRD-04 可修改
+`sku/name/category_code/lifecycle_status/description`；仍要求`If-Match`。响应中的空
+`description`表示显式清空，不与“未提交该字段”混淆。
+
+### 20.2 产品批量导入
+
+| ID | 方法与路径 | 说明 |
+|---|---|---|
+| API-PRD-IMP-01 | `GET /api/v1/product-imports/template` | 下载动态五工作表模板；Header返回版本、文件SHA、Schema SHA |
+| API-PRD-IMP-02 | `GET /api/v1/product-imports/recent` | 查询当前租户最近任务，用于恢复 |
+| API-PRD-IMP-03 | `POST /api/v1/product-imports:preflight` | multipart上传XLSX并预检；要求`Idempotency-Key` |
+| API-PRD-IMP-04 | `GET /api/v1/product-imports/{job_uuid}` | 查询任务和预览行 |
+| API-PRD-IMP-05 | `PATCH /api/v1/product-imports/{job_uuid}/rows/{source_row_number}` | 修正标准化行并重算整任务规则与SHA |
+| API-PRD-IMP-06 | `POST /api/v1/product-imports/{job_uuid}:commit` | 携带`preview_sha256`单事务提交 |
+| API-PRD-IMP-07 | `POST /api/v1/product-imports/{job_uuid}:cancel` | 取消未完成任务 |
+| API-PRD-IMP-08 | `GET /api/v1/product-imports/{job_uuid}/error-report` | 下载含原行号、错误码、详情和建议的XLSX |
+
+预检 multipart 字段为`file/sheet_name/header_row/field_mapping/unit_mapping/
+dictionary_mapping/import_mode`；三个 mapping 使用 JSON 对象字符串。`import_mode`默认
+`create_only`，批量更新必须显式使用`upsert`。相同租户、幂等键、来源SHA和配置重放
+原任务；键相同但文件或配置不同返回`IDEMPOTENCY_CONFLICT`。
+
+提交只接受`status=ready`且 SHA 未变化的任务。任一行、别名、画像或关系写入失败时整个
+事务回滚；已完成任务重复提交返回原统计。跨租户任务统一按不存在返回 404。
+
+新增错误码包括`PRODUCT_IMPORT_FILE_TYPE/PRODUCT_IMPORT_MIME_TYPE/
+PRODUCT_IMPORT_FILE_SIZE/PRODUCT_IMPORT_WORKBOOK_INVALID/PRODUCT_IMPORT_SHEET_COUNT/
+PRODUCT_IMPORT_SHEET_NOT_FOUND/PRODUCT_IMPORT_ROW_LIMIT/PRODUCT_IMPORT_MAPPING_INVALID/
+PRODUCT_IMPORT_BLOCKED/PRODUCT_IMPORT_PREVIEW_STALE/PRODUCT_IMPORT_IMMUTABLE`。
+
+### 20.3 进度与恢复边界
+
+前端上传使用 XHR 展示字节级进度；服务端预检完成后持久化任务、行、计数和错误，页面可
+通过`recent`恢复。当前解析在 API-PRD-IMP-03 请求内同步执行，不提供虚假的后台解析
+百分比；网络在任务持久化前中断时，客户端以同一文件和幂等键重传。

@@ -58,15 +58,15 @@ async def _seed() -> dict:
     password_hash = PasswordService().hash(PASSWORD)
     try:
         tenant_id = await connection.fetchval(
-            "INSERT INTO furniscope.tenants(tenant_code,name,status) VALUES($1,'认证测试企业','active') RETURNING id",
+            "INSERT INTO furniscope.tenants(tenant_code,name,status,data_class) VALUES($1,'认证测试企业','active','business') RETURNING id",
             f"AUTH_{suffix.upper()}",
         )
         suspended_tenant_id = await connection.fetchval(
-            "INSERT INTO furniscope.tenants(tenant_code,name,status) VALUES($1,'暂停认证测试企业','suspended') RETURNING id",
+            "INSERT INTO furniscope.tenants(tenant_code,name,status,data_class) VALUES($1,'暂停认证测试企业','suspended','test') RETURNING id",
             f"AUTH_S_{suffix.upper()}",
         )
         other_tenant_id = await connection.fetchval(
-            "INSERT INTO furniscope.tenants(tenant_code,name,status) VALUES($1,'其他认证测试企业','active') RETURNING id",
+            "INSERT INTO furniscope.tenants(tenant_code,name,status,data_class) VALUES($1,'其他认证测试企业','active','business') RETURNING id",
             f"AUTH_O_{suffix.upper()}",
         )
         users = {}
@@ -102,6 +102,25 @@ async def _cleanup(seed: dict) -> None:
     try:
         user_ids = [item["user_id"] for item in seed["users"].values()]
         tenant_ids = [seed["tenant_id"], seed["suspended_tenant_id"], seed["other_tenant_id"]]
+        frozen = await connection.fetchval("""
+            SELECT EXISTS(SELECT FROM furniscope.market_opportunities
+             WHERE tenant_id=ANY($1::bigint[]) AND decision_snapshot IS NOT NULL)
+        """, tenant_ids)
+        if frozen:
+            # v3_22 history is immutable even for cascade deletion. Retain the
+            # isolated evidence and retire fixture identities instead of bypassing triggers.
+            async with connection.transaction():
+                await connection.execute("""
+                    UPDATE furniscope.tenants SET status='closed' WHERE id=ANY($1::bigint[])
+                """, tenant_ids)
+                await connection.execute("""
+                    UPDATE furniscope.users SET status='disabled' WHERE id=ANY($1::bigint[])
+                """, user_ids)
+                await connection.execute("""
+                    UPDATE furniscope.auth_sessions SET revoked_at=now(),revoke_reason='fixture_cleanup'
+                     WHERE user_id=ANY($1::bigint[])
+                """, user_ids)
+            return
         await connection.execute("DELETE FROM furniscope.notification_events WHERE tenant_id=ANY($1::bigint[])", tenant_ids)
         await connection.execute("DELETE FROM furniscope.notification_channels WHERE tenant_id=ANY($1::bigint[])", tenant_ids)
         await connection.execute("DELETE FROM furniscope.competitor_change_alerts WHERE tenant_id=ANY($1::bigint[])", tenant_ids)
@@ -148,6 +167,18 @@ async def _cleanup(seed: dict) -> None:
         await connection.execute("DELETE FROM furniscope.auth_sessions WHERE user_id=ANY($1::bigint[])", user_ids)
         await connection.execute("DELETE FROM furniscope.password_reset_requests WHERE user_id=ANY($1::bigint[])", user_ids)
         await connection.execute("DELETE FROM furniscope.registration_applications WHERE reviewed_by=ANY($1::bigint[])", user_ids)
+        await connection.execute(
+            "DELETE FROM furniscope.tenant_deletion_certificates WHERE tenant_id=ANY($1::bigint[])",
+            tenant_ids,
+        )
+        await connection.execute(
+            "DELETE FROM furniscope.tenant_deletion_requests WHERE tenant_id=ANY($1::bigint[])",
+            tenant_ids,
+        )
+        await connection.execute(
+            "DELETE FROM furniscope.tenant_legal_holds WHERE tenant_id=ANY($1::bigint[])",
+            tenant_ids,
+        )
         await connection.execute("DELETE FROM furniscope.users WHERE id=ANY($1::bigint[])", user_ids)
         await connection.execute(
             "DELETE FROM furniscope.tenants WHERE id=ANY($1::bigint[])",
@@ -499,10 +530,17 @@ def test_product_create_idempotent_replay_list_and_admin_inheritance(
     assert admin_listed.status_code == 403
     assert admin_listed.json()["error"]["code"] == "PERMISSION_DENIED"
 
-    invalid = client.post("/api/v1/products", headers={**headers, "Idempotency-Key": f"bad-{uuid4()}"},
-                          json={**payload, "sku": f"TABLE-{uuid4().hex[:8]}", "category_code": "table"})
-    assert invalid.status_code == 422
-    assert invalid.json()["error"]["code"] == "PRODUCT_CATEGORY_INVALID"
+    table_product = client.post(
+        "/api/v1/products",
+        headers={**headers, "Idempotency-Key": f"table-{uuid4()}"},
+        json={
+            **payload,
+            "sku": f"TABLE-{uuid4().hex[:8]}",
+            "category_code": "table",
+        },
+    )
+    assert table_product.status_code == 201
+    assert table_product.json()["data"]["category_code"] == "table"
 
     conflict_headers = {**headers, "Idempotency-Key": f"conflict-{uuid4()}"}
     conflict = client.post("/api/v1/products", headers=conflict_headers, json=payload)
@@ -813,7 +851,7 @@ def test_authorized_market_signals_and_policy_alerts(auth_environment, monkeypat
         f"/api/v1/market-signals/sources/{pack.json()['data']['source_id']}/fetch", headers=headers)
     assert packed.status_code == 200, packed.text
     assert packed.json()["data"]["status"] == "succeeded", packed.json()
-    assert "SYN-HF-001" in packed.json()["data"]["listing_asins"]
+    assert "PROC-HF-001" in packed.json()["data"]["listing_asins"]
 
     async def authorized_html(_self, _url, _auth_token_env):
         return """<script type="application/ld+json">
@@ -918,9 +956,52 @@ def test_authorized_market_signals_and_policy_alerts(auth_environment, monkeypat
     })
     assert channel.status_code == 201
     channel_id = channel.json()["data"]["channel_id"]
+    updated_channel = client.patch(
+        f"/api/v1/notification-channels/{channel_id}",
+        headers=headers,
+        json={
+            "name": "北美市场通知",
+            "channel_type": "webhook",
+            "target_url": "https://hooks.example.invalid/furniscope/market",
+            "secret_env": None,
+            "events": ["competitor_alert"],
+        },
+    )
+    assert updated_channel.status_code == 200
+    assert updated_channel.json()["data"]["name"] == "北美市场通知"
+    assert updated_channel.json()["data"]["events"] == ["competitor_alert"]
     queued = client.post(f"/api/v1/notification-channels/{channel_id}/test", headers=headers)
     assert queued.status_code == 202
     assert queued.json()["data"]["status"] == "pending"
+    event_id = queued.json()["data"]["event_id"]
+    event_detail = client.get(
+        f"/api/v1/notification-channels/events/{event_id}",
+        headers=headers,
+    )
+    assert event_detail.status_code == 200
+    assert event_detail.json()["data"]["payload"] == {}
+
+    async def mark_notification_failed() -> None:
+        connection = await asyncpg.connect(TEST_DSN)
+        try:
+            await connection.execute(
+                """UPDATE furniscope.notification_events
+                      SET status='failed',attempts=5,last_error='EndpointUnavailable'
+                    WHERE id=$1 AND tenant_id=$2""",
+                event_id,
+                seed["tenant_id"],
+            )
+        finally:
+            await connection.close()
+
+    asyncio.run(mark_notification_failed())
+    retried = client.post(
+        f"/api/v1/notification-channels/events/{event_id}:retry",
+        headers=headers,
+    )
+    assert retried.status_code == 202
+    assert retried.json()["data"]["status"] == "pending"
+    assert retried.json()["data"]["attempts"] == 0
 
     async def verify_due_scheduler() -> list[str]:
         settings = ApiSettings(
@@ -1508,6 +1589,108 @@ def test_admin_user_and_prompt_endpoints_enforce_role_and_audit(auth_environment
     assert asyncio.run(audit_count()) >= 3
 
 
+def test_enterprise_rbac_and_append_only_audit_chain(auth_environment) -> None:
+    seed, client, _ = auth_environment
+    owner_token = _login(client, seed["users"]["user"]["email"]).json()["data"]["access_token"]
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+    suffix = uuid4().hex[:10]
+    viewer_email = f"auth-viewer-{suffix}@example.invalid"
+
+    async def create_viewer() -> int:
+        connection = await asyncpg.connect(TEST_DSN)
+        try:
+            return await connection.fetchval(
+                """
+                INSERT INTO furniscope.users
+                  (tenant_id,email,password_hash,name,role_code,status)
+                VALUES($1,$2,$3,'RBAC Viewer','user','active')
+                RETURNING id
+                """,
+                seed["tenant_id"],
+                viewer_email,
+                PasswordService().hash(PASSWORD),
+            )
+        finally:
+            await connection.close()
+
+    viewer_id = asyncio.run(create_viewer())
+    seed["users"]["rbac_viewer"] = {
+        "user_id": viewer_id,
+        "tenant_id": seed["tenant_id"],
+        "email": viewer_email,
+    }
+    roles = client.get("/api/v1/admin/tenant-roles", headers=owner_headers)
+    assert roles.status_code == 200
+    assert {item["role_code"] for item in roles.json()["data"]["items"]} == {
+        "tenant_owner", "data_admin", "analyst", "operator", "auditor", "viewer",
+    }
+    members = client.get("/api/v1/admin/tenant-members", headers=owner_headers)
+    assert members.status_code == 200
+    viewer = next(item for item in members.json()["data"]["items"]
+                  if item["user_id"] == viewer_id)
+    assert viewer["role_codes"] == ["viewer"]
+
+    viewer_token = _login(client, viewer_email).json()["data"]["access_token"]
+    viewer_headers = {
+        "Authorization": f"Bearer {viewer_token}",
+        "Idempotency-Key": f"viewer-product-{uuid4()}",
+    }
+    assert client.get("/api/v1/products", headers=viewer_headers).status_code == 200
+    denied = client.post("/api/v1/products", headers=viewer_headers, json={
+        "sku": f"RBAC-{suffix}", "name": "RBAC denied", "category_code": "sofa",
+    })
+    assert denied.status_code == 403
+    assert denied.json()["error"]["code"] == "PERMISSION_DENIED"
+
+    promoted = client.put(
+        f"/api/v1/admin/tenant-members/{viewer_id}/roles",
+        headers=owner_headers,
+        json={"role_codes": ["operator"]},
+    )
+    assert promoted.status_code == 200
+    assert promoted.json()["data"]["role_codes"] == ["operator"]
+    created = client.post("/api/v1/products", headers={
+        **viewer_headers, "Idempotency-Key": f"operator-product-{uuid4()}",
+    }, json={
+        "sku": f"RBAC-{suffix}", "name": "RBAC allowed", "category_code": "sofa",
+    })
+    assert created.status_code == 201, created.json()
+
+    last_owner = client.put(
+        f"/api/v1/admin/tenant-members/{seed['users']['user']['user_id']}/roles",
+        headers=owner_headers,
+        json={"role_codes": ["viewer"]},
+    )
+    assert last_owner.status_code == 409
+    assert last_owner.json()["error"]["code"] == "LAST_TENANT_OWNER_REQUIRED"
+
+    verified = client.get("/api/v1/admin/audit-chain:verify", headers=owner_headers)
+    assert verified.status_code == 200
+    assert verified.json()["data"]["valid"] is True
+    assert verified.json()["data"]["event_count"] >= 1
+
+    async def assert_runtime_cannot_tamper() -> None:
+        connection = await asyncpg.connect(TEST_DSN)
+        try:
+            assert await connection.fetchval(
+                "SELECT has_table_privilege('furniscope_platform_admin',"
+                "'furniscope.audit_logs','UPDATE')"
+            ) is False
+            await connection.execute("SET SESSION AUTHORIZATION furniscope_admin_login")
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await connection.execute(
+                    """
+                    UPDATE furniscope.audit_logs SET action_code='tampered'
+                     WHERE tenant_id=$1
+                    """,
+                    seed["tenant_id"],
+                )
+        finally:
+            await connection.close()
+
+    asyncio.run(assert_runtime_cannot_tamper())
+
+
 def test_admin_soft_deletes_enterprise_and_can_restore_it(auth_environment) -> None:
     seed, client, _ = auth_environment
     admin_token = _admin_login(client, seed["users"]["admin"]["email"]).json()["data"]["access_token"]
@@ -1515,12 +1698,44 @@ def test_admin_soft_deletes_enterprise_and_can_restore_it(auth_environment) -> N
     target_tenant_id = seed["other_tenant_id"]
     target_email = seed["users"]["other"]["email"]
     target_token = _login(client, target_email).json()["data"]["access_token"]
+    suffix = target_email.split("@")[0].rsplit("-", 1)[1]
+
+    async def add_accounts() -> tuple[int, int]:
+        connection = await asyncpg.connect(TEST_DSN)
+        try:
+            password_hash = await connection.fetchval(
+                "SELECT password_hash FROM furniscope.users WHERE email=$1",
+                target_email,
+            )
+            active_id = await connection.fetchval(
+                """INSERT INTO furniscope.users(
+                     tenant_id,email,password_hash,name,role_code,status
+                   ) VALUES($1,$2,$3,'第二账号','user','active') RETURNING id""",
+                target_tenant_id, f"second-{suffix}@example.invalid", password_hash,
+            )
+            disabled_id = await connection.fetchval(
+                """INSERT INTO furniscope.users(
+                     tenant_id,email,password_hash,name,role_code,status
+                   ) VALUES($1,$2,$3,'已停用账号','user','disabled') RETURNING id""",
+                target_tenant_id, f"disabled-{suffix}@example.invalid", password_hash,
+            )
+            return int(active_id), int(disabled_id)
+        finally:
+            await connection.close()
+
+    active_id, disabled_id = asyncio.run(add_accounts())
     deleted_version = None
+    # Search this fixture's unique suffix; old retained audit data may fill page 1.
+    query = {"page_size": 100, "keyword": target_email.split("@")[0].rsplit("-", 1)[1]}
     try:
-        listing = client.get("/api/v1/admin/enterprise-users?page_size=100", headers=admin_headers)
+        listing = client.get("/api/v1/admin/enterprise-users", params=query, headers=admin_headers)
         assert listing.status_code == 200
         target = next(item for item in listing.json()["data"]["items"]
                       if item["tenant_id"] == target_tenant_id)
+        assert len([
+            item for item in listing.json()["data"]["items"]
+            if item["tenant_id"] == target_tenant_id
+        ]) == 3
         enabled = client.patch(
             f"/api/v1/admin/enterprise-users/{target_tenant_id}?user_id={target['user_id']}",
             headers={**admin_headers, "If-Match": target["resource_version"]},
@@ -1537,18 +1752,18 @@ def test_admin_soft_deletes_enterprise_and_can_restore_it(auth_environment) -> N
         removed_data = removed.json()["data"]
         assert removed_data["deleted"] is True
         assert removed_data["tenant_status"] == "closed"
-        assert removed_data["disabled_account_count"] == 1
+        assert removed_data["disabled_account_count"] == 3
         deleted_version = removed_data["resource_version"]
 
         assert client.get("/api/v1/users/me", headers={
             "Authorization": f"Bearer {target_token}"}).status_code == 403
         assert _login(client, target_email).status_code == 403
         default_items = client.get(
-            "/api/v1/admin/enterprise-users?page_size=100", headers=admin_headers,
+            "/api/v1/admin/enterprise-users", params=query, headers=admin_headers,
         ).json()["data"]["items"]
         assert all(item["tenant_id"] != target_tenant_id for item in default_items)
         deleted_items = client.get(
-            "/api/v1/admin/enterprise-users?status=closed&page_size=100", headers=admin_headers,
+            "/api/v1/admin/enterprise-users", params={**query, "status": "closed"}, headers=admin_headers,
         ).json()["data"]["items"]
         assert any(item["tenant_id"] == target_tenant_id for item in deleted_items)
         model_items = client.get(
@@ -1565,12 +1780,27 @@ def test_admin_soft_deletes_enterprise_and_can_restore_it(auth_environment) -> N
         assert refused.json()["error"]["code"] == "ADMIN_TENANT_DELETE_FORBIDDEN"
     finally:
         if deleted_version:
-            restored = client.patch(
-                f"/api/v1/admin/enterprise-users/{target_tenant_id}",
+            restored = client.post(
+                f"/api/v1/admin/enterprise-users/{target_tenant_id}:restore",
                 headers={**admin_headers, "If-Match": deleted_version},
-                json={"tenant_status": "active", "user_status": "active", "entitlements": []},
             )
             assert restored.status_code == 200
+            assert restored.json()["data"]["restored_account_count"] == 3
+
+            async def statuses() -> dict[int, str]:
+                connection = await asyncpg.connect(TEST_DSN)
+                try:
+                    rows = await connection.fetch(
+                        "SELECT id,status FROM furniscope.users WHERE id=ANY($1::bigint[])",
+                        [active_id, disabled_id],
+                    )
+                    return {int(row["id"]): row["status"] for row in rows}
+                finally:
+                    await connection.close()
+
+            restored_statuses = asyncio.run(statuses())
+            assert restored_statuses[active_id] == "active"
+            assert restored_statuses[disabled_id] == "disabled"
 
 
 def test_registration_application_queue_reject_and_approve(auth_environment) -> None:

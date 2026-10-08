@@ -13,6 +13,18 @@ groups:
         labels: {severity: warning}
         annotations:
           summary: FurniScope HTTP 5xx rate is above 10 percent
+      - alert: FurniScopeWorkerHeartbeatMissing
+        expr: absent(furniscope_worker_heartbeat_unixtime) or time() - furniscope_worker_heartbeat_unixtime > 90
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: FurniScope worker heartbeat is missing or stale
+      - alert: FurniScopeWorkerMaintenanceFailures
+        expr: increase(furniscope_worker_maintenance_failures_total[10m]) > 2
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: FurniScope worker scheduler maintenance is repeatedly failing
       - alert: FurniScopeFailedTaskBacklog
         expr: furniscope_analysis_tasks{status="failed"} > 5
         for: 5m

@@ -1009,6 +1009,29 @@ COMMIT;
 \ir migrations/v3_9_active_web_collection.sql
 \ir migrations/v3_10_analysis_workspaces.sql
 \ir migrations/v3_11_forecast_sku_aliases.sql
+\ir migrations/v3_15_enterprise_data.sql
+\ir migrations/v3_18_customer_memory.sql
+\ir migrations/v3_16_tenant_boundaries.sql
+\ir migrations/v3_17_opportunity_policy.sql
+\ir migrations/v3_19_training_leases.sql
+\ir migrations/v3_20_forecast_routing.sql
+\ir migrations/v3_21_import_templates.sql
+\ir migrations/v3_22_opportunity_outcomes.sql
+\ir migrations/v3_23_context_lifecycle.sql
+\ir migrations/v3_24_memory_agent_governance.sql
+\ir migrations/v3_25_database_security_baseline.sql
+\ir migrations/v3_26_competitor_watch_product_binding.sql
+\ir migrations/v3_27_audit_rbac.sql
+\ir migrations/v3_28_tenant_deletion_lifecycle.sql
+\ir migrations/v3_29_tenant_cell_routing.sql
+\ir migrations/v3_30_tenant_query_optimization.sql
+\ir migrations/v3_31_controlled_data_query.sql
+\ir migrations/v3_32_product_catalog_imports.sql
+\ir migrations/v3_33_tenant_data_class.sql
+\ir migrations/v3_34_sku_fact_identity.sql
+\ir migrations/v3_35_agent_runtime.sql
+\ir migrations/v3_36_market_intelligence_governance.sql
+\ir migrations/v3_37_operational_outcomes.sql
 
 -- Verification SQL (read-only; run after build).
 SET search_path TO furniscope, public;

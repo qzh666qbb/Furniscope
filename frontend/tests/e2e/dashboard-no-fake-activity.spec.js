@@ -1,6 +1,20 @@
 import { expect, test } from "@playwright/test";
 
 const success = (data) => ({ success: true, data, request_id: "dashboard-e2e" });
+const expectNoHorizontalOverflow = async (page) => {
+  const details = await page.evaluate(() => ({
+    viewportWidth: innerWidth,
+    documentWidth: document.documentElement.scrollWidth,
+    overflow: [...document.querySelectorAll("body *")]
+      .map((element) => {
+        const box = element.getBoundingClientRect();
+        return { selector: `${element.tagName.toLowerCase()}.${element.className || ""}`, left: box.left, right: box.right, width: box.width };
+      })
+      .filter((item) => item.left < -1 || item.right > innerWidth + 1)
+      .slice(0, 12),
+  }));
+  expect(details.documentWidth, JSON.stringify(details.overflow, null, 2)).toBeLessThanOrEqual(details.viewportWidth);
+};
 
 test("首页工作流节点和运行中计数与真实任务状态同步", async ({ page }) => {
   await page.addInitScript(() => {
@@ -21,7 +35,8 @@ test("首页工作流节点和运行中计数与真实任务状态同步", async
       data = {
         products: 12,
         running_tasks: 1,
-        pending_confirmations: 0,
+        pending_confirmations: 2,
+        pending_confirmation_tasks: 1,
         failed_tasks: 1,
         conflicted_products: 2,
         reports: 3,
@@ -85,13 +100,43 @@ test("首页工作流节点和运行中计数与真实任务状态同步", async
   await page.goto("/#workspace");
   await expect(page.getByText("运行中任务")).toBeVisible();
   await expect(page.locator(".metrics button").filter({ hasText: "运行中任务" }).getByRole("strong")).toHaveText("1");
-  await expect(page.locator(".metrics button").filter({ hasText: "待确认异常" }).getByRole("strong")).toHaveText("3");
+  await expect(page.locator(".metrics button").filter({ hasText: "待确认异常" }).getByRole("strong")).toHaveText("4");
   const completedRow = page.locator(".product-row").filter({ hasText: "HF-B0142" });
   await expect(completedRow.locator(".step.done")).toHaveCount(5);
   await expect(completedRow.locator(".step.active")).toHaveCount(0);
   const partialRow = page.locator(".product-row").filter({ hasText: "HF-A0345" });
   await expect(partialRow.locator(".step").nth(1)).toHaveClass(/active/);
   await expect(partialRow.locator(".step").nth(0)).toHaveClass(/done/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".workspace-main")).toHaveCSS("margin-left", "0px");
+  const dashboardColumns = await page.locator(".workspace-dashboard-grid").locator(":scope > *").evaluateAll(
+    (elements) => elements.map((element) => {
+      const box = element.getBoundingClientRect();
+      return { top: box.top, bottom: box.bottom };
+    }),
+  );
+  expect(dashboardColumns[1].top).toBeGreaterThan(dashboardColumns[0].bottom);
+  await expect(page.getByRole("heading", { name: "最近报告" })).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: "test-results/dashboard-mobile.png", fullPage: true });
+
+  await page.goto("/#work-diary?from=workspace");
+  await expect(page.getByRole("heading", { name: "工作日记", exact: true })).toBeVisible();
+  await expect(page.locator(".work-diary-list .workbench-list-head")).toBeHidden();
+  await expect(page.locator(".work-diary-list article").first()).toHaveCSS("display", "grid");
+  await expect(page.locator('.work-diary-list [data-label="产品与市场"]').first()).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+  await page.screenshot({ path: "test-results/work-diary-mobile.png", fullPage: true });
+
+  await page.goto("/#analysis");
+  await expect(page.getByRole("heading", { name: "AI 工作台", exact: true })).toBeVisible();
+  await expect(page.locator(".workbench-plane-preview>div")).toHaveCSS("display", "grid");
+  const previewNodes = await page.locator(".preview-node").evaluateAll(
+    (elements) => elements.map((element) => element.getBoundingClientRect().top),
+  );
+  expect(new Set(previewNodes).size).toBe(previewNodes.length);
+  await expectNoHorizontalOverflow(page);
 });
 
 test("首页不展示写死的 AI 实时分析动态", async ({ page }) => {

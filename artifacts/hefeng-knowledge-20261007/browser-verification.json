@@ -1,0 +1,14 @@
+{
+  "url": "http://127.0.0.1:4173/#knowledge",
+  "h1": "企业知识库",
+  "buttons": [
+    "HHeFeng",
+    "HeFeng 业务SOP知识库2/2 可检索",
+    "HeFeng 北美市场证据库2/2 可检索",
+    "HeFeng 产品与制造知识库2/2 可检索"
+  ],
+  "selectedBase": "HeFeng 业务SOP知识库",
+  "documentWidth": 1440,
+  "innerWidth": 1440,
+  "errors": []
+}

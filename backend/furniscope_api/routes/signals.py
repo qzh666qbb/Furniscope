@@ -146,6 +146,21 @@ async def list_policy_sources(request: Request, session: DatabaseSession,
                            request_id=request.state.request_id)
 
 
+@router.post("/policy-sources:install-defaults",
+             response_model=SuccessEnvelope[list[PolicySourceItem]],
+             summary="安装官方合规政策源")
+async def install_default_policy_sources(request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    items = await _service(request).install_default_policy_sources(
+        session, tenant_id=principal.tenant_id, user_id=principal.user_id,
+    )
+    await session.commit()
+    return SuccessEnvelope(
+        data=[PolicySourceItem.model_validate(item) for item in items],
+        request_id=request.state.request_id,
+    )
+
+
 @router.post("/policy-sources", response_model=SuccessEnvelope[PolicySourceItem], status_code=201,
              summary="创建官方政策源")
 async def create_policy_source(body: PolicySourceCreateRequest, request: Request, session: DatabaseSession,

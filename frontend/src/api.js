@@ -40,6 +40,7 @@ export function clearSession() {
 
 function transientFailure(status, fallback) {
   const error = new Error(fallback);
+  error.status = status;
   error.transient = status >= 500 || status === 0;
   return error;
 }
@@ -67,7 +68,7 @@ async function refreshAccessToken() {
 }
 
 async function request(path, options = {}, includeResponse = false) {
-  const { skipRefresh = false, skipAuth = false, headers: extraHeaders, ...fetchOptions } = options;
+  const { skipRefresh = false, skipAuth = false, rawData = false, headers: extraHeaders, ...fetchOptions } = options;
   const isForm = fetchOptions.body instanceof FormData;
   const headers = { ...(isForm ? {} : { "Content-Type": "application/json" }), ...(extraHeaders || {}) };
   let token = skipAuth ? null : sessionStorage.getItem(ACCESS_TOKEN_KEY);
@@ -103,15 +104,86 @@ async function request(path, options = {}, includeResponse = false) {
     throw new Error(body?.error?.message || (skipAuth ? "邮箱或密码错误" : "登录已过期，请重新登录"));
   }
   if (!response.ok) {
-    throw response.status >= 500
+    const error = response.status >= 500
       ? transientFailure(response.status, body?.error?.message || `请求失败（${response.status}）`)
       : new Error(body?.error?.message || `请求失败（${response.status}）`);
+    error.status = response.status;
+    error.code = body?.error?.code;
+    throw error;
   }
-  return includeResponse ? { data: body.data, response } : body.data;
+  return includeResponse ? { data: body.data, response } : rawData ? body : body.data;
 }
 
 export const api = (path, options = {}) => request(path, options, false);
 export const apiWithMeta = (path, options = {}) => request(path, options, true);
+
+export async function downloadApiFile(path, options = {}, retried = false) {
+  let token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch {
+    throw transientFailure(0, "文件下载服务暂时不可用");
+  }
+  if (response.status === 401 && !retried && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+    token = await refreshAccessToken();
+    return downloadApiFile(path, {
+      ...options,
+      headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
+    }, true);
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error?.message || `文件下载失败（${response.status}）`);
+  }
+  return { blob: await response.blob(), response };
+}
+
+export async function uploadApiForm(path, body, { headers: extraHeaders = {}, onProgress } = {}, retried = false) {
+  let token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", `${API_BASE}${path}`);
+    Object.entries(extraHeaders).forEach(([key, value]) => request.setRequestHeader(key, value));
+    if (token) request.setRequestHeader("Authorization", `Bearer ${token}`);
+    request.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    });
+    request.addEventListener("error", () => reject(transientFailure(0, "文件上传服务暂时不可用")));
+    request.addEventListener("load", async () => {
+      const payload = (() => {
+        try {
+          return JSON.parse(request.responseText);
+        } catch {
+          return null;
+        }
+      })();
+      if (request.status === 401 && !retried && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+        try {
+          token = await refreshAccessToken();
+          resolve(await uploadApiForm(path, body, {
+            headers: { ...extraHeaders, Authorization: `Bearer ${token}` },
+            onProgress,
+          }, true));
+        } catch (error) {
+          if (!error?.transient) clearSession();
+          reject(error);
+        }
+        return;
+      }
+      if (request.status < 200 || request.status >= 300) {
+        reject(request.status >= 500
+          ? transientFailure(request.status, payload?.error?.message || `请求失败（${request.status}）`)
+          : new Error(payload?.error?.message || `请求失败（${request.status}）`));
+        return;
+      }
+      resolve(payload?.data);
+    });
+    request.send(body);
+  });
+}
 
 export function subscribeTaskEvents(taskUuid, onMessage, onError) {
   const controller = new AbortController();
@@ -152,37 +224,45 @@ export function subscribeTaskEvents(taskUuid, onMessage, onError) {
   return () => controller.abort();
 }
 
-export async function postSse(path, body, onEvent) {
+export async function postSse(path, body, onEvent, options = {}) {
   const controller = new AbortController();
-  const connect = async (retried = false) => {
+  const seenEventIds = new Set();
+  const connect = async (authRetried = false) => {
     let token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
     const headers = {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
+      ...(options.headers || {}),
     };
     if (token) headers.Authorization = `Bearer ${token}`;
-    let response = await fetch(`${API_BASE}${path}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    if (response.status === 401 && !retried && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
-      token = await refreshAccessToken();
-      headers.Authorization = `Bearer ${token}`;
+    let response;
+    try {
       response = await fetch(`${API_BASE}${path}`, {
         method: "POST",
         headers,
         body: JSON.stringify(body),
         signal: controller.signal,
       });
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+      throw transientFailure(0, "对话流连接中断");
+    }
+    if (response.status === 401 && !authRetried && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+      token = await refreshAccessToken();
+      headers.Authorization = `Bearer ${token}`;
+      return connect(true);
     }
     const contentType = response.headers.get("content-type") || "";
     if (!response.ok || !response.body) {
       const payload = await response.json().catch(() => null);
-      throw response.status >= 500
-        ? transientFailure(response.status, payload?.error?.message || `请求失败（${response.status}）`)
-        : new Error(payload?.error?.message || `请求失败（${response.status}）`);
+      const message = payload?.error?.message || `请求失败（${response.status}）`;
+      if (
+        response.status >= 500
+        || payload?.error?.code === "WORKSPACE_TURN_IN_PROGRESS"
+      ) {
+        throw transientFailure(response.status, message);
+      }
+      throw new Error(message);
     }
     if (contentType && !contentType.includes("text/event-stream") && !contentType.includes("octet-stream")) {
       const payload = await response.json().catch(() => null);
@@ -201,22 +281,34 @@ export async function postSse(path, body, onEvent) {
       buffer = blocks.pop() || "";
       for (const block of blocks) {
         let eventName = "message";
+        let eventId = "";
         const dataLines = [];
         for (const line of block.split("\n")) {
           if (line.startsWith("event:")) eventName = line.slice(6).trim();
+          else if (line.startsWith("id:")) eventId = line.slice(3).trim();
           else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
         }
         if (!dataLines.length) continue;
+        if (eventId && seenEventIds.has(eventId)) continue;
         const data = JSON.parse(dataLines.join("\n"));
+        if (eventId) seenEventIds.add(eventId);
         if (eventName === "done") sawDone = true;
         if (eventName === "error") errorMessage = data?.message || "暂时无法完成这次问询。";
-        onEvent?.(eventName, data);
+        onEvent?.(eventName, data, eventId);
       }
     }
     if (errorMessage) throw new Error(errorMessage);
-    if (!sawDone) throw new Error("对话流已中断，请重试");
+    if (!sawDone) throw transientFailure(0, "对话流已中断，请重试");
   };
-  await connect();
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await connect();
+      return;
+    } catch (error) {
+      if (controller.signal.aborted || !error?.transient || attempt === 1) throw error;
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
+    }
+  }
 }
 
 export async function login(email, password) {

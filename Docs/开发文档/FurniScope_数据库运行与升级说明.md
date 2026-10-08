@@ -1,19 +1,22 @@
 # FurniScope 数据库设计（现行）
 
-本文描述当前仓库实际落地的数据层，不是历史 V2 规划。口径优先级为：运行库结构与服务代码 > 可执行 SQL > 历史设计文档。本文同时说明空库、应用启动后和当前演示库三种状态，避免把“迁移文件存在”误当成“数据库已经升级”。
+本文描述仓库数据层；运行环境是否升级须另行核验。2026-10-08补齐竞品多时点历史、
+机会经营实绩字段、常驻Worker维护及WAL/PITR配置，本轮已在本地数据库验证业务闭环；
+容器级PITR恢复仍待Docker和目标基础设施验收。总体依据：
+[企业决策与数据闭环总体设计](../项目设计文档/15_FurniScope_企业决策与数据闭环总体设计V1.md)。
 
 | 项 | 值 |
 |---|---|
 | 引擎 | PostgreSQL 16+ |
 | 业务 Schema | `furniscope` |
-| 扩展 | `pgcrypto`（UUID） |
+| 扩展 | `pgcrypto`（必需）；`pgvector`（可选，1024维知识向量加速） |
 | 基线 DDL | `furniscope_postgresql_v3.sql` |
 | 增量迁移 | `migrations/v3_*.sql` |
 | 迁移台账 | `furniscope.schema_migrations`（当前仅登记版本，不负责自动执行 SQL） |
 | 运行期建表入口 | `backend/furniscope_api/services/schema_bootstrap.py` |
 | 设计原稿（V3 基线） | `Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md` |
 | 初始化说明 | `Docs/项目设计文档/03_FurniScope_PostgreSQL数据库初始化说明V3.md` |
-| 本文核对日期 | 2026-09-14 |
+| 本文核对日期 | 2026-10-08（本地v3.37增量）；演示库统计保留2026-09-14历史日期 |
 
 Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.d/001-schema.sql`，并把 `migrations/` 挂到同级目录，供基线末尾 `\ir` 引用。数据卷一旦建过，改 SQL **不会**自动重跑，需要新库或手工迁移。
 
@@ -21,10 +24,10 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 ## 1. 设计原则
 
-1. **`tenants` 是隔离边界。** 业务表普遍带 `tenant_id`，服务层查询必须注入租户。当前没有启用 RLS，而且不少关联是“对象 ID 外键 + 独立 tenant_id”，并非复合租户外键，因此跨租户隔离主要依赖 API 鉴权与仓储层过滤，不能只依赖数据库外键。
+1. **`tenants` 是隔离边界。** 应用过滤与数据库RLS共同生效；v3.16增加复合边界，v3.25为租户表启用`FORCE RLS`并拆分数据库职责。普通请求认证后切换为`furniscope_tenant`受限角色，事务结束不残留连接身份。认证、平台调度和LangGraph私有检查点仍属受信服务连接，不声称抵御数据库服务凭据泄露。
 2. **角色只有两种。** `users.role_code` ∈ `user` / `admin`。多 Agent 是内部能力，不是权限主体。
 3. **对内 BIGINT IDENTITY，对外 UUID。** API 用 `task_uuid`、`report_uuid`、`session_uuid` 等；Checkpoint 用业务字符串 `checkpoint_id`。
-4. **时间一律 `TIMESTAMPTZ`。** 金额 `NUMERIC`；置信度 `NUMERIC(5,4)` 左右；可变结构用 `JSONB`，并有 `jsonb_typeof` CHECK。排序、过滤、关联字段保持普通列，不塞进大 JSON。
+4. **事件时点使用 `TIMESTAMPTZ`。** 企业实施与观察起止用`DATE`，不声称能区分同日内顺序。金额 `NUMERIC`；置信度 `NUMERIC(5,4)` 左右；可变结构用 `JSONB`，并有 `jsonb_typeof` CHECK。排序、过滤、关联字段保持普通列，不塞进大 JSON。
 5. **库内存业务对象，不存危险物：**
    - 文件字节（只存 `file_assets` 元数据与对象存储 key）
    - API Key、模型密钥、Refresh Token 明文（哈希或环境变量名）
@@ -39,7 +42,7 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 | 组件 | 职责 |
 |---|---|
-| Docker `upload-data` 卷 / `DEMO_STORAGE_ROOT` | 当前实现存产品图、规格书、数据集文件；库中只有 `storage_key`。生产可替换为对象存储，但仓库默认不是 S3/OSS |
+| Local/S3兼容对象存储 | 开发默认使用 `DEMO_STORAGE_ROOT`；`STORAGE_BACKEND=s3` 时使用私有S3兼容桶。两种后端均采用租户前缀对象键，库中只存 `storage_key`和SHA；production强制S3、TLS和预创建桶 |
 | `forecast-artifacts` 卷 / `forecast_assets` | 预测模型、训练数据与回测产物；数据库只保存 URI、版本与 checksum |
 | Redis | 分析、解析、数据集导入、预测、训练、控制事件和采集任务队列；不是主数据 |
 | LangGraph Checkpointer | 同一套 Postgres、当前同一 `furniscope` Schema 下的 `checkpoints`、`checkpoint_blobs`、`checkpoint_writes`、`checkpoint_migrations`；与业务表 `workflow_checkpoints` **不得互相替代** |
@@ -63,17 +66,41 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 | 6 | `migrations/v3_9_active_web_collection.sql` | 采集源类型扩到 Amazon/网页评论 |
 | 7 | `migrations/v3_10_analysis_workspaces.sql` | 工作台容器 + 对话消息 |
 | 8 | `migrations/v3_11_forecast_sku_aliases.sql` | 产品 SKU ↔ 预测训练 SKU 映射 |
+| 9 | `migrations/v3_15_enterprise_data.sql` | 原始/标准数据版本、训练血缘、租户SKU别名 |
+| 10 | `migrations/v3_18_customer_memory.sql` | 先建工作区客户记忆表，再纳入统一RLS；登记迁移版本 |
+| 11 | `migrations/v3_16_tenant_boundaries.sql` | 引入竞品三表迁移；受限角色、RLS、复合关联、模型owner约束 |
+| 12 | `migrations/v3_17_opportunity_policy.sql` | 不可变策略/反馈、市场原分/修正分、任务决策快照 |
+| 13 | `migrations/v3_19_training_leases.sql` | 训练执行令牌、尝试次数、心跳和租约 |
+| 14 | `migrations/v3_20_forecast_routing.sql` | 部署目录及预测路由不可变快照 |
+| 15 | `migrations/v3_21_import_templates.sql` | 不可变导入模板修订、辅助表血缘 |
+| 16 | `migrations/v3_22_opportunity_outcomes.sql` | 机会首次完整特征快照、不可变实施及经营观察 |
+| 17 | `migrations/v3_23_context_lifecycle.sql` | 原子Turn、Context、Citation和知识库资源 |
+| 18 | `migrations/v3_24_memory_agent_governance.sql` | 版本记忆、冲突治理和索引任务 |
+| 19 | `migrations/v3_25_database_security_baseline.sql` | 职责角色、FORCE RLS和运行期DDL收敛 |
+| 20 | `migrations/v3_26_competitor_watch_product_binding.sql` | 竞品监控产品绑定边界 |
+| 21 | `migrations/v3_27_audit_rbac.sql` | 企业RBAC及append-only哈希审计链 |
+| 22 | `migrations/v3_28_tenant_deletion_lifecycle.sql` | Legal Hold、保留期、删除请求和证明 |
+| 23 | `migrations/v3_29_tenant_cell_routing.sql` | Cell目录、placement、迁移状态和写栅栏 |
+| 24 | `migrations/v3_30_tenant_query_optimization.sql` | tenant-first索引、16分区Embedding侧索引和扩展策略 |
+| 25 | `migrations/v3_31_controlled_data_query.sql` | 销量/库存事实投影、受控指标与查询审计 |
+| 26 | `migrations/v3_32_product_catalog_imports.sql` | SKU比较键、产品组合关系及产品主档导入任务 |
+| 27 | `migrations/v3_33_tenant_data_class.sql` | 租户业务/测试/演示数据分类及服务端过滤基线 |
+| 28 | `migrations/v3_34_sku_fact_identity.sql` | SKU改名时受控同步产品、目录、销量和库存事实 |
+| 29 | `migrations/v3_35_agent_runtime.sql` | AI员工Goal/Plan/Run、工具、审批、制品和事件运行时 |
+| 30 | `migrations/v3_36_market_intelligence_governance.sql` | 五项市场决策批次、逐记录血缘、SHA和来源分类 |
+| 31 | `migrations/v3_37_operational_outcomes.sql` | 机会结果增加打样、投产、销量和退货实绩；数据库校验整数、上下界与非规划状态 |
 
-空库跑完后业务表约 **54** 张（35 核心 + 8 预测 + 1 注册 + 5 信号 + 2 通知 + 2 工作台对话 + 1 预测 SKU 映射）。
+旧基线54张统计已被增量替代；现行实际表数需执行第11节核查SQL，以免把治理/框架表混入业务表数量。
 
-此时尚无竞品动态三表、`schema_migrations` 和 LangGraph 官方表。后端或 Worker 第一次启动会执行一次 `bootstrap_runtime_schema()`，补齐竞品动态三表，并对工作台消息、采集和通知结构做兼容性检查。因此“只执行 SQL 的空库”和“应用已启动的空库”并不完全相同。
+现行基线通过v3.16引入竞品三表。Backend/Worker启动仍执行一次兼容检查，并检查全部tenant_id业务表已存在RLS策略；缺少边界迁移时拒绝启动。LangGraph框架表由其自身初始化，不作为用户直接查询表。
 
 ### 3.2 已有库增量（需手工或运维执行）
 
-下列文件 **不在** 基线 `\ir` 里，给升级旧库用。其中 **竞品动态三张表只在这里**：
+以下为旧库增量文件，部分已被现行基线间接引用：
 
 | 文件 | 作用 |
 |---|---|
+| `v3_15` → `v3_18` → `v3_16` → `v3_17` → `v3_19` → `v3_20` → `v3_21` → `v3_22` → `v3_23` → `v3_24` → `v3_25` → `v3_26` → `v3_27` → `v3_28` → `v3_29` → `v3_30` → `v3_31` → `v3_32` → `v3_33` → `v3_34` → `v3_35` → `v3_36` → `v3_37`（文件全名见上表） | 现行企业闭环、多租户、市场治理及经营实绩依赖顺序；18先于16使客户记忆表受RLS保护。可重复，脏关联或SKU冲突阻止迁移，不自动删除历史 |
 | `v3_4_competitor_tracking.sql` | `competitor_watch_targets` / `competitor_listing_snapshots` / `competitor_change_alerts` |
 | `v3_11_watch_compare_selected.sql` | 竞品库 `compare_selected`（应用启动时 `ensure_schema` 也会补） |
 | `v3_12_workspace_message_kind_context.sql` | 工作台消息类型增加 `context`，用于产品/市场选择等可见上下文 |
@@ -92,7 +119,128 @@ Docker 空库：`docker-compose.yml` 把基线挂成 `/docker-entrypoint-initdb.
 
 `schema_migrations` 目前是**台账，不是迁移执行器**：没有自动扫描、按序执行、失败回滚或 checksum 校验逻辑；`v3_13` 还会批量登记历史版本。因此运维仍需先执行目标 SQL，再确认表、列、约束存在，不能只看台账行。
 
-### 3.3 当前实际启动顺序与表数量
+升级租约、RLS或Cell协议前先停止旧worker，迁移成功并通过启动检查后再启动新进程。
+旧进程不能校验执行令牌、Cell placement或新职责。当前任务/机会快照、模板、反馈与
+实施事件不可原地改写或删除；数据清理使用归档及停用身份，不通过级联删除历史。
+`scripts/verify_enterprise_migrations.py`创建两个全新本地测试库，验证从零安装、旧
+基线加存量租户后的升级、重复迁移及启动RLS检查；不会重置已有库。v3.15-v3.30历史
+结果见[多租户隔离验收](../../artifacts/tenant-isolation-20261006/)；v3.15-v3.34最终
+迁移集合、SHA和fresh/upgrade结果见
+[系统复盘整改迁移摘要](../../artifacts/system-review-20261007-fixes/migration-v34/migration-summary.json)。
+
+### 3.3 多租户生产运维
+
+#### 数据库身份
+
+生产必须为以下登录账号设置不同随机口令：`furniscope_app_login`、
+`furniscope_admin_login`、`furniscope_worker_login`、`furniscope_langgraph_login`、
+`furniscope_backup_login`、`furniscope_monitor_login`。Compose空库由
+`scripts/provision_database_roles.sh`创建；已有库应由受控Migrator执行同一脚本。
+业务运行账号不得拥有SUPERUSER、BYPASSRLS、CREATEDB或CREATEROLE。
+
+`.env`必须设置全部`POSTGRES_*_PASSWORD`。`docker compose config`在任一职责口令
+缺失时失败，这是安全门槛，不应通过共用Owner口令绕过。生产同时设置：
+
+```dotenv
+DATABASE_ALLOW_RUNTIME_DDL=false
+DATABASE_REQUIRE_RUNTIME_ROLE_SEPARATION=true
+DEPLOYMENT_CELL_CODE=cell-local
+DEPLOYMENT_REGION=local
+```
+
+#### 全库备份与恢复
+
+备份产出custom dump、dump SHA、Manifest及Manifest SHA。Manifest包含迁移集合、
+关键行数和每个租户的审计链头：
+
+```bash
+POSTGRES_BACKUP_URL='postgresql://furniscope_backup_login@db/furniscope' \
+BACKUP_DIRECTORY=/secure/backups \
+BACKUP_RETENTION_DAYS=14 \
+scripts/backup_postgres.sh
+```
+
+恢复目标必须是新建的隔离数据库，且数据库名不能与Manifest源库相同：
+
+```bash
+RESTORE_DATABASE_URL='postgresql://migrator@db/furniscope_restore_drill' \
+CONFIRM_RESTORE=restore \
+scripts/restore_postgres.sh /secure/backups/furniscope-<UTC>.dump
+```
+
+脚本恢复前验证dump/Manifest双重SHA和归档目录，恢复后复核迁移集合、关键行数和审计
+链头。Compose已配置WAL归档、复制账号、周期`pg_basebackup`、`pg_verifybackup`及
+按时间点恢复目录准备脚本；当前机器Docker未运行，因此尚未形成容器级恢复证据。
+生产仍必须把WAL连续复制到异地耐久介质，配置跨故障域副本并周期演练；仓库脚本不替代
+基础设施级灾备。
+
+#### 单租户备份、恢复与Cell迁移
+
+单租户包包含租户元数据、所有带`tenant_id`父表的NDJSON、私有模型归属记录和对象
+SHA。分区子表不会重复导出。导出示例：
+
+```bash
+PYTHONPATH=.:backend python scripts/tenant_backup.py export \
+  --database-url 'postgresql://migrator@source/furniscope' \
+  --tenant-code ACME \
+  --object-root /srv/furniscope/objects \
+  --output /secure/backups/acme.tar.gz
+```
+
+恢复仅允许迁移集合完全相同且`tenants`为空的隔离数据库：
+
+```bash
+PYTHONPATH=.:backend python scripts/tenant_backup.py restore \
+  --database-url 'postgresql://migrator@target/acme_restore' \
+  --package /secure/backups/acme.tar.gz \
+  --confirm-tenant-code ACME \
+  --object-root /srv/furniscope/objects
+```
+
+从共享Cell提升到独立Cell使用`migrate_tenant_cell.py`。工具冻结源placement并等待在途
+写入排空，执行校验包导出/恢复，对比父表行数和内容摘要，再切换路由代际。目标数据库
+必须为空且已升级到同一迁移集合；`database_secret_ref`只填写密钥引用：
+
+```bash
+PYTHONPATH=.:backend python scripts/migrate_tenant_cell.py \
+  --source-url 'postgresql://migrator@source/furniscope' \
+  --target-url 'postgresql://migrator@target/acme_cell' \
+  --tenant-code ACME --confirm-tenant-code ACME \
+  --source-cell cell-local --target-cell cell-acme \
+  --target-region us-east --target-display-name 'ACME dedicated cell' \
+  --target-database-secret-ref secret://postgres/acme-cell \
+  --package /secure/backups/acme-cell-move.tar.gz
+```
+
+#### 删除、队列与容量
+
+租户删除必须先创建到期请求并通过Legal Hold检查，再由Migrator身份执行：
+
+```bash
+PYTHONPATH=.:backend python scripts/process_tenant_deletion.py \
+  --database-url 'postgresql://migrator@db/furniscope' \
+  --request-uuid '<request-uuid>' --confirm-tenant-code ACME \
+  --storage-root /srv/furniscope/objects \
+  --output /secure/evidence/acme-deletion.json
+```
+
+删除证明记录各表删除数、匿名化保留数、对象处置状态、执行身份和证据哈希。外部对象
+存储未配置时只记录`external_deletion_required`，不能宣称已经删除对象。
+
+Redis队列以`WORKER_TENANT_MAX_IN_FLIGHT`、`WORKER_TENANT_QUEUE_LIMIT`和
+`WORKER_TENANT_DEFER_MS`限制单租户并发与积压；任务仍受租约、超时、重试上限和死信
+治理。共享数据库目前没有按租户硬限制CPU、内存、IO或连接数，持续高负载租户应按
+`table_scaling_policies`和监控证据迁往独立Cell。
+
+#### 查询与向量索引
+
+`v3_30`给高频列表/聚合路径增加tenant-first索引，不对FK密集的canonical表原地改成
+分区表。`knowledge_chunk_embeddings`是按`tenant_id`做16路Hash分区的可重建侧索引。
+有pgvector时使用1024维向量和HNSW；无pgvector、无安装权限或不支持分区HNSW时仍保留
+JSONB、PostgreSQL FTS和Python cosine降级。上线前应对实际租户执行`EXPLAIN
+(ANALYZE, BUFFERS)`、召回率和p95延迟基准，不能仅凭索引存在判断性能达标。
+
+### 3.4 2026-09-14演示库历史快照（不代表本轮部署）
 
 ```mermaid
 flowchart LR
@@ -196,7 +344,7 @@ erDiagram
 | `manufacturing_capabilities` | 材质/工艺/认证等能力，可用性、区间、证据文件、置信度 | `(tenant, type, code)` 唯一 |
 | `registration_applications` | 公开注册：企业名、联系人、邮箱、密码哈希、建议租户码、审批状态 | pending 邮箱部分唯一 |
 
-页面：登录注册、设置里的企业画像、平台后台开通租户。
+页面：登录注册、AI智能选品中的企业事实、平台后台开通租户。
 
 ### 5.2 产品中心
 
@@ -308,7 +456,10 @@ erDiagram
 | `review_aspects` | 评论抽取的方面、情感、原文 Span、模型运行 | Span 必须等于 `reviews.content_original` 子串（触发器） |
 | `insight_clusters` / `cluster_members` | 需求聚类及成员 | task+cluster_code 唯一 |
 | `market_metrics` / `price_bands` | 确定性市场指标与价格带 | 价格带 `(task, band_code)` 唯一 |
-| `market_opportunities` | 机会描述与六维分、企业拟合、建议等级 | `(task, opportunity_code)` 唯一 |
+| `market_opportunities` | 五维市场分、企业适配、门控与完整`decision_snapshot` | `(task, opportunity_code)` 唯一；新机会特征不可改写或删除，旧机会不回填 |
+| `enterprise_opportunity_policies` | 企业目标、权重、适配强度与必要条件 | 租户内不可变版本，任务冻结 |
+| `opportunity_feedback_events` | 采纳/拒绝/待验证、原因与评分引用 | 不可变修订、复合租户外键、RLS |
+| `opportunity_outcome_events` | 实施进度、日期、目标达成、企业上报财务、销量血缘，以及打样/投产/销量/退货实绩 | 关联采纳事件；不可变修订、复合租户外键、RLS；退货率、净额和ROI由服务端派生，不能把观察结果宣称为因果收益 |
 | `product_recommendations` | 改款/定位等工程建议 | 必须挂机会与证据聚类 |
 | `evidence_links` | 结论 ↔ 证据多态引用 | 同任务 claim+evidence 唯一 |
 | `analysis_reports` | 在线报告：摘要、决策、总分、范围/产品/企业快照、`sections` | `(task, report_version)` 唯一；在线查看，无导出工作流 |
@@ -345,7 +496,10 @@ erDiagram
 3. 评论事件按 `(tenant_id, content_hash)` 去重；政策预警同样按内容哈希去重。
 4. 竞品或政策告警根据启用渠道生成 `notification_events`；Worker 每 30 秒投递 pending 事件，最多尝试 5 次。
 
-实现边界：一次采集只要没有抛异常就会记录为 `succeeded`，即使 `fetched_count=0`、`inserted_count=0`。因此运营判断必须同时看状态和计数，不能把 `succeeded` 等同于“已获取真实数据”。邮件和短信当前是 HTTP 网关 payload，不是内置 SMTP 或短信 SDK。
+实现边界：零抓取、无可写商品标识或空评论页会记录为`failed`，不会伪装为成功；
+运营仍须同时核对`fetched_count/inserted_count`和来源错误。邮件和短信当前是HTTP网关
+payload，不是内置SMTP或短信SDK。AI员工运行时默认关闭，Worker不会恢复或消费
+`agent_run`；初始化脚本会把全部`agent_triggers`保持为`disabled`。
 
 ### 5.6 竞品动态（`v3_4`）
 
@@ -368,14 +522,19 @@ erDiagram
 | `forecast_models` | 模型编码、版本、引擎、`state_uri`、checksum、指标、共享或租户私有 |
 | `tenant_data_sources` | 销售历史等源：类型、连接方式、`secret_ref`、授权说明、安全配置 JSON |
 | `tenant_sku_catalog` | 预测用 SKU×站点：只保留已映射到当前产品中心的 SKU，`attributes.source_sku` 指向训练历史 |
-| `forecast_sku_aliases` | 产品 SKU → 训练历史 SKU；引擎里多出来的 SKU 不入库 |
-| `forecast_model_deployments` | 租户场景（如 `sales_forecast`）当前启用模型 |
-| `forecast_training_runs` | 追加训练任务、指标、产物模型 |
-| `forecast_jobs` | 一次预测请求：粒度日/周、horizon、SKU 列表、站点、幂等 |
+| `forecast_sku_aliases` | 历史全局映射，仅兼容既有资料；企业新训练不读取 |
+| `tenant_forecast_sku_aliases` | 带租户、来源上下文的产品SKU与来源SKU映射 |
+| `forecast_model_deployments` | 租户场景启用模型，`route_policy.catalog_snapshot`冻结目录 |
+| `forecast_training_runs` | 初训/追加/重建、血缘、滚动指标、模型、执行次数/令牌/租约 |
+| `forecast_data_versions` | 原文件/标准文件SHA、口径与映射、质量报告、父版本、确认时间、辅助表来源SHA与模板快照；确认后不可原地修改 |
+| `forecast_import_templates` | 企业导入模板不可变修订；来源版本和创建人复合租户外键、RLS，禁止UPDATE/DELETE |
+| `forecast_jobs` | 预测请求、粒度/范围、幂等，以及入队时冻结的模型和`routing_snapshot` |
 | `forecast_runs` | 该 job 的一次执行 |
 | `forecast_results` | SKU×站点×时间桶的预测值与 A–D 可靠性 |
 
 模型文件在磁盘/对象存储，库只做版本账本。
+
+`v3_21_import_templates.sql`增加模板表及数据版本的`auxiliary_sources/template_snapshot`，已接根初始化SQL。重复迁移保留模板修订。跨表预检先校验同租户已确认来源，再将UUID和SHA冻结到标准制品；完整差额和订单行转换留在SHA校验的审计文件，数据库质量字段只保留摘要。
 
 ### 5.8 平台配置
 
@@ -420,7 +579,7 @@ erDiagram
 
 ## 7. 一致性与安全
 
-- **租户隔离：** API 从 JWT/会话解析 `tenant_id`，仓储 SQL 同时过滤租户。当前未启用 RLS，且只有部分预测表使用 `(id, tenant_id)` 复合外键；新增代码必须把租户过滤视为强制条件。
+- **租户隔离：** API从JWT/会话复核身份，业务事务SET LOCAL ROLE/GUC。v3.16复合外键约束业务关联；v3.17策略/反馈同样受保护。迁移账号与服务账号不同时，需显式授予服务账号受限角色成员资格。新tenant表须纳入策略，否则启动检查拒绝。
 - **证据 Span：** 触发器保证 `review_aspects.evidence_quote` = `reviews.content_original[start:end]`；原文不被译文或模型输出覆盖。
 - **幂等：** 分析任务、解析任务、阶段运行、确认、控制事件、预测 job/训练 各有租户级幂等键。
 - **恢复：** 确认只能挂 `is_safe_resume=true` 的业务 Checkpoint；回答写入 `workflow_control_events`，由 Worker/Supervisor 投递 resume。
@@ -430,7 +589,7 @@ erDiagram
 - **工作台对话：** 消息挂 `analysis_workspaces`，不按单次任务复制；问询上下文在请求期组装，不把 system 大包写入消息表。
 - **归档工作日记：** 报告 `status=superseded` 且无 draft 报告时，任务列表不再展示；工作台 `status=archived`。
 - **物理删除：** 市场数据集更新会先清理关联证据、评论方面、竞品匹配、评论和 listing，再重建导入结果；普通页面删除使用软删。工作台物理删除前必须先处理 `last_analysis_task_id` 与任务引用，日常流程只做归档。
-- **Schema DDL：** Backend 和 Worker 仅在进程启动时调用统一 Bootstrap；但 `DatasetRepository.list_reviews()` 与数据集导入仍会执行 `ALTER TABLE reviews ... IF NOT EXISTS` 作为旧库兼容。生产环境应先完成迁移，使这些语句成为 no-op。
+- **Schema DDL：** Backend和Worker仅在启动时执行Bootstrap；评论预览列也移到启动阶段。普通数据导入/读取不再尝试ALTER TABLE，受限业务角色无需表所有权。
 
 ---
 
@@ -477,7 +636,13 @@ erDiagram
 
 `tenant_sku_catalog` / `forecast_sku_aliases` → `forecast_model_deployments` → `forecast_jobs` → `forecast_runs` → `forecast_results`
 
-追加训练另走 `forecast_training_runs` 并产生新的 `forecast_models`，部署切换后才成为租户当前模型。预测结果可靠性为 A–D，但可靠性等级不能代替真实留出集指标。
+数据训练走`forecast_data_versions`确认 → `forecast_training_runs` → 独立时间留出 → `forecast_models`与部署切换。追加仅合并本企业已确认版本，首次训练不复制共享历史。`rejected/failed`保留旧部署；新模型owner不可变，跨企业私有模型部署被数据库拒绝。等级不能代替留出集指标。
+
+机会链路为不可变策略 → 任务事实 → 首次机会特征 → 处理反馈 → 实施与经营观察。
+`v3_37`允许非`planned`修订记录打样、投产、销量和退货数量；服务端从企业上报收入与
+费用计算净额和reported ROI，并保留可选销量版本SHA。导出固定截点、按任务完整分组，
+保留未标注候选，排除缺历史特征、采纳已更新和回溯实施。企业报告结果不等于因果收益；
+数据字段详见[API实现说明](./FurniScope_企业决策与标准数据API实现说明V1.md)。
 
 ---
 
@@ -490,11 +655,12 @@ erDiagram
 | AI 五节点 | 任务、节点尝试、业务/框架 Checkpoint、证据、报告已实现 | 最终任务成功或明确部分成功，每个已执行节点有 stage run，报告证据可回溯 |
 | 工作台对话 | 工作台和消息持久化已实现，`context` 已纳入契约 | API 写入成功，刷新或换浏览器后能从 PostgreSQL 恢复 |
 | 主动采集 | 手动拉取和 Worker 30 秒到期扫描均已实现 | 最近 run 不仅 `succeeded`，还应有合理的 fetched/inserted 计数 |
-| 竞品动态 | watch、快照、差异告警与通知入队已实现 | 目标为外部商品，至少有两个时间点快照才能验证“变化” |
+| 竞品动态 | watch、版本化快照、差异告警与通知入队已实现 | 目标为外部商品；当前经营基线每个目标含多个独立时点，新增授权采集仍须由常驻Worker持续追加 |
 | 评论舆情 | 事件存储、去重、情感字段已实现 | 来源真实返回评论且 `sentiment_events` 有新增 |
 | 政策预警 | 官方 RSS/JSON、关键词命中、已读状态已实现 | 已配置启用源，并产生实际 `policy_alerts`；不能用竞品未读数代替 |
 | 外部通知 | 通用 Webhook、钉钉、Slack、邮件/短信网关投递已实现 | 至少一个渠道启用，测试事件达到 `delivered` |
 | 销量预测 | 模型、部署、任务、运行、结果、追加训练账本已实现 | SKU 映射完整、部署有效、job 成功且业务指标经过验证 |
+| 机会结果回流 | 不可变实施修订、企业财务、打样/投产/销量/退货及销量SHA已实现 | 实绩来源可追溯，销量/退货上下界有效；reported ROI只表示企业上报观察，不作为因果证明 |
 
 ---
 
@@ -548,7 +714,7 @@ GROUP BY status ORDER BY status;
 
 ## 12. 与 V3 设计文档的差异
 
-`Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md` 记录 2026-08-09 基线（35 表）。现行系统在其上叠加了预测、注册、市场信号、通知，以及需单独执行的竞品监控。字段以仓库 SQL 为准，不以该文档的 35 表统计为上限。
+`Docs/项目设计文档/03_FurniScope_PostgreSQL数据库设计V3.md` 保留2026-08-09基线（35表），并链接企业闭环增量。现行系统已叠加预测、注册、市场信号、通知、竞品监控、标准数据及策略反馈；竞品监控随v3.16纳入从零DDL。字段以仓库SQL为准，不以历史35表统计为上限。
 
 V2.1 合并进 V3 的去向见原设计文档第 8 节（constraints、field_mapping、sections 等）。不要再按 V2 的 `roles` / `competitor_listings` 表名写新代码。
 
@@ -563,3 +729,101 @@ V2.1 合并进 V3 的去向见原设计文档第 8 节（constraints、field_map
 5. 新业务表必须带 `tenant_id`；优先使用包含 `tenant_id` 的复合唯一键/外键，降低仅靠应用层过滤的风险。
 6. 表、列、约束、索引必须同时在“全新空库”和“已有库升级”两条路径验证，并确认 Backend、Worker 都能启动。
 7. 完整列类型、默认值、CHECK、索引以 SQL 注释为准；服务中的 `ensure_schema` 只作兼容保护，不应成为第三套长期结构定义。
+
+## 14. v3.32 产品主档导入升级
+
+`v3_32_product_catalog_imports.sql`必须在 v3.31 后执行。迁移先为`products`增加生成列
+`sku_compare_key=upper(btrim(sku))`，再检查同租户大小写碰撞；发现碰撞时整个事务失败，
+必须先人工合并或改码，不得删除校验继续升级。
+
+```bash
+psql -X -v ON_ERROR_STOP=1 -d <database> \
+  -f migrations/v3_32_product_catalog_imports.sql
+```
+
+迁移新增：
+
+- `product_groups`、`product_group_members`
+- `product_import_jobs`、`product_import_rows`
+- `uk_products_tenant_sku_compare`及任务查询索引
+- 四表`ENABLE/FORCE RLS`、租户/平台策略、写栅栏、更新时间触发器和最小授权
+
+`product_import_rows(imported_product_id,tenant_id)`使用复合外键；删除产品时只将
+`imported_product_id`置空并保留租户列，要求 PostgreSQL 15+，本轮在 PostgreSQL
+16.14 验证。迁移事务负责生成列、碰撞检查和唯一索引；Backend 启动同时检查迁移台账
+和四张表，只登记版本但未实际建表会拒绝启动。
+
+升级后至少执行：
+
+```sql
+SELECT version FROM furniscope.schema_migrations
+WHERE version='v3_32_product_catalog_imports';
+
+SELECT to_regclass('furniscope.product_groups'),
+       to_regclass('furniscope.product_group_members'),
+       to_regclass('furniscope.product_import_jobs'),
+       to_regclass('furniscope.product_import_rows');
+
+SELECT tenant_id,sku_compare_key,count(*)
+FROM furniscope.products
+GROUP BY tenant_id,sku_compare_key HAVING count(*)>1;
+```
+
+本轮隔离库完成迁移首跑和重复执行，两次均成功；HTTP 集成测试同时验证 RLS 租户隔离、
+事务提交、幂等、审计、错误阻断和 1 万行预检。禁止直接在生产库以“测试”为名执行
+导入；应先克隆结构到独立数据库验证，再按备份、迁移、启动检查顺序上线。
+
+## 15. v3.33 租户数据分类升级
+
+`v3_33_tenant_data_class.sql`在v3.32后执行。迁移为`tenants`增加`data_class`，取值仅为
+`business/test/demo`，默认`business`。测试和演示租户必须由夹具显式标记；管理员账号
+列表和业务KPI由服务端排除非`business`记录，禁止依据租户名称关键词过滤。
+
+```bash
+psql -X -v ON_ERROR_STOP=1 -d <database> \
+  -f migrations/v3_33_tenant_data_class.sql
+```
+
+## 16. v3.34 SKU事实身份升级
+
+`v3_34_sku_fact_identity.sql`在v3.33后执行。迁移安装
+`furniscope.rename_tenant_sku_facts(bigint,text,text)`，产品服务在同一事务中调用它，
+原子同步`products`、`tenant_sku_catalog`、`tenant_forecast_sku_aliases`、
+`sales_facts_daily`和`inventory_facts_daily`。旧SKU保留为追溯别名；目标SKU冲突会
+使整个事务失败。
+
+```bash
+psql -X -v ON_ERROR_STOP=1 -d <database> \
+  -f migrations/v3_34_sku_fact_identity.sql
+```
+
+该函数为固定`search_path`的`SECURITY DEFINER`函数，但已撤销`PUBLIC EXECUTE`，仅向
+`furniscope_tenant`和`furniscope_platform_admin`授权；函数内部继续核验当前租户或平台
+管理员上下文。上线前必须验证：
+
+```sql
+SELECT has_function_privilege(
+  'public',
+  'furniscope.rename_tenant_sku_facts(bigint,text,text)',
+  'EXECUTE'
+) AS public_can_execute;
+```
+
+结果必须为`false`。2026-10-07已在独立fresh和upgrade数据库完成首跑、重复执行、存量
+哨兵、启动隔离及SKU事实身份检查，结果见
+[`migration-summary.json`](../../artifacts/system-review-20261007-fixes/migration-v34/migration-summary.json)。
+
+## 17. v3.36 市场决策数据治理升级
+
+`v3_36_market_intelligence_governance.sql`在v3.35后执行。迁移新增
+`market_intelligence_batches/market_intelligence_lineage`，两表均启用`FORCE RLS`、
+平台管理策略和租户迁移写栅栏。批次只能按受控状态机更新，血缘只能追加。
+
+```bash
+psql -X -v ON_ERROR_STOP=1 -d <database> \
+  -f migrations/v3_36_market_intelligence_governance.sql
+```
+
+应用启动要求迁移版本和两张表同时存在。数据包导入、完整导出、介质选择、权限矩阵及
+备份恢复要求见
+[`19_FurniScope_五项市场决策数据与存储方案V1.md`](../项目设计文档/19_FurniScope_五项市场决策数据与存储方案V1.md)。

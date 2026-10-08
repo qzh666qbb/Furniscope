@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import ApiSettings
 from ..errors import BusinessError
-from ..repositories.forecast_repository import ForecastRepository
-from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry, coerce_training_date
+from .forecast_runtime import TenantForecastRuntimeRegistry
 
 
 class ForecastModelReplacementService:
@@ -58,91 +54,12 @@ class ForecastModelReplacementService:
                       version: str, algorithm: str, change_note: str,
                       code_filename: str, code_content: bytes,
                       parameters_filename: str, parameters_content: bytes) -> dict[str, Any]:
-        parameters = self._validate(
-            code_filename=code_filename, code_content=code_content,
-            parameters_filename=parameters_filename, parameters_content=parameters_content)
-        current = (await session.execute(text("""SELECT d.id AS deployment_id,
-            d.deployment_uuid::text,m.state_uri,m.version,m.engine
-            FROM forecast_model_deployments d JOIN forecast_models m ON m.id=d.model_id
-            WHERE d.tenant_id=:tenant AND d.scenario_code='sales_forecast'
-              AND d.status='active' AND m.status='active' FOR UPDATE OF d"""),
-            {"tenant": tenant_id})).mappings().one_or_none()
-        if current is None:
-            raise BusinessError("FORECAST_DEPLOYMENT_NOT_FOUND",
-                                "当前租户尚未部署可替换的预测模型", status_code=409)
-        effective_algorithm = current["engine"] if algorithm == "current" else algorithm
-
-        replacement_uuid = str(uuid4())
-        artifact_root = Path(self.settings.forecast_artifact_root).resolve()
-        tenant_root = artifact_root / str(tenant_id)
-        tenant_root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        stage = tenant_root / f".replacement-{replacement_uuid}"
-        final = tenant_root / replacement_uuid
-        published = False
-        try:
-            source = self.registry.state_dir(tenant_id=tenant_id, state_uri=current["state_uri"])
-            shutil.copytree(source, stage)
-            (stage / "forecast.py").write_bytes(code_content)
-            (stage / "forecast.py").chmod(0o600)
-            (stage / "model_params.json").write_text(
-                json.dumps(parameters, ensure_ascii=False, indent=2), encoding="utf-8")
-            (stage / "model_manifest.json").write_text(json.dumps({
-                "algorithm": effective_algorithm, "version": version,
-                "change_note": change_note, "source_filename": Path(code_filename).name,
-            }, ensure_ascii=False, indent=2), encoding="utf-8")
-            runtime = ForecastRuntime(self.settings, state_dir=stage, model_version=version)
-            await runtime.retrain()
-            metadata = runtime.metadata()
-            if not metadata.get("ready"):
-                raise RuntimeError(metadata.get("error", "新模型未通过就绪校验"))
-            sku_rows = await runtime.list_skus(None, 5000)
-            catalog_skus, catalog_pairs = await ForecastRepository().replace_catalog_from_engine(
-                session, tenant_id=tenant_id, sku_rows=sku_rows)
-            stage.rename(final)
-            state_uri = f"server-managed://tenant/{tenant_id}/{replacement_uuid}"
-            model = (await session.execute(text("""INSERT INTO forecast_models
-                (model_code,owner_tenant_id,model_scope,version,engine,state_uri,state_checksum,
-                 status,training_data_through,metrics)
-                VALUES('sales_forecast',:tenant,'tenant_private',:version,:engine,:uri,:checksum,
-                       'active',CAST(:through AS date),CAST(:metrics AS jsonb))
-                RETURNING id,model_uuid::text"""), {
-                "tenant": tenant_id, "version": version, "engine": effective_algorithm,
-                "uri": state_uri, "checksum": metadata["state_checksum"],
-                "through": coerce_training_date(metadata.get("data_through")),
-                "metrics": json.dumps({"sku_count": metadata.get("sku_count"),
-                                       "replacement": {"parameters": parameters,
-                                                       "change_note": change_note}}),
-            })).mappings().one()
-            await session.execute(text("""UPDATE forecast_model_deployments
-                SET status='inactive',retired_at=now()
-                WHERE tenant_id=:tenant AND scenario_code='sales_forecast' AND status='active'"""),
-                {"tenant": tenant_id})
-            deployment = (await session.execute(text("""INSERT INTO forecast_model_deployments
-                (tenant_id,model_id,scenario_code,status,route_policy,deployed_by)
-                VALUES(:tenant,:model,'sales_forecast','active',CAST(:policy AS jsonb),:user)
-                RETURNING deployment_uuid::text,deployed_at"""), {
-                "tenant": tenant_id, "model": model["id"], "user": user_id,
-                "policy": json.dumps({"source": "admin_model_replacement",
-                                      "algorithm": effective_algorithm,
-                                      "previous_version": current["version"]}),
-            })).mappings().one()
-            verified = ForecastRuntime(self.settings, state_dir=final, model_version=version)
-            self.registry.remember_verified(tenant_id=tenant_id, deployment={
-                "model_scope": "tenant_private", "state_uri": state_uri,
-                "version": version, "state_checksum": metadata["state_checksum"],
-            }, runtime=verified)
-            published = True
-            return {"model_id": model["id"], "model_uuid": model["model_uuid"],
-                    "deployment_uuid": deployment["deployment_uuid"], "version": version,
-                    "engine": effective_algorithm, "deployed_at": deployment["deployed_at"],
-                    "catalog_pairs": catalog_pairs, "catalog_skus": catalog_skus}
-        except BusinessError:
-            raise
-        except Exception as exc:
-            raise BusinessError("FORECAST_MODEL_REPLACEMENT_FAILED",
-                                f"新模型校验或训练失败：{str(exc)[:500]}", status_code=422) from exc
-        finally:
-            if stage.exists():
-                shutil.rmtree(stage, ignore_errors=True)
-            if final.exists() and not published:
-                shutil.rmtree(final, ignore_errors=True)
+        # The legacy endpoint copied arbitrary packed history and considered
+        # "loadable" sufficient for release. Keep an explicit migration response
+        # until reviewed custom engines implement the independent evaluator.
+        raise BusinessError(
+            "FORECAST_STANDARD_TRAINING_REQUIRED",
+            "请在模型训练中确认企业数据并选择完整重建；上传代码直接发布已停用，"
+            "自定义引擎须先接入标准数据和独立时间验证",
+            status_code=409,
+        )

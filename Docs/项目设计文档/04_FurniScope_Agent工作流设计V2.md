@@ -1,5 +1,9 @@
 # FurniScope Agent 工作流设计 V2.0
 
+> 2026-10-04增量：企业决策以[15总体设计](./15_FurniScope_企业决策与数据闭环总体设计V1.md)为权威依据。I00冻结企业策略和事实，I14采用五市场因子、可配置适配修正与独立硬条件；历史“六维分”不再表示六项直接相加。销量数据清洗与训练为独立流程，不改变本工作流的五阶段语义。
+
+2026-10-05补全：产品解析提供真实原文证据与未确认候选，人工核验后才可进入企业适配。I14首次机会评分冻结完整特征，重试复用原结果；新分析才重新评分。机会反馈之后独立记录实施/经营观察，固定截点整任务导出供离线排序验收。销售训练通过租约和执行令牌恢复、逐SKU三窗口验证发布；这些流程不将反馈采纳视为经营成功，也不自动训练机会排序模型。
+
 ## 1. 文档定位
 
 | 项目 | 内容 |
@@ -26,7 +30,7 @@
 1. 一个 `user` 提供目标、产品、企业能力和合规市场数据后，超级 AI 员工自主完成分析。
 2. 从授权竞品和评论中识别可比商品、需求痛点、购买动机、人群和场景。
 3. 将市场需求与材料、工艺、成本、MOQ、交期、认证和包装能力联合判断。
-4. 输出六维机会分、独立置信度、工程建议、风险、验证方法和原始证据。
+4. 输出五因子市场分、企业修正分、条件检查、独立置信度、工程建议和原始证据。
 5. 默认自动重试、降级、部分继续和恢复，只在阻断性业务不确定性出现时询问 user。
 6. 任一节点可审计、可恢复；成功节点不得重复写入、重复调用模型或重复计费。
 
@@ -45,12 +49,18 @@
 ### 2.3 决策优先级
 
 ```text
-确定性规则与已确认事实
-> 已冻结业务输入和数据版本
-> 受 Schema 与证据约束的模型推理
-> 安全降级结果
-> user_confirmation
+当前用户在本轮的明确表达
+> 已确认的产品/企业事实
+> 已确认且当前有效的客户记忆
+> 服务端工作台状态与历史
+> 已冻结任务/报告证据
+> 当前租户有权访问的知识库文档
+> 模型推断
 ```
+
+确定性规则、租户边界、Schema和证据门禁对所有层级生效。高优先级输入可以临时覆盖低
+优先级上下文，但不得静默改写长期记忆、企业画像或产品画像；写回长期资源必须走候选、
+版本与人工确认流程。
 
 只有前四层不能安全决定后续路径时，才允许中断 user。
 
@@ -69,7 +79,7 @@
 | Review Insight Capability | 抽取观点、需求、情感、场景和证据 | 有效评论、家具本体 | 观点级结构化结果 | 是 |
 | Need Clustering Capability | 识别跨评论需求模式 | 评论观点和向量 | 需求簇、成员、代表证据 | 条件 |
 | Market Analytics Capability | 计算价格、竞争、卖点和趋势 | 竞品、评论、需求簇 | 确定性市场指标 | 否 |
-| Opportunity Scoring Capability | 计算机会分与独立置信度 | 指标、需求、企业能力 | 六维分、机会和置信度 | 否为主 |
+| Opportunity Scoring Capability | 计算机会分与独立置信度 | 指标、需求、冻结策略与企业事实 | 市场分、企业修正、条件检查和置信度 | 否为主 |
 | Product Strategy Capability | 将需求转为可验证工程建议 | 机会、证据、产品、知识 | 根因、动作、风险、验证方法 | 是 |
 | Evidence Audit Capability | 阻止无证据结论进入报告 | 机会、建议、指标、原始证据 | 证据链、降级或阻断项 | 条件 |
 | Report Composition Capability | 组织在线综合决策报告 | 已审计结构化结果 | 报告快照 | 是 |
@@ -246,7 +256,7 @@ I11/I12并行阶段横跨市场研究和机会评估。对外投影遵循主路�
 | `review_extracting` | 观点 Map/Reduce 抽取 |
 | `need_clustering` | 需求聚类与本体映射 |
 | `market_analytics` | 价格、趋势和企业适配并行计算 |
-| `opportunity_scoring` | 六维机会评分与置信度 |
+| `opportunity_scoring` | 五市场因子、企业修正、硬条件与置信度 |
 | `strategy_generating` | 工程建议 Map |
 | `evidence_auditing` | 证据审计和报告门禁 |
 | `report_generating` | 在线报告结构生成 |
@@ -442,24 +452,22 @@ I12通过并行分支执行，各分支只读共享输入、独立写入，避�
 | 项目 | 设计 |
 |---|---|
 | 节点功能 | 计算需求热度、增长、未满足程度、竞争空间、利润空间、企业适配度、基础分和独立置信度 |
-| 输入 | 需求簇、市场/适配指标、版本化权重 |
-| 输出 | 机会、六维分、总分、置信度、适配项和缺口 |
+| 输入 | 需求簇、市场指标、任务冻结的企业策略/能力/产品事实 |
+| 输出 | 五市场分项、market_score、adjusted_score、适配分、置信度、条件明细及policy_snapshot |
 | 数据库写入 | `market_opportunities`、Stage输出引用 |
 | 判断条件 | 缺失分项按版本化规则归一；未知不填0；高分低置信度不强推荐 |
 | 重试 | 仅数据库瞬时错误2次；任务+机会唯一键UPSERT |
 | 异常兜底 | 配置非法直接失败；低置信但可探索时按统一确认规则处理 |
 
-评分保持：
+默认市场权重为需求热度0.30、增长0.15、未满足0.25、竞争空间0.20、利润代理0.10。缺失项按可用权重归一；企业策略可修改权重和适配强度。
 
-```text
-机会基础分 =
-20% × 需求热度
-+ 15% × 需求增长
-+ 20% × 未满足程度
-+ 15% × 竞争空间
-+ 10% × 利润空间
-+ 20% × 企业适配度
-```
+$$
+S_{\mathrm{market}}=\frac{\sum_{i\in A}w_ix_i}{\sum_{i\in A}w_i},
+\qquad
+S_{\mathrm{adjusted}}=S_{\mathrm{market}}[(1-\alpha)+\alpha F/100]
+$$
+
+$\alpha$默认0.3。$F$按已确认事实的已知检查项计算，完全未知时不填中性分，跳过适配乘数并要求补证据。精确能力、同单位数值条件分别判定pass/blocked/unknown；硬条件blocked输出`capability_gap`，工程建议优先级low。旧任务不重算；`base_score`兼容存放修正分，`manufacturing_fit`首项保留条件明细。实现为`external_toolbox.py`调用`enterprise_decision.py`，不是LLM自由打分或已训练排序模型。
 
 ### I15 Product Strategy Generation Map
 
@@ -777,7 +785,7 @@ flowchart TD
     T --> I13
     SKIP --> I13
     E --> I13
-    I13 --> I14[I14 六维机会评分与置信度]
+    I13 --> I14[I14 市场评分、企业修正与条件检查]
     I14 -->|主结论低置信需选择| I07
     I14 --> SMAP{I15 Top机会建议Map}
     SMAP --> S1[建议1]
@@ -945,3 +953,97 @@ FurniScopeSuperEmployeeGraph
 - 移除所有按传统岗位分配人工节点或审批人的规则；
 - 最终报告改为事务提交后直接可查看的在线综合决策报告；
 - 增加旧N00—N19到新内部节点与外部五阶段的完整映射。
+
+## 20. 工作台 Turn 与上下文装配
+
+工作台自由问询和任务证据问询共用`TurnService`。`task_uuid`为空时装配工作台知识；
+非空时先验证任务属于同租户、同工作台，再追加任务结果和证据。旧任务聊天路由只调用
+该服务，不再拥有独立Prompt或上下文拼装函数。
+
+### 20.1 每轮执行顺序
+
+```text
+校验工作台和可选任务
+  -> 按 Idempotency-Key/client_turn_id 预留 pending Turn
+  -> 读取 Context 当前版本
+  -> 解析意图、实体、指代和服务端工作台状态
+  -> 服务端历史 + 企业画像 + 产品画像 + 授权数据集
+  -> confirmed 客户记忆 + 绑定知识库检索 + 可选任务证据
+  -> 按来源优先级处理冲突、Token 预算裁剪并计算 context_hash
+  -> 模型生成或确定性降级
+  -> 原子提交消息对、状态修订、快照、Citation、候选记忆和Turn响应
+  -> 提交成功后释放 answer_delta/citation/memory_candidate/action/done
+```
+
+`analysis_workspace_states`显式保存`current_product_id/current_market/
+compared_markets/current_dataset_id/current_task_id/current_analysis_stage/
+pending_confirmation/last_user_intent/resolved_references`。解析顺序为问题中的明确实体、
+本轮绑定、服务端状态、Context默认值，避免每轮从自由文本重新猜测。市场切换时只复用
+同市场且品类匹配的数据集，否则解除绑定；“它/这个/刚才那个”、纠错、多市场比较、
+暂停和恢复都写入本轮`resolution_log`。
+
+裁剪顺序为旧历史、低优先级知识匹配、任务证据摘要；任何被裁剪来源都写入
+`truncated_sources`。`context:preview`复用同一装配器，使“为什么没记住/没引用”
+可在调用模型前排查。
+
+### 20.2 记忆规则
+
+只从策略`allowed_types`提取候选，产品成本等画像事实不得复制为客户记忆。默认
+`confirmation_required=true`；候选确认后才进入后续上下文。记忆必须标明
+`scope`、`effective_at/expires_at`、`sensitivity`、来源消息和确认人。新值通过
+`supersedes_memory_uuid`连接旧值，确认动作同时完成新旧状态切换，生命周期为
+`candidate -> confirmed -> superseded/archived/invalidated`。
+
+依赖企业或产品画像的记忆保存`profile_dependencies`；来源画像版本变化时只失效显式
+声明依赖的记忆，独立偏好不连带失效。`restricted`记忆只在Context Preview中显示被
+策略排除，不进入模型Prompt。`user`作用域只对创建者可见，`workspace`只在当前工作台
+生效，`tenant`才允许同企业授权成员复用。自然语言遗忘只生成带明确UUID目标的确认动作，
+Agent不得直接执行模糊删除。
+
+### 20.3 知识与引用
+
+知识文档按版本解析、分页切片、Embedding召回和Rerank；每个入选chunk转换为真实
+Citation。结构化画像、授权数据、任务证据和客户记忆也使用同一Citation结构。
+回答只能返回本轮快照内的引用，不得根据来源类型和数量伪造`context_sources`。
+
+知识文档一律按不可信数据处理，文档中的“忽略系统规则”“覆盖优先级”等指令不得进入
+控制平面。知识库可见性为`tenant/user`；检索、绑定、重索引和Citation解析同时校验
+tenant与创建者边界，删除版本后清理对应chunk。
+
+### 20.4 流式可见性
+
+SSE中的`progress`只描述已完成的可展示阶段，例如“已加载N项可审计上下文”。
+禁止传输模型`reasoning`、思维链或隐藏Prompt。为避免“页面已显示但刷新丢失”，
+模型输出先完成持久化事务，再以`answer_delta`分块释放。每个SSE事件带稳定`id`；
+客户端在单次请求及一次自动重连中按ID去重，并复用原`Idempotency-Key`。服务端对已完成
+Turn按持久化响应重放，不重新调用模型；同一工作台只允许一个`pending` Turn，避免快速
+连续提交导致回答乱序。
+
+### 20.5 冲突与写回规则
+
+Context Builder固定采用§2.3的来源优先级，并把同一语义槽位的不同值写入
+`context_governance.conflicts`。例如企业画像为美国、长期记忆为德国、本轮明确询问英国
+时，本轮使用英国；该覆盖只更新工作台状态。只有用户明确要求长期记住且候选经确认后，
+才新增记忆版本；企业/产品画像只能通过对应业务接口修改。模型推断永远不能写回事实表。
+
+### 20.6 可观测与评测
+
+每轮快照保存来源优先级、冲突、解析日志、Token估算、裁剪项和`context_hash`。固定评测
+集覆盖指代、SKU纠错、市场切换、多市场比较、暂停/恢复、临时条件不误写和知识库Prompt
+Injection。离线结果只证明确定性样例行为；真实模型响应时延、Token成本、无依据回答率
+和线上检索效果仍需生产观测。
+
+## 21. 通用自主 Agent 演进边界
+
+现有 I00-I19 LangGraph 继续作为市场分析领域内的固定业务图，不直接改造成允许模型动态
+增删节点的通用工作流。Web AI 员工的目标、计划、Tool/Skill 编排、Policy、
+Verifier、Replanner、`Copilot / AI员工`双模式切换和独立工作台按
+[`17_FurniScope_AI员工系统与桌面端总体设计V1.md`](./17_FurniScope_AI员工系统与桌面端总体设计V1.md)
+推进；Tauri、本地 MCP、设备授权和本地 Bridge 按
+[`18_FurniScope_桌面端未来规划V1.md`](./18_FurniScope_桌面端未来规划V1.md)后置实施。
+
+演进时将当前固定图注册为高层`market_analysis.run`领域 Skill，由新的 Goal/Plan Runtime
+调用；固定图内部的版本冻结、Checkpoint、幂等、人工确认、证据审计和最终事务语义保持
+不变。当前生产口径仍是受控问数、RAG、固定`run_workflow`和预测路由；通用 Goal/Plan/Run
+Runtime、动态 Tool 选择、MCP Host、桌面 Bridge 和本地计算机操作尚未实现，不得提前
+作为现有能力对外描述。

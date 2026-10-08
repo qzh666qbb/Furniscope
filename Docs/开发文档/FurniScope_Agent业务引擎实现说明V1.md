@@ -1,5 +1,11 @@
 # FurniScope Agent业务引擎实现说明 V1
 
+> 2026-10-04企业决策增量：[15总体设计](../项目设计文档/15_FurniScope_企业决策与数据闭环总体设计V1.md)与[API实现说明](./FurniScope_企业决策与标准数据API实现说明V1.md)补充现行外部工具实现。分析创建时冻结企业策略和事实；`external_toolbox.py`调用`enterprise_decision.py`计算五市场因子、可配置适配修正及独立硬条件。明确能力冲突输出`capability_gap`和暂缓建议，未知保留待确认；不存在证据的成本影响不再生成金额。策略/反馈并非已训练的排序模型。
+
+普通任务与asyncpg工具查询均绑定租户受限角色，连接归还后重借需重新绑定；LangGraph内部检查点与平台调度属于受信服务边界。以下合成适配器仅验证编排，不是企业评分或商业精度的验收依据。
+
+2026-10-05：`product_facts.py`统一产品和企业能力词表，解析候选须有原文依据且经人工确认；单位成本不以出厂价替代。v3_22在机会首次INSERT时冻结完整`decision_snapshot`，外部工具评分重试复用原机会，不用当前事实重写历史。处理反馈、实施与经营观察由独立服务持久化；固定截点导出后可运行[离线验收](./FurniScope_真实数据离线验收指南.md)，不将采纳标签当经营成功，不自动训练排序模型。
+
 ## 1. 实现范围
 
 本模块实现 FurniScope“跨境家具超级 AI 员工”的 LangGraph 业务编排核心，不包含 FastAPI Web 接口，也不把内部能力包装成用户角色。系统鉴权角色仍只有 `user/admin`。
@@ -133,7 +139,8 @@ result = await engine.run(initial_state)
 3. 各节点Prompt正文、输出JSON Schema和阿里云Model Router正式HTTP协议。
 4. I18生产报告生成算法仍需真实Prompt和Schema；当前`SyntheticFurnitureToolbox`会写合法在线报告与模型追溯，并显著标记`synthetic_demo`。I19在最终事务中校验报告后完成任务。
 5. Agent State未包含创建任务必需的`created_by/job_name/job_type/idempotency_key`完整命令，所以业务服务需先事务创建`draft analysis_tasks`，再启动I00；没有擅自扩展锁定State。
-6. Redis任务队列部署拓扑未实现；确认恢复Worker已实现数据库Outbox领取、5分钟租约重领、成功消费与失败状态。
+6. Redis Streams任务队列与独立Worker拓扑已实现，覆盖数据库补投、租约重领、成功消费、
+   重试/死信和30秒维护；AI员工Runtime关闭时不恢复或消费`agent_run`。
 
 ## 8. 已验证结果
 

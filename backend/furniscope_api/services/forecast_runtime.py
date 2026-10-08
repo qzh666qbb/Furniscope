@@ -39,9 +39,10 @@ class ForecastRuntime:
         self.model_version = model_version or settings.forecast_model_version
         self._service: Any | None = None
         self._lock = RLock()
+        self._checksum_cache: tuple[tuple, str] | None = None
 
     def _required_paths(self) -> list[Path]:
-        return [
+        paths = [
             self.engine_path,
             self.state_dir / "meta.json",
             self.state_dir / "daily.pkl",
@@ -50,6 +51,10 @@ class ForecastRuntime:
             self.state_dir / "week_model.pkl",
             self.state_dir / "encoders.pkl",
         ]
+        for filename in ("model_manifest.json", "model_params.json"):
+            if (self.state_dir / filename).is_file():
+                paths.append(self.state_dir / filename)
+        return paths
 
     @property
     def engine_path(self) -> Path:
@@ -57,13 +62,28 @@ class ForecastRuntime:
         return tenant_engine if tenant_engine.is_file() else self.engine_root / "forecast.py"
 
     def fingerprint(self) -> str:
-        digest = hashlib.sha256()
-        for path in self._required_paths():
+        """Content SHA256; file metadata is only a cache invalidation hint."""
+        paths = self._required_paths()
+        signature = []
+        for path in paths:
             if not path.is_file():
                 raise RuntimeError(f"Forecast runtime artifact is missing: {path.name}")
             stat = path.stat()
-            digest.update(f"{path.name}:{stat.st_size}:{stat.st_mtime_ns}".encode())
-        return digest.hexdigest()
+            signature.append((path.name, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns))
+        signature = tuple(signature)
+        if self._checksum_cache and self._checksum_cache[0] == signature:
+            return self._checksum_cache[1]
+        digest = hashlib.sha256()
+        for path in paths:
+            digest.update(path.name.encode() + b"\0")
+            with path.open("rb") as handle:
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    if chunk.startswith(b"version https://git-lfs.github.com/spec/"):
+                        raise RuntimeError(f"Forecast artifact has not been downloaded: {path.name}")
+                    digest.update(chunk)
+        checksum = digest.hexdigest()
+        self._checksum_cache = signature, checksum
+        return checksum
 
     def metadata(self) -> dict[str, Any]:
         if not self.settings.forecast_enabled:
@@ -88,7 +108,7 @@ class ForecastRuntime:
                 "granularities": ["day", "week"],
                 "trained_at": {key: value.get("trained_at") for key, value in
                                model_card.get("trained_models", {}).items()},
-                "reported_backtest": (
+                "reported_backtest": manifest.get("evaluation") or (
                     {
                         **(model_card.get("recomputed_backtest") or {}),
                         "copied_from_docs": model_card.get("reported_backtest") or {},
@@ -166,12 +186,23 @@ class ForecastRuntime:
                             **scenario,
                         )
                         lower, upper = result["confidence_interval"]
+                        reliability = result["reliability"]
+                        provenance = {key: result[key] for key in
+                                      ("method", "segment", "validation_status", "validation_scope", "data_through")
+                                      if key in result}
+                        if user_reference:
+                            # Accuracy on the reference product is not accuracy on the target.
+                            lower = upper = None
+                            reliability = "D"
+                            provenance.update(method="reference_sku", validation_status="unvalidated",
+                                              validation_scope=None)
                         summaries.append({
                             "sku": sku, "site": site,
                             "total": float(result["weekly_total"]),
                             "daily_average": float(result["daily_avg"]),
-                            "lower": float(lower), "upper": float(upper),
-                            "reliability": result["reliability"],
+                            "lower": float(lower) if lower is not None else None,
+                            "upper": float(upper) if upper is not None else None,
+                            "reliability": reliability, **provenance,
                         })
                         predictions = result["predictions"]
                         prediction_total = sum(float(item["sales"]) for item in predictions)
@@ -179,8 +210,9 @@ class ForecastRuntime:
                             bucket_start = item.get("date") or item["week_start"]
                             point_lower = item.get("lower")
                             point_upper = item.get("upper")
-                            if request["granularity"] == "week" and (
-                                    point_lower is None or point_upper is None):
+                            if (request["granularity"] == "week" and result.get("validation_scope") != "window_total"
+                                    and lower is not None
+                                    and upper is not None and (point_lower is None or point_upper is None)):
                                 # Backward compatibility for tenant engines created before
                                 # weekly point intervals were added: allocate their aggregate
                                 # interval over rows while preserving the reported total.
@@ -189,23 +221,27 @@ class ForecastRuntime:
                                          else 1 / max(len(predictions), 1))
                                 point_lower = round(float(lower) * share, 1)
                                 point_upper = round(float(upper) * share, 1)
+                            if user_reference:
+                                point_lower = point_upper = None
                             points.append({
                                 "sku": sku, "site": site, "bucket_start": bucket_start,
                                 "predicted_sales": float(item["sales"]),
                                 "lower": float(point_lower) if point_lower is not None else None,
                                 "upper": float(point_upper) if point_upper is not None else None,
-                                "reliability": result["reliability"],
+                                "reliability": reliability,
                             })
                 total = round(sum(item["total"] for item in summaries), 1)
-                upper_total = round(sum(item["upper"] for item in summaries), 1)
-                safety_stock = max(0, round(upper_total - total))
+                upper_total = (round(sum(item["upper"] for item in summaries), 1)
+                               if all(item["upper"] is not None for item in summaries) else None)
+                safety_stock = max(0, round(upper_total - total)) if upper_total is not None else None
                 return {
                     "summaries": summaries,
                     "points": points,
                     "metrics": {
                         "pair_count": len(summaries), "total_forecast": total,
                         "upper_total": upper_total, "safety_stock": safety_stock,
-                        "recommended_production": round(total + safety_stock),
+                        "recommended_production": round(total + safety_stock) if safety_stock is not None else None,
+                        "planning_status": "error_band_available" if safety_stock is not None else "unvalidated",
                         "model_version": self.model_version,
                         "data_through": self.metadata().get("data_through"),
                         "forecast_start": effective_start or (points[0]["bucket_start"] if points else None),

@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+import re
 from typing import Literal
 
 from pydantic import SecretStr, model_validator
@@ -15,10 +16,16 @@ class ApiSettings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     app_debug: bool = False
     database_url: str = "postgresql+asyncpg://postgres@127.0.0.1:5432/furniscope"
+    admin_database_url: str | None = None
+    worker_database_url: str | None = None
     database_pool_size: int = 10
     database_max_overflow: int = 10
     database_pool_timeout_seconds: int = 10
     database_command_timeout_seconds: int = 30
+    database_allow_runtime_ddl: bool = False
+    database_require_runtime_role_separation: bool = False
+    deployment_cell_code: str = "cell-local"
+    deployment_region: str = "local"
 
     furniscope_jwt_private_key: SecretStr | None = None
     furniscope_jwt_public_keys_json: SecretStr | None = None
@@ -30,10 +37,18 @@ class ApiSettings(BaseSettings):
 
     log_level: str = "INFO"
     cors_allowed_origins: list[str] = []
+    storage_backend: Literal["local", "s3"] = "local"
     demo_storage_root: str = "var/demo_uploads"
+    object_storage_endpoint: str | None = None
+    object_storage_access_key: SecretStr | None = None
+    object_storage_secret_key: SecretStr | None = None
+    object_storage_bucket: str = "furniscope"
+    object_storage_region: str = "us-east-1"
+    object_storage_secure: bool = True
+    object_storage_auto_create_bucket: bool = False
     upload_max_bytes: int = 26_214_400
     analysis_ontology_version: str = "sofa-ontology-v1"
-    analysis_scoring_version: str = "opportunity-score-v2"
+    analysis_scoring_version: str = "opportunity-score-v3"
     analysis_prompt_bundle_version: str = "furniscope-agent-v1"
     analysis_model_route_version: str = "token-plan-route-v1"
     analysis_worker_mode: Literal["demo_only", "token_plan_demo", "external"] = "demo_only"
@@ -48,6 +63,10 @@ class ApiSettings(BaseSettings):
     worker_lease_ms: int = 120_000
     worker_max_attempts: int = 3
     worker_job_timeout_seconds: int = 900
+    worker_tenant_max_in_flight: int = 1
+    worker_tenant_queue_limit: int = 100
+    worker_tenant_defer_ms: int = 250
+    worker_metrics_port: int = 9108
     aliyun_model_router_api_key: SecretStr | None = None
     aliyun_model_router_chat_base_url: str = (
         "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
@@ -77,6 +96,11 @@ class ApiSettings(BaseSettings):
     forecast_artifact_root: str = "forecast_assets/tenants"
     forecast_model_version: str = "sales-forecast-v4"
     forecast_max_pairs: int = 100
+    data_query_timeout_ms: int = 5000
+    knowledge_relevance_threshold: float = 0.35
+    knowledge_auto_select_limit: int = 5
+    memory_auto_extract_enabled: bool = False
+    agent_runtime_enabled: bool = False
 
     @model_validator(mode="after")
     def validate_contract(self) -> "ApiSettings":
@@ -93,10 +117,31 @@ class ApiSettings(BaseSettings):
             and not self.deepseek_api_key.get_secret_value().strip()
         ):
             self.deepseek_api_key = None
+        for field_name in (
+            "object_storage_access_key",
+            "object_storage_secret_key",
+        ):
+            secret = getattr(self, field_name)
+            if secret is not None and not secret.get_secret_value().strip():
+                setattr(self, field_name, None)
         if not self.database_url.startswith("postgresql+asyncpg://"):
             raise ValueError("DATABASE_URL must use postgresql+asyncpg")
+        for name, url in {
+            "ADMIN_DATABASE_URL": self.admin_database_url,
+            "WORKER_DATABASE_URL": self.worker_database_url,
+        }.items():
+            if url is not None and not url.startswith("postgresql+asyncpg://"):
+                raise ValueError(f"{name} must use postgresql+asyncpg")
         if not 1 <= self.database_pool_size <= 100:
             raise ValueError("DATABASE_POOL_SIZE must be between 1 and 100")
+        if self.app_env == "production" and self.database_allow_runtime_ddl:
+            raise ValueError("Production forbids runtime schema DDL")
+        if self.app_env == "production" and not self.database_require_runtime_role_separation:
+            raise ValueError("Production requires database runtime-role separation")
+        if not re.fullmatch(r"[a-z][a-z0-9-]{1,63}", self.deployment_cell_code):
+            raise ValueError("DEPLOYMENT_CELL_CODE must be a lowercase cell identifier")
+        if not re.fullmatch(r"[a-z][a-z0-9-]{1,63}", self.deployment_region):
+            raise ValueError("DEPLOYMENT_REGION must be a lowercase region identifier")
         if self.access_token_ttl_seconds != 900:
             raise ValueError("ACCESS_TOKEN_TTL_SECONDS must be 900 per API V3.2")
         if self.jwt_clock_skew_seconds != 60:
@@ -108,6 +153,33 @@ class ApiSettings(BaseSettings):
             or self.furniscope_jwt_public_keys_json is None
         ):
             raise ValueError("JWT private/public key configuration is required in production")
+        if self.app_env == "production" and self.storage_backend != "s3":
+            raise ValueError("Production requires STORAGE_BACKEND=s3")
+        if self.storage_backend == "s3":
+            missing_storage = [
+                name for name, value in {
+                    "OBJECT_STORAGE_ENDPOINT": self.object_storage_endpoint,
+                    "OBJECT_STORAGE_ACCESS_KEY": self.object_storage_access_key,
+                    "OBJECT_STORAGE_SECRET_KEY": self.object_storage_secret_key,
+                }.items() if not value
+            ]
+            if missing_storage:
+                raise ValueError(
+                    "S3 storage requires " + ", ".join(missing_storage)
+                )
+            if "://" in (self.object_storage_endpoint or ""):
+                raise ValueError(
+                    "OBJECT_STORAGE_ENDPOINT must be host:port without a URL scheme"
+                )
+            if not re.fullmatch(
+                r"[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]",
+                self.object_storage_bucket,
+            ):
+                raise ValueError("OBJECT_STORAGE_BUCKET is invalid")
+            if self.app_env == "production" and not self.object_storage_secure:
+                raise ValueError("Production object storage requires TLS")
+            if self.app_env == "production" and self.object_storage_auto_create_bucket:
+                raise ValueError("Production object storage bucket must be pre-provisioned")
         if self.upload_max_bytes < 1 or self.upload_max_bytes > 52_428_800:
             raise ValueError("UPLOAD_MAX_BYTES must be between 1 and 52428800")
         versions = {
@@ -125,6 +197,19 @@ class ApiSettings(BaseSettings):
             )
         if not self.langgraph_database_url.startswith("postgresql://"):
             raise ValueError("LANGGRAPH_DATABASE_URL must use postgresql://")
+        if self.app_env == "production":
+            database_urls = {
+                "ADMIN_DATABASE_URL": self.admin_database_url,
+                "WORKER_DATABASE_URL": self.worker_database_url,
+            }
+            missing = [name for name, url in database_urls.items() if not url]
+            if missing:
+                raise ValueError("Production requires separate " + ", ".join(missing))
+            if any(url == self.database_url for url in database_urls.values()):
+                raise ValueError("Production database roles must use distinct connection URLs")
+            main_sync_url = self.database_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+            if self.langgraph_database_url == main_sync_url:
+                raise ValueError("Production requires a dedicated LANGGRAPH_DATABASE_URL")
         if self.job_queue_mode == "redis" and not self.redis_url:
             raise ValueError("REDIS_URL is required when JOB_QUEUE_MODE=redis")
         if self.app_env == "production" and self.job_queue_mode != "redis":
@@ -139,6 +224,14 @@ class ApiSettings(BaseSettings):
             raise ValueError("WORKER_MAX_ATTEMPTS must be between 1 and 10")
         if not 1 <= self.worker_job_timeout_seconds <= 86_400:
             raise ValueError("WORKER_JOB_TIMEOUT_SECONDS must be between 1 and 86400")
+        if not 1 <= self.worker_tenant_max_in_flight <= 16:
+            raise ValueError("WORKER_TENANT_MAX_IN_FLIGHT must be between 1 and 16")
+        if not 1 <= self.worker_tenant_queue_limit <= 100_000:
+            raise ValueError("WORKER_TENANT_QUEUE_LIMIT must be between 1 and 100000")
+        if not 10 <= self.worker_tenant_defer_ms <= 10_000:
+            raise ValueError("WORKER_TENANT_DEFER_MS must be between 10 and 10000")
+        if not 1024 <= self.worker_metrics_port <= 65_535:
+            raise ValueError("WORKER_METRICS_PORT must be between 1024 and 65535")
         if self.app_env == "production" and self.analysis_worker_mode in {
             "demo_only", "token_plan_demo"
         }:
@@ -187,6 +280,12 @@ class ApiSettings(BaseSettings):
             raise ValueError("ALIYUN_MODEL_ROUTER_MAX_RETRIES must be between 0 and 5")
         if not 1 <= self.forecast_max_pairs <= 1000:
             raise ValueError("FORECAST_MAX_PAIRS must be between 1 and 1000")
+        if not 500 <= self.data_query_timeout_ms <= 30_000:
+            raise ValueError("DATA_QUERY_TIMEOUT_MS must be between 500 and 30000")
+        if not 0 <= self.knowledge_relevance_threshold <= 1:
+            raise ValueError("KNOWLEDGE_RELEVANCE_THRESHOLD must be between 0 and 1")
+        if not 1 <= self.knowledge_auto_select_limit <= 20:
+            raise ValueError("KNOWLEDGE_AUTO_SELECT_LIMIT must be between 1 and 20")
         if self.forecast_enabled:
             engine_value = Path(self.forecast_engine_root).expanduser()
             state_value = Path(self.forecast_state_dir).expanduser()

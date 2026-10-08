@@ -1,0 +1,31 @@
+{
+  "protocol": "agent-tools-visual-acceptance-v1",
+  "passed": true,
+  "desktop": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "document_scroll_width": 1440,
+    "data_query_result_visible": true,
+    "chart_bar_count": 3,
+    "table_row_count": 3,
+    "knowledge_manager_visible": true
+  },
+  "mobile": {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "document_scroll_width": 390,
+    "knowledge_manager_width": 374,
+    "knowledge_manager_right": 382,
+    "data_query_result_visible": true
+  },
+  "page_errors": [],
+  "screenshots": [
+    "data-query-desktop.png",
+    "knowledge-manager-desktop.png",
+    "knowledge-manager-mobile.png"
+  ]
+}

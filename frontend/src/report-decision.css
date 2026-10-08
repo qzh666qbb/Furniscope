@@ -280,7 +280,7 @@
 .rdp-dim-list > div,
 .rdp-dim-list > .rdp-dim-trace {
   display: grid;
-  grid-template-columns: 92px 1fr 36px;
+  grid-template-columns: 92px 1fr 52px;
   gap: 8px;
   align-items: center;
   color: #536176;
@@ -297,6 +297,16 @@
   display: block;
   height: 100%;
   background: #078f8a;
+}
+.rdp-dim-list .is-missing {
+  color: #7a8696;
+}
+.rdp-dim-list .is-missing i b {
+  width: 0;
+}
+.rdp-dim-list .is-missing strong {
+  font-size: 9px;
+  font-weight: 600;
 }
 .rdp-dim-list p {
   margin: 8px 0 0;

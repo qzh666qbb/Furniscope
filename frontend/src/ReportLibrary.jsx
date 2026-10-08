@@ -54,13 +54,15 @@ export function ReportLibrary({ Sidebar, Topbar }) {
   const [productId, setProductId] = useState("");
   const [country, setCountry] = useState("");
   const [days, setDays] = useState("");
+  const [page, setPage] = useState(1);
+  const [filterOptions, setFilterOptions] = useState({ products: [], countries: [] });
   const [selected, setSelected] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [working, setWorking] = useState(false);
 
   const load = () => {
     setLoading(true);
-    const params = new URLSearchParams({ page_size: "100" });
+    const params = new URLSearchParams({ page_size: "10", page: String(page) });
     if (query.trim()) params.set("q", query.trim());
     if (productId) params.set("product_id", productId);
     if (country) params.set("target_country", country);
@@ -78,15 +80,26 @@ export function ReportLibrary({ Sidebar, Topbar }) {
 
   useEffect(() => {
     load();
-  }, [productId, country, days]);
+  }, [productId, country, days, page]);
+  useEffect(() => {
+    api("/api/v1/reports/filter-options")
+      .then((data) => setFilterOptions(data))
+      .catch(() => setFilterOptions({ products: [], countries: [] }));
+  }, []);
 
-  const products = useMemo(() => {
-    const map = new Map();
-    for (const row of items) map.set(row.product_id, `${row.product_sku} ${row.product_name}`);
-    return [...map.entries()];
-  }, [items]);
-  const countries = useMemo(() => [...new Set(items.map((row) => row.target_country).filter(Boolean))], [items]);
+  const products = useMemo(
+    () => (filterOptions.products || []).map((item) => [
+      item.product_id, `${item.product_sku} ${item.product_name}`,
+    ]),
+    [filterOptions.products],
+  );
+  const countries = filterOptions.countries || [];
+  const totalPages = Math.max(1, Math.ceil(total / 10));
   const allSelected = items.length > 0 && selected.length === items.length;
+  const runSearch = () => {
+    if (page === 1) load();
+    else setPage(1);
+  };
 
   const toggle = (id) =>
     setSelected((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -149,11 +162,11 @@ export function ReportLibrary({ Sidebar, Topbar }) {
                 placeholder="搜索产品名称、任务名称或报告标题…"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && load()}
+                onKeyDown={(event) => event.key === "Enter" && runSearch()}
               />
             </label>
             <label className="report-filter-select">
-              <select aria-label="按产品筛选" value={productId} onChange={(event) => setProductId(event.target.value)}>
+              <select aria-label="按产品筛选" value={productId} onChange={(event) => { setProductId(event.target.value); setPage(1); }}>
                 <option value="">全部产品</option>
                 {products.map(([id, label]) => (
                   <option key={id} value={id}>{label}</option>
@@ -162,7 +175,7 @@ export function ReportLibrary({ Sidebar, Topbar }) {
               <CaretDown />
             </label>
             <label className="report-filter-select">
-              <select aria-label="按市场筛选" value={country} onChange={(event) => setCountry(event.target.value)}>
+              <select aria-label="按市场筛选" value={country} onChange={(event) => { setCountry(event.target.value); setPage(1); }}>
                 <option value="">全部市场</option>
                 {countries.map((code) => (
                   <option key={code} value={code}>{marketLabel(code)} · {code}</option>
@@ -171,14 +184,14 @@ export function ReportLibrary({ Sidebar, Topbar }) {
               <CaretDown />
             </label>
             <label className="report-filter-select">
-              <select aria-label="按时间筛选" value={days} onChange={(event) => setDays(event.target.value)}>
+              <select aria-label="按时间筛选" value={days} onChange={(event) => { setDays(event.target.value); setPage(1); }}>
                 {TIME_OPTIONS.map(([value, label]) => (
                   <option key={value || "all"} value={value}>{label}</option>
                 ))}
               </select>
               <CaretDown />
             </label>
-            <button type="button" onClick={load}>检索 <CaretDown /></button>
+            <button type="button" onClick={runSearch}>检索 <CaretDown /></button>
             <span>共 <b>{total}</b> 份报告</span>
           </div>
 
@@ -248,6 +261,10 @@ export function ReportLibrary({ Sidebar, Topbar }) {
               })}
             </div>
           )}
+          {total > 0 && <div className="asset-pagination">
+            <span>第 {page} / {totalPages} 页</span>
+            <div><button disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>上一页</button><button disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>下一页</button></div>
+          </div>}
         </div>
       </section>
 

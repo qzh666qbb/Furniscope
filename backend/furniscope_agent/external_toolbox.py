@@ -13,12 +13,14 @@ import math
 import re
 import time
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 import asyncpg
 from pydantic import BaseModel, Field
 
 from .contracts import CapabilityResult
+from .enterprise_decision import default_policy, enterprise_fit, number, score_opportunity
+from .product_facts import fact_is_confirmed
 from .errors import AgentError
 from .state import FurniScopeGraphState
 
@@ -54,12 +56,41 @@ class ReportNarrative(BaseModel):
     decision_note: str = Field(min_length=4, max_length=500)
 
 
+class ReviewAspectCandidate(BaseModel):
+    review_id: int
+    taxonomy_code: str = Field(min_length=2, max_length=100)
+    sentiment: Literal["positive", "negative", "neutral", "mixed"]
+    severity: Literal["low", "medium", "high"] | None = None
+    evidence_quote: str = Field(min_length=1, max_length=240)
+    confidence: float = Field(ge=0, le=1)
+
+
+class ReviewAspectExtraction(BaseModel):
+    aspects: list[ReviewAspectCandidate] = Field(default_factory=list, max_length=300)
+
+
 def _json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
 
 
 def _clamp(value: float, low: float = 0, high: float = 100) -> float:
     return round(max(low, min(high, value)), 2)
+
+
+def _number(value: Any) -> float | None:
+    if isinstance(value, dict):
+        value = value.get("value") or value.get("max") or value.get("min")
+    if isinstance(value, str):
+        try:
+            decoded = json.loads(value)
+            if decoded != value:
+                value = decoded
+        except json.JSONDecodeError:
+            pass
+    try:
+        return None if value in (None, "") else float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _object(value: Any) -> dict[str, Any]:
@@ -95,6 +126,108 @@ def _similarity(left: str, right: str) -> float:
     return len(a & b) / len(a | b) if a and b else 0.0
 
 
+def _cosine_similarity(left: list[float], right: list[float]) -> float:
+    if len(left) != len(right) or not left:
+        raise ValueError("embedding vectors must have the same non-zero dimension")
+    numerator = sum(a * b for a, b in zip(left, right, strict=True))
+    left_norm = math.sqrt(sum(value * value for value in left))
+    right_norm = math.sqrt(sum(value * value for value in right))
+    if left_norm == 0 or right_norm == 0:
+        raise ValueError("embedding vectors must be non-zero")
+    return numerator / (left_norm * right_norm)
+
+
+def _semantic_cluster_groups(
+    rows: list[dict[str, Any]], vectors: list[list[float]],
+) -> list[dict[str, Any]]:
+    """Cluster evidence inside stable taxonomy boundaries and rank central evidence."""
+    if len(rows) != len(vectors):
+        raise ValueError("embedding count does not match review aspect count")
+    if not rows:
+        return []
+    dimension = len(vectors[0])
+    if not dimension or any(len(vector) != dimension for vector in vectors):
+        raise ValueError("embedding dimensions are inconsistent")
+
+    from sklearn.cluster import AgglomerativeClustering
+
+    grouped_indices: dict[str, list[int]] = {}
+    for index, row in enumerate(rows):
+        grouped_indices.setdefault(str(row["taxonomy_code"]), []).append(index)
+
+    groups: list[dict[str, Any]] = []
+    for taxonomy, indices in grouped_indices.items():
+        if len(indices) == 1:
+            labels = [0]
+        else:
+            labels = AgglomerativeClustering(
+                n_clusters=None,
+                metric="cosine",
+                linkage="average",
+                distance_threshold=0.28,
+            ).fit_predict([vectors[index] for index in indices]).tolist()
+        for label in sorted(set(labels)):
+            member_indices = [
+                index for index, assigned in zip(indices, labels, strict=True)
+                if assigned == label
+            ]
+            centroid = [
+                sum(vectors[index][axis] for index in member_indices) / len(member_indices)
+                for axis in range(dimension)
+            ]
+            similarities = {
+                index: max(0.0, min(1.0, _cosine_similarity(vectors[index], centroid)))
+                for index in member_indices
+            }
+            ranked = sorted(
+                member_indices,
+                key=lambda index: (
+                    -(float(rows[index]["extraction_confidence"]) * .55
+                      + similarities[index] * .45),
+                    -similarities[index],
+                    int(rows[index]["id"]),
+                ),
+            )
+            groups.append({
+                "taxonomy_code": taxonomy,
+                "rows": [rows[index] for index in member_indices],
+                "similarities": {
+                    int(rows[index]["id"]): round(similarities[index], 6)
+                    for index in member_indices
+                },
+                "representative_ids": [int(rows[index]["id"]) for index in ranked[:3]],
+            })
+    return groups
+
+
+def _taxonomy_cluster_groups(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(str(row["taxonomy_code"]), []).append(row)
+    return [
+        {
+            "taxonomy_code": taxonomy,
+            "rows": members,
+            "similarities": {int(row["id"]): 1.0 for row in members},
+            "representative_ids": [
+                int(row["id"]) for row in sorted(
+                    members,
+                    key=lambda item: (-float(item["extraction_confidence"]), int(item["id"])),
+                )[:3]
+            ],
+        }
+        for taxonomy, members in grouped.items()
+    ]
+
+
+def enterprise_fit_for_cluster(
+    snapshot: dict[str, Any], *, category_code: str | None, market_country: str | None,
+    taxonomy_code: str, product_facts: dict | None = None,
+) -> tuple[float | None, float, dict[str, Any]]:
+    return enterprise_fit(snapshot, category_code=category_code, market_country=market_country,
+                          taxonomy_code=taxonomy_code, product_facts=product_facts)
+
+
 class ExternalFurnitureToolbox:
     """Execute the complete analysis graph against authorized database rows."""
 
@@ -123,7 +256,7 @@ class ExternalFurnitureToolbox:
             "review_extract_batch": self._review_extract_batch,
             "review_extract_reduce": self._review_extract_reduce,
             "need_clustering": self._need_clustering,
-            "taxonomy_rule_cluster": self._need_clustering,
+            "taxonomy_rule_cluster": self._taxonomy_rule_cluster,
             "analytics_fork": self._analytics_fork,
             "price_competition": self._price_competition,
             "trend": self._trend,
@@ -432,35 +565,115 @@ class ExternalFurnitureToolbox:
             "SELECT id,rating,content_original FROM furniscope.reviews WHERE tenant_id=$1 AND dataset_id=$2 AND id=ANY($3::bigint[]) AND is_valid ORDER BY id",
             state["tenant_id"], state["dataset_id"], ids,
         )
-        model_run_id = await self._model_run(state, "text_extract", {"review_ids": ids})
+        extracted: dict[int, list[ReviewAspectCandidate]] = {}
+        fallback_model_run_id = None
+        started = time.monotonic()
+        if self.model_client is not None:
+            try:
+                result = await self.model_client.structured(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "从家具评论中抽取可验证观点，返回JSON对象aspects。"
+                                f"taxonomy_code只能取{list(_TAXONOMY)}或general_experience；"
+                                "evidence_quote必须逐字复制原评论中的连续片段，不得改写；"
+                                "同一评论最多3条，不得添加原文没有的信息。"
+                            ),
+                        },
+                        {"role": "user", "content": _json([
+                            {"review_id": row["id"], "rating": row["rating"],
+                             "content": row["content_original"]} for row in rows
+                        ])},
+                    ],
+                    output_type=ReviewAspectExtraction,
+                )
+                for item in result.aspects:
+                    extracted.setdefault(item.review_id, []).append(item)
+                model_run_id = await self._model_run(
+                    state, "text_extract", {"review_ids": ids},
+                    provider=getattr(self.model_client, "last_chat_provider", None) or "aliyun_token_plan",
+                    model_id=getattr(self.model_client, "last_chat_model", None) or "qwen3.7-plus",
+                    schema_version="review-aspects-v2", status="succeeded",
+                    latency_ms=int((time.monotonic() - started) * 1000),
+                    input_tokens=getattr(self.model_client, "last_input_tokens", None),
+                    output_tokens=getattr(self.model_client, "last_output_tokens", None),
+                )
+            except Exception as exc:
+                await self._model_run(
+                    state, "text_extract", {"review_ids": ids},
+                    provider=getattr(self.model_client, "last_chat_provider", None) or "aliyun_token_plan",
+                    model_id=getattr(self.model_client, "last_chat_model", None) or "qwen3.7-plus",
+                    schema_version="review-aspects-v2", status="failed",
+                    latency_ms=int((time.monotonic() - started) * 1000),
+                    schema_valid=False, error_code=type(exc).__name__[:100],
+                )
+                fallback_model_run_id = await self._model_run(
+                    state, "text_extract", {"review_ids": ids, "fallback": "taxonomy_rules_v2"},
+                    model_id="evidence-rules-v2", schema_version="review-aspects-rule-v2",
+                )
+                model_run_id = fallback_model_run_id
+        else:
+            model_run_id = await self._model_run(state, "text_extract", {"review_ids": ids})
+        if self.model_client is not None and fallback_model_run_id is None and any(
+            not any(
+                row["content_original"].find(item.evidence_quote) >= 0
+                for item in extracted.get(row["id"], [])[:3]
+            )
+            for row in rows
+        ):
+            fallback_model_run_id = await self._model_run(
+                state, "text_extract", {"review_ids": ids, "fallback": "taxonomy_rules_v2"},
+                model_id="evidence-rules-v2", schema_version="review-aspects-rule-v2",
+            )
         aspect_ids = []
         async with self.pool.acquire() as conn, conn.transaction():
             for row in rows:
-                content = row["content_original"].strip()
-                if not content:
+                content = row["content_original"]
+                if not content or not content.strip():
                     continue
-                lowered = content.lower()
-                taxonomy = next((code for code, words in _TAXONOMY.items() if any(w in lowered for w in words)), "general_experience")
-                negative = any(word in lowered for word in _NEGATIVE)
-                positive = any(word in lowered for word in _POSITIVE)
-                sentiment = "mixed" if negative and positive else "negative" if negative or (row["rating"] is not None and row["rating"] <= 2) else "positive" if positive or (row["rating"] is not None and row["rating"] >= 4) else "neutral"
-                quote = content[: min(240, len(content))]
-                aspect_id = await conn.fetchval(
-                    """INSERT INTO furniscope.review_aspects
-                       (tenant_id,analysis_job_id,review_id,aspect_index,taxonomy_code,sentiment,severity,
-                        person_codes,scenario_codes,product_attribute_codes,evidence_start,evidence_end,
-                        evidence_quote,extraction_confidence,model_run_id)
-                       VALUES($1,$2,$3,0,$4,$5,$6,'[]','[]',$7::jsonb,0,$8,$9,$10,$11)
-                       ON CONFLICT(analysis_job_id,review_id,aspect_index) DO UPDATE SET
-                         taxonomy_code=EXCLUDED.taxonomy_code,sentiment=EXCLUDED.sentiment,
-                         evidence_quote=EXCLUDED.evidence_quote,evidence_end=EXCLUDED.evidence_end,
-                         extraction_confidence=EXCLUDED.extraction_confidence,model_run_id=EXCLUDED.model_run_id
-                       RETURNING id""",
-                    state["tenant_id"], state["task_id"], row["id"], taxonomy, sentiment,
-                    "high" if sentiment == "negative" else None, _json([taxonomy] if taxonomy in _TAXONOMY else []),
-                    len(quote), quote, Decimal("0.78"), model_run_id,
+                candidates = []
+                for candidate in extracted.get(row["id"], [])[:3]:
+                    start = content.find(candidate.evidence_quote)
+                    if start >= 0:
+                        taxonomy = candidate.taxonomy_code if candidate.taxonomy_code in _TAXONOMY else "general_experience"
+                        candidates.append((
+                            taxonomy, candidate.sentiment, candidate.severity,
+                            start, start + len(candidate.evidence_quote),
+                            candidate.evidence_quote, candidate.confidence,
+                        ))
+                used_model = bool(candidates)
+                if not candidates:
+                    lowered = content.lower()
+                    taxonomy = next((code for code, words in _TAXONOMY.items() if any(w in lowered for w in words)), "general_experience")
+                    negative = any(word in lowered for word in _NEGATIVE)
+                    positive = any(word in lowered for word in _POSITIVE)
+                    sentiment = "mixed" if negative and positive else "negative" if negative or (row["rating"] is not None and row["rating"] <= 2) else "positive" if positive or (row["rating"] is not None and row["rating"] >= 4) else "neutral"
+                    quote = content[: min(240, len(content))]
+                    candidates = [(taxonomy, sentiment, "high" if sentiment == "negative" else None,
+                                   0, len(quote), quote, .62)]
+                active_run_id = model_run_id if used_model else (
+                    fallback_model_run_id or model_run_id
                 )
-                aspect_ids.append(aspect_id)
+                for aspect_index, (taxonomy, sentiment, severity, start, end, quote, confidence) in enumerate(candidates):
+                    aspect_id = await conn.fetchval(
+                        """INSERT INTO furniscope.review_aspects
+                           (tenant_id,analysis_job_id,review_id,aspect_index,taxonomy_code,sentiment,severity,
+                            person_codes,scenario_codes,product_attribute_codes,evidence_start,evidence_end,
+                            evidence_quote,extraction_confidence,model_run_id)
+                           VALUES($1,$2,$3,$4,$5,$6,$7,'[]','[]',$8::jsonb,$9,$10,$11,$12,$13)
+                           ON CONFLICT(analysis_job_id,review_id,aspect_index) DO UPDATE SET
+                             taxonomy_code=EXCLUDED.taxonomy_code,sentiment=EXCLUDED.sentiment,
+                             severity=EXCLUDED.severity,evidence_start=EXCLUDED.evidence_start,
+                             evidence_quote=EXCLUDED.evidence_quote,evidence_end=EXCLUDED.evidence_end,
+                             extraction_confidence=EXCLUDED.extraction_confidence,model_run_id=EXCLUDED.model_run_id
+                           RETURNING id""",
+                        state["tenant_id"], state["task_id"], row["id"], aspect_index,
+                        taxonomy, sentiment, severity,
+                        _json([taxonomy] if taxonomy in _TAXONOMY else []),
+                        start, end, quote, Decimal(str(round(confidence, 4))), active_run_id,
+                    )
+                    aspect_ids.append(aspect_id)
         return CapabilityResult(output_ref={"batch_id": payload.get("batch_id"), "aspect_ids": aspect_ids, "processed": len(rows)})
 
     async def _review_extract_reduce(self, state: FurniScopeGraphState, _payload: dict[str, Any]) -> CapabilityResult:
@@ -469,24 +682,104 @@ class ExternalFurnitureToolbox:
             raise AuthorizedDataRequired("有效评论未能产生可追溯观点")
         return CapabilityResult(output_ref={"aspect_count": count})
 
-    async def _need_clustering(self, state: FurniScopeGraphState, _payload: dict[str, Any]) -> CapabilityResult:
-        groups = await self.pool.fetch(
-            """SELECT a.taxonomy_code,count(*) aspect_count,count(DISTINCT a.review_id) review_count,
-                      count(DISTINCT r.listing_id) listing_count,
-                      count(*) FILTER(WHERE a.sentiment='positive') positive_count,
-                      count(*) FILTER(WHERE a.sentiment='negative') negative_count,
-                      array_agg(a.id ORDER BY a.extraction_confidence DESC,a.id) aspect_ids
+    async def _need_clustering(
+        self, state: FurniScopeGraphState, _payload: dict[str, Any],
+    ) -> CapabilityResult:
+        return await self._need_clustering_impl(state, use_model=True)
+
+    async def _taxonomy_rule_cluster(
+        self, state: FurniScopeGraphState, _payload: dict[str, Any],
+    ) -> CapabilityResult:
+        return await self._need_clustering_impl(state, use_model=False)
+
+    async def _need_clustering_impl(
+        self, state: FurniScopeGraphState, *, use_model: bool,
+    ) -> CapabilityResult:
+        raw_rows = await self.pool.fetch(
+            """SELECT a.id,a.taxonomy_code,a.sentiment,a.evidence_quote,a.extraction_confidence,
+                      a.review_id,r.listing_id
                  FROM furniscope.review_aspects a JOIN furniscope.reviews r ON r.id=a.review_id
-                WHERE a.analysis_job_id=$1 AND a.tenant_id=$2 GROUP BY a.taxonomy_code""",
+                WHERE a.analysis_job_id=$1 AND a.tenant_id=$2
+                ORDER BY a.taxonomy_code,a.id""",
             state["task_id"], state["tenant_id"],
         )
+        rows = [dict(row) for row in raw_rows]
+        if not rows:
+            raise AuthorizedDataRequired("没有可用于需求聚类的评论观点")
+
+        method = "taxonomy_rules_v1"
+        quality_flags: list[dict[str, str]] = []
+        groups: list[dict[str, Any]]
+        if use_model and self.model_client is not None:
+            started = time.monotonic()
+            quotes = [str(row["evidence_quote"]).strip() for row in rows]
+            try:
+                embedding_result = await self.model_client.embeddings(quotes)
+                vectors = embedding_result.get("vectors")
+                if not isinstance(vectors, list):
+                    raise ValueError("embedding response does not contain vectors")
+                groups = _semantic_cluster_groups(rows, vectors)
+                method = (
+                    f"agglomerative-cosine-v1:"
+                    f"{embedding_result.get('provider') or 'aliyun_bailian'}:"
+                    f"{embedding_result.get('model') or 'text-embedding-v4'}"
+                )
+                await self._model_run(
+                    state, "embed", {"aspect_ids": [row["id"] for row in rows]},
+                    provider=embedding_result.get("provider") or "aliyun_bailian",
+                    model_id=str(embedding_result.get("model") or "text-embedding-v4"),
+                    schema_version="review-cluster-embedding-v1", status="succeeded",
+                    latency_ms=int((time.monotonic() - started) * 1000),
+                    input_tokens=embedding_result.get("total_tokens"),
+                )
+            except Exception as exc:
+                await self._model_run(
+                    state, "embed", {"aspect_ids": [row["id"] for row in rows]},
+                    provider=getattr(self.model_client, "last_embedding_provider", None)
+                    or "aliyun_bailian",
+                    model_id=getattr(self.model_client, "last_embedding_model", None)
+                    or "text-embedding-v4",
+                    schema_version="review-cluster-embedding-v1", status="failed",
+                    latency_ms=int((time.monotonic() - started) * 1000),
+                    schema_valid=False, error_code=type(exc).__name__[:100],
+                )
+                groups = _taxonomy_cluster_groups(rows)
+                quality_flags.append({
+                    "code": "REVIEW_CLUSTERING_DEGRADED",
+                    "message": "Embedding 聚类不可用，已降级为 taxonomy 确定性聚类。",
+                })
+        else:
+            groups = _taxonomy_cluster_groups(rows)
+            await self._model_run(
+                state, "embed", {"aspect_ids": [row["id"] for row in rows], "fallback": method},
+                model_id="taxonomy-cluster-v1", schema_version="review-cluster-rule-v1",
+            )
+
         total_reviews = max(1, len(state.get("valid_review_ids", [])))
         cluster_ids = []
         async with self.pool.acquire() as conn, conn.transaction():
-            for row in groups:
-                mention_rate = min(1.0, row["review_count"] / total_reviews)
-                importance = _clamp(mention_rate * 70 + row["negative_count"] / row["aspect_count"] * 30)
-                representatives = row["aspect_ids"][: min(3, len(row["aspect_ids"]))]
+            await conn.execute(
+                "DELETE FROM furniscope.insight_clusters WHERE analysis_job_id=$1 AND tenant_id=$2",
+                state["task_id"], state["tenant_id"],
+            )
+            taxonomy_counts: dict[str, int] = {}
+            for group in groups:
+                taxonomy = group["taxonomy_code"]
+                taxonomy_counts[taxonomy] = taxonomy_counts.get(taxonomy, 0) + 1
+                members = group["rows"]
+                review_count = len({row["review_id"] for row in members})
+                listing_count = len({row["listing_id"] for row in members})
+                positive_count = sum(row["sentiment"] == "positive" for row in members)
+                negative_count = sum(row["sentiment"] == "negative" for row in members)
+                mention_rate = min(1.0, review_count / total_reviews)
+                importance = _clamp(
+                    mention_rate * 70 + negative_count / len(members) * 30
+                )
+                representatives = group["representative_ids"]
+                suffix = (
+                    f"-{taxonomy_counts[taxonomy]}"
+                    if method.startswith("agglomerative-cosine-v1") else ""
+                )
                 cluster_id = await conn.fetchval(
                     """INSERT INTO furniscope.insight_clusters
                        (tenant_id,analysis_job_id,cluster_code,taxonomy_code,name,summary,sentiment_distribution,
@@ -499,21 +792,37 @@ class ExternalFurnitureToolbox:
                          importance_score=EXCLUDED.importance_score,cluster_confidence=EXCLUDED.cluster_confidence,
                          representative_aspect_ids=EXCLUDED.representative_aspect_ids
                        RETURNING id""",
-                    state["tenant_id"], state["task_id"], f"need-{row['taxonomy_code']}", row["taxonomy_code"],
-                    row["taxonomy_code"].replace("_", " ").title(),
-                    f"{row['review_count']} 条评论涉及该需求，其中 {row['negative_count']} 条为负向观点。",
-                    _json({"positive": row["positive_count"], "negative": row["negative_count"], "other": row["aspect_count"] - row["positive_count"] - row["negative_count"]}),
-                    row["aspect_count"], row["review_count"], row["listing_count"], mention_rate,
-                    importance, min(.95, .55 + math.log10(row["review_count"] + 1) * .2), _json(representatives),
+                    state["tenant_id"], state["task_id"], f"need-{taxonomy}{suffix}",
+                    taxonomy, taxonomy.replace("_", " ").title(),
+                    f"{review_count} 条评论涉及该需求，其中 {negative_count} 条为负向观点。",
+                    _json({
+                        "positive": positive_count,
+                        "negative": negative_count,
+                        "other": len(members) - positive_count - negative_count,
+                    }),
+                    len(members), review_count, listing_count, mention_rate,
+                    importance, min(.95, .55 + math.log10(review_count + 1) * .2),
+                    _json(representatives),
                 )
                 cluster_ids.append(cluster_id)
-                for aspect_id in row["aspect_ids"]:
+                for row in members:
+                    aspect_id = int(row["id"])
                     await conn.execute(
                         """INSERT INTO furniscope.cluster_members(cluster_id,review_aspect_id,similarity_score,is_representative)
-                           VALUES($1,$2,1,$3) ON CONFLICT(cluster_id,review_aspect_id) DO UPDATE SET is_representative=EXCLUDED.is_representative""",
-                        cluster_id, aspect_id, aspect_id in representatives,
+                           VALUES($1,$2,$3,$4) ON CONFLICT(cluster_id,review_aspect_id) DO UPDATE SET
+                             similarity_score=EXCLUDED.similarity_score,
+                             is_representative=EXCLUDED.is_representative""",
+                        cluster_id, aspect_id, group["similarities"][aspect_id],
+                        aspect_id in representatives,
                     )
-        return CapabilityResult(output_ref={"cluster_ids": cluster_ids, "cluster_count": len(cluster_ids)})
+        return CapabilityResult(
+            output_ref={
+                "cluster_ids": cluster_ids,
+                "cluster_count": len(cluster_ids),
+                "method": method,
+            },
+            quality_flags=quality_flags,
+        )
 
     async def _analytics_fork(self, _state: FurniScopeGraphState, _payload: dict[str, Any]) -> CapabilityResult:
         return CapabilityResult(output_ref={"branches": ["price_competition", "trend"]})
@@ -577,22 +886,65 @@ class ExternalFurnitureToolbox:
 
     async def _opportunity_scoring(self, state: FurniScopeGraphState, _payload: dict[str, Any]) -> CapabilityResult:
         clusters = await self.pool.fetch(
-            "SELECT id,taxonomy_code,name,summary,mention_rate,importance_score,cluster_confidence FROM furniscope.insight_clusters WHERE analysis_job_id=$1 AND tenant_id=$2 ORDER BY importance_score DESC LIMIT 5",
+            """SELECT c.id,c.taxonomy_code,c.name,c.summary,c.mention_rate,c.cluster_confidence,
+                      (SELECT count(*) FILTER(WHERE a.sentiment='negative')::float8 / NULLIF(count(*),0)
+                         FROM furniscope.cluster_members cm JOIN furniscope.review_aspects a ON a.id=cm.review_aspect_id
+                        WHERE cm.cluster_id=c.id AND a.tenant_id=c.tenant_id) negative_share
+                 FROM furniscope.insight_clusters c WHERE c.analysis_job_id=$1 AND c.tenant_id=$2
+                ORDER BY c.importance_score DESC LIMIT 5""",
             state["task_id"], state["tenant_id"],
         )
         band_id = await self.pool.fetchval("SELECT id FROM furniscope.price_bands WHERE analysis_job_id=$1 ORDER BY id LIMIT 1", state["task_id"])
+        snapshot = state.get("enterprise_profile_snapshot") or {}
+        policy = snapshot.get("opportunity_policy") or default_policy()
+        category_code = (snapshot.get("product_context") or {}).get("category_code")
+        trend_growth = await self.pool.fetchval(
+            """SELECT metric_value FROM furniscope.market_metrics
+                WHERE analysis_job_id=$1 AND tenant_id=$2 AND metric_code='review_mention_growth'
+                ORDER BY id DESC LIMIT 1""",
+            state["task_id"], state["tenant_id"],
+        )
+        median_price = await self.pool.fetchrow(
+            """SELECT metric_value,unit FROM furniscope.market_metrics
+                WHERE analysis_job_id=$1 AND tenant_id=$2 AND metric_code='median_sale_price'
+                ORDER BY id DESC LIMIT 1""",
+            state["task_id"], state["tenant_id"],
+        )
+        unit_cost_fact = (snapshot.get("product_facts") or {}).get("unit_cost", {})
+        unit_cost = number(unit_cost_fact.get("value")) if fact_is_confirmed(unit_cost_fact) else None
+        unit_cost_currency = unit_cost_fact.get("unit") or _object(unit_cost_fact.get("value")).get("currency")
+        weights = policy["weights"]
         review_count = max(1, len(state.get("valid_review_ids", [])))
         units = []
         async with self.pool.acquire() as conn, conn.transaction():
             for index, cluster in enumerate(clusters, 1):
                 heat = _clamp(float(cluster["mention_rate"]) * 100)
-                unmet = _clamp(float(cluster["importance_score"]))
+                unmet = _clamp(float(cluster["negative_share"]) * 100) if cluster["negative_share"] is not None else None
                 competition = _clamp(100 - min(80, len(state.get("valid_listing_ids", [])) * 2))
-                growth = _clamp(heat * 0.55 + unmet * 0.45)
-                profit = _clamp(competition * 0.55 + (100 - heat) * 0.2 + 15)
-                base = _clamp(heat * .30 + growth * .15 + unmet * .25 + competition * .20 + profit * .10)
+                growth = _clamp(50 + float(trend_growth) / 2) if trend_growth is not None else None
+                profit = None
+                if (median_price and unit_cost is not None and unit_cost >= 0
+                        and unit_cost_currency == median_price["unit"]
+                        and float(median_price["metric_value"]) > 0):
+                    price = float(median_price["metric_value"])
+                    profit = _clamp((price - unit_cost) / price * 100)
+                factors = {
+                    "demand_heat": heat, "demand_growth": growth, "unmet_need": unmet,
+                    "competition_space": competition, "profit_space": profit,
+                }
+                enterprise_fit, fit_confidence, fit_detail = enterprise_fit_for_cluster(
+                    snapshot,
+                    category_code=category_code,
+                    market_country=state.get("target_market", {}).get("country"),
+                    taxonomy_code=cluster["taxonomy_code"],
+                )
+                scored = score_opportunity(factors, policy, enterprise_fit)
+                gated_score = scored["adjusted_score"]
                 confidence = min(float(cluster["cluster_confidence"]), .95 if review_count >= 20 else .7)
-                level = ("prioritize_validate" if base >= 65 and confidence >= .6
+                confidence = round(confidence * scored["coverage"] * (.75 + .25 * fit_confidence), 4)
+                level = ("capability_gap" if fit_detail["blocked"]
+                         else "collect_more_data" if fit_detail["status"] == "unknown" or gated_score is None
+                         else "prioritize_validate" if gated_score >= 65 and confidence >= .6
                          else "collect_more_data" if confidence < .6 else "limited_opportunity")
                 opportunity_id = await conn.fetchval(
                     """INSERT INTO furniscope.market_opportunities
@@ -600,24 +952,21 @@ class ExternalFurnitureToolbox:
                         primary_cluster_ids,price_band_id,demand_heat_score,unmet_need_score,competition_space_score,
                         demand_growth_score,profit_space_score,
                         enterprise_fit_score,enterprise_fit_confidence,base_score,confidence,
-                        recommendation_level,weight_config,scoring_version,manufacturing_fit)
-                       VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21,$22::jsonb)
+                        recommendation_level,weight_config,scoring_version,manufacturing_fit,
+                        market_score,adjusted_score,policy_snapshot)
+                       VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21,$22::jsonb,$23,$24,$25::jsonb)
                        ON CONFLICT(analysis_job_id,opportunity_code) DO UPDATE SET
-                         title=EXCLUDED.title,description=EXCLUDED.description,demand_heat_score=EXCLUDED.demand_heat_score,
-                         unmet_need_score=EXCLUDED.unmet_need_score,competition_space_score=EXCLUDED.competition_space_score,
-                         demand_growth_score=EXCLUDED.demand_growth_score,profit_space_score=EXCLUDED.profit_space_score,
-                         enterprise_fit_score=EXCLUDED.enterprise_fit_score,
-                         enterprise_fit_confidence=EXCLUDED.enterprise_fit_confidence,
-                         base_score=EXCLUDED.base_score,manufacturing_fit=EXCLUDED.manufacturing_fit,
-                         confidence=EXCLUDED.confidence,recommendation_level=EXCLUDED.recommendation_level,updated_at=now()
+                         opportunity_code=EXCLUDED.opportunity_code
                        RETURNING id""",
                     state["tenant_id"], state["task_id"], f"OPP-{index:02d}", f"改善{cluster['name']}", cluster["summary"],
                     state.get("target_market", {}).get("country", "US"), state.get("target_market", {}).get("platform", "amazon"),
                     _json([cluster["id"]]), band_id, heat, unmet, competition, growth, profit,
-                    0, 0, base, confidence, level,
-                    _json({"demand_heat": .30, "demand_growth": .15, "unmet_need": .25, "competition_space": .20, "profit_space": .10}),
-                    state.get("version_bundle", {}).get("scoring_version", "opportunity-score-v2"),
-                    _json([]),
+                    enterprise_fit, fit_confidence, gated_score or 0, confidence, level,
+                    _json({
+                        **weights, **scored, "profit_semantics": "price_minus_confirmed_unit_cost",
+                    }),
+                    "enterprise-policy-v1",
+                    _json([fit_detail]), scored["market_score"], scored["adjusted_score"], _json(policy),
                 )
                 units.append({"opportunity_id": opportunity_id})
         if not units:
@@ -626,14 +975,18 @@ class ExternalFurnitureToolbox:
 
     async def _strategy_generate(self, state: FurniScopeGraphState, payload: dict[str, Any]) -> CapabilityResult:
         opportunity_id = payload["opportunity_id"]
-        row = await self.pool.fetchrow("SELECT id,title,description,primary_cluster_ids,confidence,base_score FROM furniscope.market_opportunities WHERE id=$1 AND analysis_job_id=$2 AND tenant_id=$3", opportunity_id, state["task_id"], state["tenant_id"])
+        row = await self.pool.fetchrow("SELECT id,title,description,primary_cluster_ids,confidence,base_score,recommendation_level FROM furniscope.market_opportunities WHERE id=$1 AND analysis_job_id=$2 AND tenant_id=$3", opportunity_id, state["task_id"], state["tenant_id"])
         if row is None:
             raise AuthorizedDataRequired("机会项不在当前任务租户范围")
         model_run_id = await self._model_run(state, "reason", {"opportunity_id": opportunity_id})
         cluster_ids = _array(row["primary_cluster_ids"])
-        priority = "high" if float(row["base_score"]) >= 65 else "medium"
-        factor = (0.08, 0.15) if priority == "high" else (0.03, 0.08)
-        base = 100.0
+        priority = ("high" if row["recommendation_level"] == "prioritize_validate"
+                    else "low" if row["recommendation_level"] == "capability_gap" else "medium")
+        action = (f"暂缓“{row['title']}”：先解决已明确的企业能力或硬约束缺口，再重新评估。"
+                  if row["recommendation_level"] == "capability_gap"
+                  else f"先确认“{row['title']}”的缺失事实与制造要求，再决定是否进行样品验证。"
+                  if row["recommendation_level"] == "collect_more_data"
+                  else f"围绕“{row['title']}”进行小批量样品验证，并记录尺寸、材料、包装与成本影响。")
         rec_id = await self.pool.fetchval(
             """INSERT INTO furniscope.product_recommendations
                (tenant_id,opportunity_id,recommendation_type,problem_statement,root_cause_hypotheses,
@@ -643,11 +996,11 @@ class ExternalFurnitureToolbox:
                RETURNING id""",
             state["tenant_id"], opportunity_id, row["description"],
             _json(["评论中重复出现的需求可能与产品属性或使用场景有关"]),
-            f"围绕“{row['title']}”进行小批量样品验证，并记录尺寸、材料、包装与成本影响。",
+            action,
             "在量产决策前验证需求真实性和制造可行性。", _json(["product", "manufacturing", "market"]),
             priority, min(float(row["confidence"]), .85),
-            "至少完成一轮样品测试和目标用户反馈，不以模型建议直接量产。", _json(cluster_ids),
-            round(base * factor[0], 2), round(base * factor[1], 2), model_run_id,
+            "至少完成一轮样品验证和目标用户反馈，不以模型建议直接量产。", _json(cluster_ids),
+            None, None, model_run_id,
         )
         return CapabilityResult(output_ref={"recommendation_id": rec_id, "opportunity_id": opportunity_id})
 
@@ -722,11 +1075,78 @@ class ExternalFurnitureToolbox:
                  JOIN furniscope.products p ON p.id=t.product_id WHERE t.id=$1 AND t.tenant_id=$2""",
             state["task_id"], state["tenant_id"],
         )
-        opportunities = await self.pool.fetch("SELECT id,title,description,base_score,confidence,recommendation_level FROM furniscope.market_opportunities WHERE analysis_job_id=$1 ORDER BY base_score DESC", state["task_id"])
+        opportunities = await self.pool.fetch(
+            """SELECT id,title,description,base_score,market_score,adjusted_score,
+                      confidence,recommendation_level
+                 FROM furniscope.market_opportunities
+                WHERE analysis_job_id=$1 AND tenant_id=$2
+                ORDER BY CASE recommendation_level
+                           WHEN 'prioritize_validate' THEN 0
+                           WHEN 'collect_more_data' THEN 1
+                           WHEN 'limited_opportunity' THEN 2
+                           WHEN 'capability_gap' THEN 3
+                           ELSE 4
+                         END,
+                         adjusted_score DESC NULLS LAST,base_score DESC,id""",
+            state["task_id"], state["tenant_id"],
+        )
         recommendations = await self.pool.fetch("SELECT r.id,r.recommended_action,r.validation_method,r.risk_level FROM furniscope.product_recommendations r JOIN furniscope.market_opportunities o ON o.id=r.opportunity_id WHERE o.analysis_job_id=$1 ORDER BY r.id", state["task_id"])
-        top_score = float(opportunities[0]["base_score"])
+        top_score = float(opportunities[0]["adjusted_score"] or opportunities[0]["base_score"])
         confidence = min(float(r["confidence"]) for r in opportunities)
         decision = opportunities[0]["recommendation_level"]
+        price_row = await self.pool.fetchrow(
+            """SELECT count(*)::int sample_size,count(DISTINCT l.currency)::int currency_count,
+                      min(l.currency) currency,
+                      percentile_cont(0.25) WITHIN GROUP (ORDER BY l.sale_price) market_low,
+                      percentile_cont(0.5) WITHIN GROUP (ORDER BY l.sale_price) market_median,
+                      percentile_cont(0.75) WITHIN GROUP (ORDER BY l.sale_price) market_high,
+                      max(c.set_version)::int competitor_set_version
+                 FROM furniscope.competitor_matches c
+                 JOIN furniscope.market_listings l
+                   ON l.id=c.listing_id AND l.tenant_id=c.tenant_id
+                WHERE c.analysis_job_id=$1 AND c.tenant_id=$2
+                  AND c.competitor_type<>'excluded'
+                  AND l.sale_price IS NOT NULL AND l.sale_price>0""",
+            state["task_id"], state["tenant_id"],
+        )
+        sample_size = int(price_row["sample_size"] or 0)
+        currency_count = int(price_row["currency_count"] or 0)
+        if not sample_size:
+            price_status = "insufficient_market_data"
+        elif currency_count != 1:
+            price_status = "currency_conflict"
+        else:
+            price_status = "market_observation_only"
+        price_summary = {
+            "calculation_version": "report-pricing-freeze-v1",
+            "status": price_status,
+            "currency": price_row["currency"] if currency_count == 1 else None,
+            "sample_size": sample_size,
+            "market_low": float(price_row["market_low"]) if currency_count == 1 and price_row["market_low"] is not None else None,
+            "market_median": float(price_row["market_median"]) if currency_count == 1 and price_row["market_median"] is not None else None,
+            "market_high": float(price_row["market_high"]) if currency_count == 1 and price_row["market_high"] is not None else None,
+            "recommended_low": None,
+            "recommended_high": None,
+            "input_snapshot": {
+                "price_sample_size": sample_size,
+                "currency_count": currency_count,
+                "unit_cost": None,
+                "target_margin": None,
+            },
+            "evidence_source": {
+                "analysis_task_id": state["task_id"],
+                "competitor_set_version": price_row["competitor_set_version"],
+            },
+        }
+        version_bundle = {
+            **_object(state.get("version_bundle", {})),
+            "report_contract": {
+                "version": "decision-report-v2",
+                "primary_opportunity_id": int(opportunities[0]["id"]),
+                "opportunity_ranking_version": "enterprise-gated-v1",
+                "price_calculation_version": price_summary["calculation_version"],
+            },
+        }
         data_class = "authorized_market_data"
         evidence = {
             "product_name": task["product_name"], "sku": task["sku"],
@@ -746,14 +1166,18 @@ class ExternalFurnitureToolbox:
         sections = [
             {"section_code": "opportunities", "title": "市场机会", "sort_order": 1, "items": [dict(r) for r in opportunities]},
             {"section_code": "recommendations", "title": "产品与制造建议", "sort_order": 2, "items": [dict(r) for r in recommendations]},
-            {"section_code": "evidence_boundary", "title": "证据与边界", "sort_order": 3, "content": "所有定量值来自当前数据集；建议需经样品和用户测试验证。"},
+            {"section_code": "evidence_boundary", "title": "证据与边界", "sort_order": 3, "content": "所有定量值来自当前数据集；建议需经样品和用户反馈验证。"},
         ]
         if existing:
             await self.pool.execute(
                 """UPDATE furniscope.analysis_reports
-                      SET executive_summary=$1, generated_model_run_id=$2, updated_at=now()
-                    WHERE report_uuid=$3::uuid AND tenant_id=$4""",
-                summary, model_run_id, existing, state["tenant_id"],
+                      SET executive_summary=$1,decision_recommendation=$2,
+                          overall_opportunity_score=$3,overall_confidence=$4,
+                          price_summary=$5::jsonb,sections=$6::jsonb,version_bundle=$7::jsonb,
+                          generated_model_run_id=$8,updated_at=now()
+                    WHERE report_uuid=$9::uuid AND tenant_id=$10""",
+                summary, decision, top_score, confidence, _json(price_summary),
+                _json(sections), _json(version_bundle), model_run_id, existing, state["tenant_id"],
             )
             return CapabilityResult(output_ref={"report_uuid": existing}, state_update={"report_ref": {"report_uuid": existing}})
         report_uuid = await self.pool.fetchval(
@@ -769,10 +1193,10 @@ class ExternalFurnitureToolbox:
             _json({"data_class": data_class, "dataset": task["dataset_name"], "source": task["source_name"], "authorization_reference": task["authorization_reference"], "country": task["target_country"], "platform": task["target_platform"], "listing_count": task["listing_count"], "valid_review_count": task["valid_review_count"], "limitations": task["limitations"]}),
             _json({"product_id": state["product_id"], "profile_version": state["product_profile_version"], "sku": task["sku"]}),
             _json(_object(task["enterprise_profile_snapshot"])),
-            _json({"currency": task["analysis_currency"]}),
+            _json(price_summary),
             _json({"level": "medium", "items": ["样本代表性", "制造成本", "产品验证"]}),
             _json([{"item": r["validation_method"], "recommendation_id": r["id"]} for r in recommendations]),
-            _json(sections), _json(state.get("partial_failures", [])), _json(state.get("version_bundle", {})), model_run_id,
+            _json(sections), _json(state.get("partial_failures", [])), _json(version_bundle), model_run_id,
         )
         report_id = await self.pool.fetchval("SELECT id FROM furniscope.analysis_reports WHERE report_uuid=$1::uuid", report_uuid)
         primary_aspects = await self.pool.fetch("SELECT evidence_id FROM furniscope.evidence_links WHERE analysis_job_id=$1 AND evidence_type='review_aspect' ORDER BY is_primary DESC,display_order LIMIT 10", state["task_id"])

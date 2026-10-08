@@ -35,8 +35,11 @@ class FakeMappingResult:
 class FakeSession:
     def __init__(self, row: dict | None) -> None:
         self.row = row
+        self.info = {}
 
-    async def execute(self, *_args, **_kwargs) -> FakeMappingResult:
+    async def execute(self, statement, *_args, **_kwargs) -> FakeMappingResult:
+        if "tenant_placements" in str(statement):
+            return FakeMappingResult({"cell_code": "cell-local", "status": "active"})
         return FakeMappingResult(self.row)
 
     async def rollback(self) -> None:
@@ -152,6 +155,8 @@ def active_row(role_code: str = "user") -> dict:
         "role_code": role_code,
         "user_status": "active",
         "tenant_status": "active",
+        "tenant_role_codes": ["tenant_owner"] if role_code == "user" else [],
+        "permissions": [],
     }
 
 

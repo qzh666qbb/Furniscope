@@ -6,7 +6,8 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse
 
-from ..auth import AuthenticatedPrincipal, require_user
+from ..auth import AuthenticatedPrincipal, require_permission, require_user
+from ..database import bind_tenant_session
 from ..dependencies import DatabaseSession, Pagination
 from ..schemas import PageData, SuccessEnvelope
 from ..schemas.forecasts import (ForecastJobCreateRequest, ForecastJobSummary,
@@ -24,6 +25,7 @@ def _service(request: Request) -> ForecastService:
 async def _run_forecast(app, dispatch: dict) -> None:
     try:
         async for session in app.state.database.session():
+            await bind_tenant_session(session, dispatch["tenant_id"])
             await ForecastService(app.state.settings, app.state.forecast_runtime).execute(
                 session, **dispatch)
     except Exception:
@@ -64,7 +66,8 @@ async def forecast_skus(request: Request,
              summary="创建销量预测任务")
 async def create_forecast_job(body: ForecastJobCreateRequest, request: Request,
                               session: DatabaseSession,
-                              principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+                              principal: Annotated[AuthenticatedPrincipal, Depends(
+                                  require_permission("analysis.execute"))],
                               idempotency_key: Annotated[str, Header(alias="Idempotency-Key",
                                                                      min_length=1, max_length=128)]):
     def envelope(data):
@@ -86,7 +89,8 @@ async def create_forecast_job(body: ForecastJobCreateRequest, request: Request,
              summary="启动销量预测任务")
 async def start_forecast_job(job_uuid: UUID, request: Request, background_tasks: BackgroundTasks,
                              session: DatabaseSession,
-                             principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+                             principal: Annotated[AuthenticatedPrincipal, Depends(
+                                 require_permission("analysis.execute"))],
                              idempotency_key: Annotated[str, Header(alias="Idempotency-Key",
                                                                     min_length=1, max_length=128)]):
     def envelope(data):

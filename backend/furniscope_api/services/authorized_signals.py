@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 from decimal import Decimal
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 import hashlib
 import ipaddress
@@ -12,11 +13,13 @@ import json
 import os
 import re
 import socket
+import ssl
 from typing import Any
 from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 
+import certifi
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,8 +42,41 @@ DEFAULT_POLICY_KEYWORDS = [
     "furniture", "sofa", "chair", "recliner", "跨境", "家具", "沙发", "召回", "recall",
     "safety", "cpsc", "tariff", "duty", "customs", "certification", "reach", "prop 65",
 ]
+DEFAULT_POLICY_SOURCES = (
+    {
+        "name": "美国 CPSC 产品召回",
+        "source_type": "official_rss",
+        "source_url": "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS",
+        "market_country": "US",
+        "category_code": "furniture",
+        "authorization_reference": "CPSC 官方公开 RSS",
+    },
+    {
+        "name": "美国联邦公报 CPSC 公告",
+        "source_type": "official_json",
+        "source_url": (
+            "https://www.federalregister.gov/api/v1/documents.json?"
+            "per_page=100&order=newest&conditions%5Bagencies%5D%5B%5D="
+            "consumer-product-safety-commission"
+        ),
+        "market_country": "US",
+        "category_code": "furniture",
+        "authorization_reference": "FederalRegister.gov 官方公开 API",
+    },
+)
 HIGH_RISK_TERMS = ("recall", "召回", "ban", "禁售", "injury", "伤亡", "tariff", "加征关税")
 MEDIUM_RISK_TERMS = ("certification", "认证", "customs", "清关", "reach", "prop 65", "cpsc")
+POLICY_CATEGORY_TERMS = {
+    "sofa": (
+        "sofa", "couch", "loveseat", "sectional", "ottoman", "recliner",
+        "reclining chair", "upholstered chair", "沙发", "躺椅", "脚凳",
+    ),
+    "furniture": (
+        "furniture", "sofa", "couch", "loveseat", "sectional", "ottoman",
+        "recliner", "chair", "dresser", "mattress", "bed", "table",
+        "家具", "沙发", "椅", "床", "桌", "柜",
+    ),
+}
 POSITIVE_TERMS = ("comfortable", "sturdy", "easy assembly", "perfect", "love", "舒服", "结实", "满意", "稳固")
 NEGATIVE_TERMS = ("broken", "terrible", "awful", "smell", "mold", "refund", "collapsed", "squeak", "差", "破", "臭", "塌", "退")
 
@@ -67,6 +103,11 @@ def _safe_error(exc: Exception) -> str:
     return type(exc).__name__[:120]
 
 
+def _matches_policy_category(category_code: str | None, haystack: str) -> bool:
+    terms = POLICY_CATEGORY_TERMS.get(str(category_code or "").lower())
+    return not terms or any(term in haystack for term in terms)
+
+
 def finalize_collect_run(*, status: str, fetched: int, inserted: int,
                          listing_asins: list[str], error_summary: str | None) -> tuple[str, str | None]:
     """Zero-result collects must not be recorded as succeeded."""
@@ -86,7 +127,10 @@ def _parse_datetime(value: Any) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
-        return None
+        try:
+            parsed = parsedate_to_datetime(str(value))
+        except (TypeError, ValueError):
+            return None
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
@@ -329,7 +373,8 @@ class AuthorizedSignalService:
             if token:
                 headers["Authorization"] = f"Bearer {token}"
         request = Request(url, headers=headers)
-        with urlopen(request, timeout=12) as response:  # noqa: S310 - URL/IP are validated before use.
+        tls_context = ssl.create_default_context(cafile=certifi.where())
+        with urlopen(request, timeout=12, context=tls_context) as response:  # noqa: S310
             final_url = response.geturl() or url
             if final_url != url:
                 self._assert_fetch_allowed(final_url)
@@ -938,6 +983,34 @@ class AuthorizedSignalService:
             items.append({key: _jsonable(value) for key, value in item.items()})
         return items
 
+    async def install_default_policy_sources(
+        self, session: AsyncSession, *, tenant_id: int, user_id: int,
+    ) -> list[dict[str, Any]]:
+        for source in DEFAULT_POLICY_SOURCES:
+            await session.execute(text("""
+                INSERT INTO policy_sources
+                  (tenant_id,name,source_type,source_url,market_country,category_code,keywords,
+                   authorization_reference,schedule_minutes,enabled,created_by)
+                VALUES (:tenant,:name,:type,:url,:country,:category,CAST(:keywords AS jsonb),
+                        :authorization,1440,TRUE,:user)
+                ON CONFLICT (tenant_id,source_url) DO UPDATE SET
+                  name=EXCLUDED.name,source_type=EXCLUDED.source_type,
+                  market_country=EXCLUDED.market_country,category_code=EXCLUDED.category_code,
+                  keywords=EXCLUDED.keywords,authorization_reference=EXCLUDED.authorization_reference,
+                  enabled=TRUE
+            """), {
+                "tenant": tenant_id,
+                "name": source["name"],
+                "type": source["source_type"],
+                "url": source["source_url"],
+                "country": source["market_country"],
+                "category": source["category_code"],
+                "keywords": json.dumps(DEFAULT_POLICY_KEYWORDS, ensure_ascii=False),
+                "authorization": source["authorization_reference"],
+                "user": user_id,
+            })
+        return await self.list_policy_sources(session, tenant_id=tenant_id)
+
     async def update_policy_source(self, session: AsyncSession, *, tenant_id: int, source_id: int,
                                    payload: dict[str, Any]) -> dict[str, Any]:
         current = await self.get_policy_source(session, tenant_id=tenant_id, source_id=source_id)
@@ -959,13 +1032,22 @@ class AuthorizedSignalService:
     def _parse_policy_payload(self, source: dict[str, Any], body: str) -> list[dict[str, Any]]:
         if source["source_type"] == "official_json":
             payload = json.loads(body)
-            entries = payload if isinstance(payload, list) else payload.get("items") or payload.get("entries") or payload.get("alerts") or []
+            entries = payload if isinstance(payload, list) else (
+                payload.get("items") or payload.get("entries") or payload.get("alerts")
+                or payload.get("results") or payload.get("recalls") or []
+            )
             return [{
-                "external_id": str(item.get("id") or item.get("external_id") or item.get("url") or item.get("title") or "")[:300],
+                "external_id": str(item.get("id") or item.get("external_id")
+                                   or item.get("document_number") or item.get("recallID")
+                                   or item.get("url") or item.get("title") or "")[:300],
                 "title": item.get("title") or item.get("name") or "未命名政策更新",
-                "summary": item.get("summary") or item.get("description") or "",
-                "url": item.get("url") or item.get("link"),
-                "published_at": _parse_datetime(item.get("published_at") or item.get("published") or item.get("updated_at")),
+                "summary": item.get("summary") or item.get("abstract") or item.get("description") or "",
+                "url": item.get("url") or item.get("html_url") or item.get("link"),
+                "published_at": _parse_datetime(
+                    item.get("published_at") or item.get("publication_date")
+                    or item.get("recallDate") or item.get("lastPublishDate")
+                    or item.get("published") or item.get("updated_at")
+                ),
             } for item in entries if isinstance(item, dict)]
         root = ET.fromstring(body)
         entries = [element for element in root.iter() if _local_name(element.tag) in {"item", "entry"}]
@@ -996,7 +1078,9 @@ class AuthorizedSignalService:
             for entry in entries:
                 haystack = f"{entry.get('title') or ''}\n{entry.get('summary') or ''}".lower()
                 matched = [keyword for keyword in keywords if keyword.lower() in haystack]
-                if not matched:
+                if not matched or not _matches_policy_category(
+                    source.get("category_code"), haystack
+                ):
                     continue
                 if any(term in haystack for term in HIGH_RISK_TERMS):
                     severity = "high"

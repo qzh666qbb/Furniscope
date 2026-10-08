@@ -12,20 +12,92 @@ from ..errors import BusinessError
 from ..repositories.dataset_repository import DatasetRepository
 from ..repositories.product_repository import ProductRepository
 from ..repositories.workspace_repository import WorkspaceRepository
+from ..repositories.enterprise_repository import EnterpriseRepository
 from ..schemas import PageData, SuccessEnvelope
 from ..schemas.workspaces import (
     WorkbenchChatRequest, WorkbenchChatResponse,
     WorkspaceArchiveResponse, WorkspaceCreateRequest, WorkspaceListItem,
     WorkspaceMessageCreateRequest, WorkspaceMessageItem,
+    CustomerMemoryItem, CustomerMemoryList,
 )
 from ..services.chat_sse import stream_chat_events
 from ..services.model_router_client import ServiceModelRouterClient
 from ..services.workbench_chat import (
     build_workbench_thinking, catalog_context, local_workbench_chat_answer,
     parse_model_chat_text, workbench_system_prompt,
+    enrich_catalog_context,
 )
+from ..services.customer_memory import extract_memory_candidates, memory_context
 
 router = APIRouter(prefix="/api/v1/analysis-workspaces", tags=["Analysis Workspaces"])
+
+
+@router.get("/memories", response_model=SuccessEnvelope[CustomerMemoryList], include_in_schema=False,
+            summary="查看当前账号的已确认客户记忆")
+async def list_customer_memories(request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    workspace_uuid: UUID | None = None):
+    repo = WorkspaceRepository()
+    workspace_id = None
+    if workspace_uuid:
+        workspace = await repo.get(session, tenant_id=principal.tenant_id, workspace_uuid=str(workspace_uuid))
+        workspace_id = workspace["id"] if workspace else None
+    rows = await repo.list_memory(session, tenant_id=principal.tenant_id,
+                                  user_id=principal.user_id, workspace_id=workspace_id,
+                                  include_candidates=True)
+    return SuccessEnvelope(data=CustomerMemoryList(items=[CustomerMemoryItem(**row) for row in rows]),
+                           request_id=request.state.request_id)
+
+
+@router.delete("/memories/{memory_key}", response_model=SuccessEnvelope[dict], include_in_schema=False,
+               summary="删除一条客户记忆")
+async def delete_customer_memory(memory_key: str, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    workspace_uuid: UUID | None = None):
+    repo = WorkspaceRepository()
+    workspace_id = None
+    if workspace_uuid:
+        workspace = await repo.get(session, tenant_id=principal.tenant_id, workspace_uuid=str(workspace_uuid))
+        workspace_id = workspace["id"] if workspace else None
+    archived = await repo.archive_memory(session, tenant_id=principal.tenant_id,
+                                         user_id=principal.user_id, memory_key=memory_key,
+                                         workspace_id=workspace_id)
+    await session.commit()
+    return SuccessEnvelope(data={"memory_key": memory_key, "archived": archived}, request_id=request.state.request_id)
+
+
+@router.post("/memories/{memory_key}:confirm", response_model=SuccessEnvelope[dict], include_in_schema=False,
+             summary="确认一条候选客户记忆")
+async def confirm_customer_memory(memory_key: str, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    workspace_uuid: UUID | None = None):
+    repo = WorkspaceRepository()
+    workspace_id = None
+    if workspace_uuid:
+        workspace = await repo.get(session, tenant_id=principal.tenant_id, workspace_uuid=str(workspace_uuid))
+        workspace_id = workspace["id"] if workspace else None
+    confirmed = await repo.set_memory_status(session, tenant_id=principal.tenant_id,
+                                              user_id=principal.user_id, memory_key=memory_key,
+                                              status="confirmed", workspace_id=workspace_id)
+    await session.commit()
+    return SuccessEnvelope(data={"memory_key": memory_key, "confirmed": confirmed}, request_id=request.state.request_id)
+
+
+@router.post("/memories/{memory_key}:reject", response_model=SuccessEnvelope[dict], include_in_schema=False,
+             summary="拒绝一条候选客户记忆")
+async def reject_customer_memory(memory_key: str, request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    workspace_uuid: UUID | None = None):
+    repo = WorkspaceRepository()
+    workspace_id = None
+    if workspace_uuid:
+        workspace = await repo.get(session, tenant_id=principal.tenant_id, workspace_uuid=str(workspace_uuid))
+        workspace_id = workspace["id"] if workspace else None
+    rejected = await repo.set_memory_status(session, tenant_id=principal.tenant_id,
+                                             user_id=principal.user_id, memory_key=memory_key,
+                                             status="archived", workspace_id=workspace_id)
+    await session.commit()
+    return SuccessEnvelope(data={"memory_key": memory_key, "rejected": rejected}, request_id=request.state.request_id)
 
 
 def _normalize_chat_output(output: dict, fallback: dict) -> dict:
@@ -64,6 +136,8 @@ def _normalize_chat_output(output: dict, fallback: dict) -> dict:
         "action_href": output.get("action_href") or fallback.get("action_href") or None,
         "product_candidates": cleaned_candidates,
         "missing_market": output.get("missing_market") or fallback.get("missing_market"),
+        "memory_updates": output.get("memory_updates") if isinstance(output.get("memory_updates"), list) else fallback.get("memory_updates", []),
+        "context_sources": output.get("context_sources") if isinstance(output.get("context_sources"), list) else fallback.get("context_sources", []),
     }
 
 
@@ -74,7 +148,18 @@ def _finalize_workbench_answer(answer_text: str, fallback: dict[str, Any]) -> di
     return _normalize_chat_output({"answer": answer_text}, fallback)
 
 
-async def _workbench_chat_context(body: WorkbenchChatRequest, session, tenant_id: int, *, streaming: bool):
+def _context_sources(messages: list[dict[str, Any]], memory_updates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    system = messages[0].get("content", "") if messages else ""
+    return [
+        {"type": "workspace_history", "label": "工作台历史", "used": max(0, len(messages) - 2)},
+        {"type": "customer_memory", "label": "客户记忆", "used": len(memory_updates)},
+        {"type": "enterprise_profile", "label": "企业画像", "used": 1 if "enterprise_profile" in system else 0},
+        {"type": "product_profile", "label": "产品画像", "used": 1 if "selected_product_profile" in system else 0},
+        {"type": "authorized_data", "label": "授权市场数据", "used": 1 if "datasets" in system else 0},
+    ]
+
+
+async def _workbench_chat_context(body: WorkbenchChatRequest, session, tenant_id: int, user_id: int, *, streaming: bool):
     products, _ = await ProductRepository().list(
         session, tenant_id=tenant_id, offset=0, limit=100,
         analysis_status=None, category_code=None, keyword=None,
@@ -85,6 +170,35 @@ async def _workbench_chat_context(body: WorkbenchChatRequest, session, tenant_id
     )
     selected_product = next((item for item in products if item.get("product_id") == body.product_id), None)
     selected_dataset = next((item for item in datasets if item.get("dataset_id") == body.dataset_id), None)
+    repo = WorkspaceRepository()
+    workspace = None
+    if body.workspace_uuid:
+        workspace = await repo.get(session, tenant_id=tenant_id, workspace_uuid=str(body.workspace_uuid))
+    stored_history = []
+    if workspace:
+        stored_history, _ = await repo.list_messages(
+            session, tenant_id=tenant_id, workspace_id=workspace["id"], offset=0, limit=100,
+        )
+        stored_history = [
+            {"role": item["role"], "content": item["content"]}
+            for item in stored_history if item.get("role") in {"user", "assistant"}
+        ]
+    memories = await repo.list_memory(
+        session, tenant_id=tenant_id,
+        user_id=user_id,
+        workspace_id=workspace["id"] if workspace else None,
+    )
+    enterprise_profile = await EnterpriseRepository().get_profile(session, tenant_id=tenant_id)
+    product_profile = None
+    if selected_product and selected_product.get("current_profile_version_id"):
+        product_profile = await ProductRepository().get_profile(
+            session, tenant_id=tenant_id, product_id=int(selected_product["product_id"]),
+            profile_version_id=int(selected_product["current_profile_version_id"]),
+        )
+        if product_profile:
+            product_profile["attributes"] = await ProductRepository().attributes(
+                session, tenant_id=tenant_id, profile_version_id=int(product_profile["profile_version_id"]),
+            )
     fallback = local_workbench_chat_answer(
         body.question, products=products, datasets=datasets,
         selected_product=selected_product, selected_dataset=selected_dataset,
@@ -93,45 +207,87 @@ async def _workbench_chat_context(body: WorkbenchChatRequest, session, tenant_id
         body.question, products=products, datasets=datasets,
         selected_product=selected_product, selected_dataset=selected_dataset,
     )
-    context = catalog_context(products, datasets, selected_product, selected_dataset)
+    context = enrich_catalog_context(
+        catalog_context(products, datasets, selected_product, selected_dataset),
+        enterprise_profile=enterprise_profile, product_profile=product_profile,
+        memories=memory_context(memories),
+    )
     messages = [{
         "role": "system",
         "content": workbench_system_prompt(context, streaming=streaming),
     }]
+    combined_history = stored_history[-12:] if stored_history else body.history[-12:]
     messages.extend(
         {"role": item.get("role", "user"), "content": item.get("content", "")[:2000]}
-        for item in body.history[-8:] if item.get("content")
+        for item in combined_history[-8:] if item.get("content")
     )
     messages.append({"role": "user", "content": body.question})
     return fallback, thinking, messages
 
 
-@router.post("/chat", response_model=SuccessEnvelope[WorkbenchChatResponse],
+async def _persist_memory_candidates(body: WorkbenchChatRequest, session, *, tenant_id: int,
+                                     user_id: int, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not body.workspace_uuid or not candidates:
+        return []
+    repo = WorkspaceRepository()
+    workspace = await repo.get(session, tenant_id=tenant_id, workspace_uuid=str(body.workspace_uuid))
+    if not workspace:
+        return []
+    saved = []
+    for candidate in candidates[:5]:
+        saved.append(await repo.upsert_memory(
+            session, tenant_id=tenant_id, user_id=user_id, workspace_id=workspace["id"],
+            memory=candidate, status="candidate",
+        ))
+    return saved
+
+
+@router.post("/chat", response_model=SuccessEnvelope[WorkbenchChatResponse], include_in_schema=False,
              summary="分析工作台对话：核对目录与市场数据后再回答")
 async def workbench_chat(body: WorkbenchChatRequest, request: Request, session: DatabaseSession,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
     fallback, _thinking, messages = await _workbench_chat_context(
-        body, session, principal.tenant_id, streaming=False,
+        body, session, principal.tenant_id, principal.user_id, streaming=False,
     )
+    saved_memory = []
+    if request.app.state.settings.memory_auto_extract_enabled:
+        saved_memory = await _persist_memory_candidates(
+            body, session, tenant_id=principal.tenant_id, user_id=principal.user_id,
+            candidates=extract_memory_candidates(body.question),
+        )
     client = ServiceModelRouterClient(request.app.state.settings)
     try:
         output = await client.structured(messages=messages, output_type=dict)
         payload = _normalize_chat_output(output if isinstance(output, dict) else {}, fallback)
+        payload["memory_updates"] = saved_memory
+        payload["context_sources"] = _context_sources(messages, saved_memory)
         data = WorkbenchChatResponse(**payload)
     except Exception:
+        fallback["memory_updates"] = saved_memory
+        fallback["context_sources"] = _context_sources(messages, saved_memory)
         data = WorkbenchChatResponse(**fallback)
     finally:
+        await session.commit()
         await client.close()
     return SuccessEnvelope(data=data, request_id=request.state.request_id)
 
 
-@router.post("/chat/stream", summary="分析工作台流式对话（思考过程 + 回答）")
+@router.post("/chat/stream", summary="分析工作台流式对话（兼容接口）", include_in_schema=False)
 @router.post("/chat:stream", include_in_schema=False)
 async def workbench_chat_stream(body: WorkbenchChatRequest, request: Request, session: DatabaseSession,
     principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
     fallback, thinking, messages = await _workbench_chat_context(
-        body, session, principal.tenant_id, streaming=True,
+        body, session, principal.tenant_id, principal.user_id, streaming=True,
     )
+    saved_memory = []
+    if request.app.state.settings.memory_auto_extract_enabled:
+        saved_memory = await _persist_memory_candidates(
+            body, session, tenant_id=principal.tenant_id, user_id=principal.user_id,
+            candidates=extract_memory_candidates(body.question),
+        )
+    fallback["memory_updates"] = saved_memory
+    fallback["context_sources"] = _context_sources(messages, saved_memory)
+    await session.commit()
     client = ServiceModelRouterClient(request.app.state.settings)
     return StreamingResponse(
         stream_chat_events(
@@ -184,7 +340,11 @@ async def list_workspaces(request: Request, session: DatabaseSession, pagination
             response_model=SuccessEnvelope[PageData[WorkspaceMessageItem]],
             summary="查询工作台对话")
 async def list_workspace_messages(workspace_uuid: UUID, request: Request, session: DatabaseSession,
-    pagination: Pagination, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)]):
+    pagination: Pagination, principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+    before_seq: Annotated[int | None, Query(ge=1)] = None,
+    after_seq: Annotated[int | None, Query(ge=0)] = None,
+    message_kind: Annotated[str | None, Query(max_length=24)] = None,
+    task_uuid: UUID | None = None):
     workspace = await WorkspaceRepository().get(
         session, tenant_id=principal.tenant_id, workspace_uuid=str(workspace_uuid),
     )
@@ -194,6 +354,8 @@ async def list_workspace_messages(workspace_uuid: UUID, request: Request, sessio
     rows, total = await WorkspaceRepository().list_messages(
         session, tenant_id=principal.tenant_id, workspace_id=workspace["id"],
         offset=pagination.offset, limit=pagination.page_size,
+        before_seq=before_seq, after_seq=after_seq, message_kind=message_kind,
+        task_uuid=str(task_uuid) if task_uuid else None,
     )
     data = PageData[WorkspaceMessageItem].build(
         items=[WorkspaceMessageItem(**row) for row in rows], total=total, params=pagination,

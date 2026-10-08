@@ -1,0 +1,15 @@
+749d82a04dadbed9d1f94a384b11570a0e9bc429e8438ae246daab3f74a9e4a2  evaluation-final.json
+23ad870330668da82ad8ba74c70ed965638905b54fca6b3a5be10a8611961ad1  memory-evaluation-final.json
+ba720fafcfdc0d898a9508e20c5b8c2be83e2b5727b2a1b9ce6ccba9465221d5  visual-acceptance.json
+a1b50338cc1ec8df2d0572d4541c0af5ac8acd488a57ad66cceabc23050ff8bd  data-query-desktop.png
+034b4f76a5308c5c1e03127b0ff89c170d8578c0c446d50259317016f7cfde9d  knowledge-manager-desktop.png
+67dbadd864b3a2519ba7c6e4439f8e0a1cbd9898d119f06ee36151458140428f  knowledge-manager-mobile.png
+d3f3da4f51598d3ced52604499bba778d423e36b0eea66e8843e85ce0b6442ad  ../data-query-migrations-20261006-final/migration-summary.json
+0c1f02a146da90fe9cc1c9ee365eaa068a2c6192f11a1f897f4e5b0a4d4aba14  ../../migrations/v3_31_controlled_data_query.sql
+e6d1a1e050a49706d2a7deb22396db82cd9bb95265e1dc2c1ac04461db1a5dc9  ../../backend/furniscope_api/services/data_query.py
+6d024e673120c0b62399ebfdda0b5d85a67176e62a27f3aea7ea1e0a2744e713  ../../backend/furniscope_api/services/agent_orchestrator.py
+bd89604d9e2f1ed0cc00fd8e4ba04ef3abb5c2e2106a1b6ebd0640b210e0641d  ../../frontend/src/AnalysisCenter.jsx
+de20caa41b0197e08642017126428f34623aa337fb446bb862bfeeb1ea706007  ../../frontend/src/analysis-center.css
+ca482850d18da55bf513b512346517045cd0e96c49a22cc2119932d4ebd91d65  ../../frontend/tests/e2e/data-query-rag-orchestration.spec.js
+c43c584919f91aedd8b9692bfb11b8d81da98c434e995cfbdb050b968893db2c  ../../scripts/evaluate_agent_tools.py
+bcd6fb7bbc0e6ab8eedbfc995f51f1565c0cce6977cb3ac976a4abda489b59e3  ../../tests/test_data_query.py

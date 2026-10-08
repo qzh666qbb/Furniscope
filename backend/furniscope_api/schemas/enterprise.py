@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -24,6 +25,14 @@ class EnterpriseConstraint(BaseModel):
     expires_at: str | None = None
     sensitivity_level: str = Field(default="normal", max_length=16)
     model_config = ConfigDict(extra="forbid")
+
+
+class EnterpriseConstraintRecord(EnterpriseConstraint):
+    """Constraint returned with server-managed governance provenance."""
+
+    source_class: str | None = Field(default=None, max_length=64)
+    rule_version: str | None = Field(default=None, max_length=128)
+    governance_batch_uuid: UUID | None = None
 
 
 class EnterpriseProfilePayload(BaseModel):
@@ -69,6 +78,7 @@ class CapabilityRecord(CapabilityItem):
 
 
 class EnterpriseProfileRecord(EnterpriseProfilePayload):
+    constraints: list[EnterpriseConstraintRecord] = Field(default_factory=list, max_length=50)
     profile_version: int = Field(ge=1)
     profile_completeness: float
     confirmed_by: int | None

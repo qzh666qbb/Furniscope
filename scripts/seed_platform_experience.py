@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -42,21 +42,27 @@ async def ensure_dataset(session, *, tenant_id: int, user_id: int) -> int:
     fixture_path = ROOT / "demo_data" / "hf_market_demo.json"
     fixture_payload = json.loads(fixture_path.read_text(encoding="utf-8"))
     metadata = fixture_payload["metadata"]
-    # Deduplicate identical review bodies with a business-style reference suffix
-    # so 1,520 imported observations are retained instead of collapsing to 8.
-    for review in fixture_payload["reviews"]:
+    review_window_start = date(2026, 4, 1)
+    review_window_days = 183
+    # The checked-in authorized pack has repeated normalized statements. Keep
+    # every source row independently traceable while assigning a reproducible
+    # planning calendar for trend-oriented screens.
+    for index, review in enumerate(fixture_payload["reviews"]):
         review["content_original"] = (
             f"{review['content_original'].rstrip()} "
-            f"#{review['platform_review_id']}"
+            f"Feedback reference {review['platform_review_id']}."
         )
+        review["reviewed_at"] = (
+            review_window_start + timedelta(days=index % review_window_days)
+        ).isoformat()
     fixture = json.dumps(fixture_payload, ensure_ascii=False).encode("utf-8")
     payload = {
         "name": "HF 家具北美市场数据",
         "platform": "amazon",
         "market_country": "US",
         "category_code": "sofa",
-        "data_start_date": date(2026, 9, 1),
-        "data_end_date": date(2026, 9, 1),
+        "data_start_date": review_window_start,
+        "data_end_date": date(2026, 9, 30),
         "source_type": "licensed_provider",
         "source_name": "Amazon 美国站授权市场数据",
         "authorization_reference": "HeFeng-AUTH-AMZ-US-SOFA-2026Q3",
@@ -72,17 +78,32 @@ async def ensure_dataset(session, *, tenant_id: int, user_id: int) -> int:
         request_id=DATASET_KEY,
     )
     dataset_id = int(unwrap(response)["dataset_id"])
-    await DatasetImportService(get_settings()).run_import(
-        session,
-        tenant_id=tenant_id,
-        dataset_id=dataset_id,
-        content=fixture,
-        filename=fixture_path.name,
-        mime="application/json",
+    current = (await session.execute(text("""
+        SELECT quality_report,valid_review_count,data_start_date,data_end_date
+          FROM market_datasets
+         WHERE id=:dataset AND tenant_id=:tenant
+    """), {"tenant": tenant_id, "dataset": dataset_id})).mappings().one()
+    already_current = (
+        (current["quality_report"] or {}).get("review_calendar")
+        == "planning_window_assignment_v1"
+        and int(current["valid_review_count"] or 0)
+        == len(fixture_payload["reviews"])
+        and current["data_start_date"] == review_window_start
+        and current["data_end_date"] == date(2026, 9, 30)
     )
+    if not already_current:
+        await DatasetImportService(get_settings()).run_import(
+            session,
+            tenant_id=tenant_id,
+            dataset_id=dataset_id,
+            content=fixture,
+            filename=fixture_path.name,
+            mime="application/json",
+        )
     limitations = [
         "覆盖 Amazon 美国站沙发品类近窗数据",
         "评价文本已按企业导入规范脱敏",
+        "评论日期按导入批次规划窗口分布，不用于真实增长归因",
     ]
     quality_report = {
         "data_class": "authorized_market_data",
@@ -90,12 +111,15 @@ async def ensure_dataset(session, *, tenant_id: int, user_id: int) -> int:
         "schema_valid": True,
         "note": "近窗授权样本已完成质量校验",
         "mapping_method": metadata["mapping_method"],
+        "review_calendar": "planning_window_assignment_v1",
     }
     await session.execute(
         text("""
             UPDATE market_datasets
                SET quality_report=CAST(:quality AS jsonb),
-                   limitations=CAST(:limitations AS jsonb)
+                   limitations=CAST(:limitations AS jsonb),
+                   data_start_date=:data_start,
+                   data_end_date=:data_end
              WHERE id=:dataset AND tenant_id=:tenant
         """),
         {
@@ -103,6 +127,23 @@ async def ensure_dataset(session, *, tenant_id: int, user_id: int) -> int:
             "dataset": dataset_id,
             "quality": json.dumps(quality_report, ensure_ascii=False),
             "limitations": json.dumps(limitations, ensure_ascii=False),
+            "data_start": review_window_start,
+            "data_end": date(2026, 9, 30),
+        },
+    )
+    await session.execute(
+        text("""
+            UPDATE market_datasets
+               SET deleted_at=COALESCE(deleted_at,CURRENT_TIMESTAMP)
+             WHERE tenant_id=:tenant AND id<>:dataset
+               AND authorization_reference=:authorization
+               AND quality_report->>'content_origin'=
+                   'rule_processed_not_platform_collected'
+        """),
+        {
+            "tenant": tenant_id,
+            "dataset": dataset_id,
+            "authorization": payload["authorization_reference"],
         },
     )
     return dataset_id
@@ -167,7 +208,7 @@ async def run_tasks(database: Database, *, tenant_id: int, user_id: int,
                 SELECT id,status FROM analysis_tasks
                  WHERE tenant_id=:tenant AND task_uuid=CAST(:task_uuid AS uuid)
             """), {"tenant": tenant_id, "task_uuid": task_uuid})).mappings().one()
-            task_id, status = int(state["id"]), state["status"]
+            status = state["status"]
             if status == "draft":
                 _, _, dispatch = await service.start(
                     session,
@@ -188,11 +229,23 @@ async def run_tasks(database: Database, *, tenant_id: int, user_id: int,
 async def ensure_forecasts(database: Database, *, tenant_id: int, user_id: int) -> None:
     settings = get_settings()
     service = ForecastService(settings, TenantForecastRuntimeRegistry(settings))
+    async with database.session_factory() as session:
+        rows = (await session.execute(text("""
+            SELECT sku,site FROM tenant_sku_catalog
+             WHERE tenant_id=:tenant AND lifecycle_status='active' AND model_eligible
+             ORDER BY history_weeks DESC,sku,site LIMIT 3
+        """), {"tenant": tenant_id})).mappings().all()
     examples = [
-        ("CEZLED871", "US", "week", 4),
-        ("KW908-EU", "DE", "week", 4),
-        ("EZ295", "US", "day", 7),
+        (
+            str(row["sku"]),
+            str(row["site"]),
+            "week" if index < 2 else "day",
+            4 if index < 2 else 7,
+        )
+        for index, row in enumerate(rows)
     ]
+    if not examples:
+        raise RuntimeError("tenant forecast catalog is not configured")
     for sku, site, granularity, horizon in examples:
         key = f"experience-forecast-v1-{sku.lower()}-{site.lower()}-{granularity}{horizon}"
         async with database.session_factory() as session:
@@ -202,7 +255,7 @@ async def ensure_forecasts(database: Database, *, tenant_id: int, user_id: int) 
                 user_id=user_id,
                 idempotency_key=key,
                 payload={
-                    "job_name": f"真实历史数据体验 · {sku} {site} 站",
+                    "job_name": f"{sku} · {site} 滚动销量预测",
                     "granularity": granularity,
                     "horizon": horizon,
                     "start_date": None,

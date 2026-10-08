@@ -1,5 +1,7 @@
 # FurniScope Mermaid 图 V3.0
 
+> 2026-10-05企业增量的完整结构图见[15总体设计§3](./15_FurniScope_企业决策与数据闭环总体设计V1.md#3-总体结构)：标准数据与模板/对账、独立初训/追加/重建、租约恢复与逐SKU滚动发布、企业策略与硬条件、处理反馈→实施/经营观察→完整任务数据→离线验收及RLS。以下图保留核心分析编排，机会评分为五因子市场分及独立企业修正，排序学习仍待真实数据实验。
+
 ## 1. 文档说明
 
 本文提供 FurniScope“跨境家具超级 AI 员工”V3 的六张可直接复制渲染的 Mermaid 图。图中系统角色只包含 `user/admin`；多 Agent 是超级 AI 员工的内部能力，不是用户岗位。核心范围不包含 Listing 生成、文件导出、验证任务、多人报告评审和产品运营事件。
@@ -145,7 +147,7 @@ flowchart TB
     subgraph API[FastAPI服务层]
         GW[REST API v1<br/>JWT、Request ID、限流]
         AUTH[认证与user/admin静态鉴权]
-        TENANT[tenant_id隔离与审计]
+        TENANT[tenant_id、受限角色、RLS与审计]
         PRODUCT[产品、文件与画像服务]
         DATASET[市场数据集与质量服务]
         TASK[分析任务与综合结果服务]
@@ -162,7 +164,7 @@ flowchart TB
         COMP[竞品过滤、Embedding与Rerank]
         REVIEW[评论预处理与观点Map Reduce]
         ANALYTICS[价格、趋势与企业适配并行分析]
-        SCORE[六维机会评分与独立置信度]
+        SCORE[五因子市场分、企业修正<br/>硬条件与独立置信度]
         RECOMMEND[家具产品与制造建议]
         EVIDENCE[证据审计与报告生成]
         INTERRUPT[统一interrupt和Command resume]
@@ -664,7 +666,7 @@ flowchart LR
 
     subgraph E3[evaluating_opportunity 评估机会]
         I13[I13 并行分析Join]
-        I14[I14 六维机会评分与独立置信度]
+        I14[I14 市场分、企业修正<br/>硬条件与独立置信度]
         I13 --> I14
     end
 

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("仅在租户模型空间内提供模型替换入口", async ({ page }) => {
+test("租户模型空间解释标准训练要求，不开放直接代码发布", async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("furniscope-access-token", "admin-token"));
   await page.route("**/api/v1/users/me", route => route.fulfill({
     status: 200, contentType: "application/json",
@@ -35,8 +35,7 @@ test("仅在租户模型空间内提供模型替换入口", async ({ page }) => 
 
   await page.locator(".model-detail").getByRole("button", { name: "更新模型" }).click();
   await expect(page.getByRole("heading", { name: "更新 HeFeng 的模型" })).toBeVisible();
-  await expect(page.locator("form").getByText("sales-v4-hf", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("算法方案")).toHaveValue("current");
-  await expect(page.getByText("模型代码（必选）")).toBeVisible();
-  await expect(page.getByText("模型参数（必选）")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("sales-v4-hf", { exact: true })).toBeVisible();
+  await expect(page.getByText("代码直接替换暂未开放", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog").locator('input[type="file"]')).toHaveCount(0);
 });

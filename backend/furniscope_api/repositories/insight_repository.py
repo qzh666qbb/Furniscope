@@ -70,11 +70,13 @@ class InsightRepository:
                        demand_heat_score::float8,demand_growth_score::float8,unmet_need_score::float8,
                        competition_space_score::float8,profit_space_score::float8,
                        enterprise_fit_score::float8,enterprise_fit_confidence::float8,
-                       base_score::float8,confidence::float8,
+                       base_score::float8,confidence::float8,market_score::float8,adjusted_score::float8,policy_snapshot,
                        recommendation_level,weight_config,scoring_version,manufacturing_fit,
                        calculated_at,created_at,updated_at
                   FROM market_opportunities WHERE tenant_id=:tenant_id AND analysis_job_id=:task_id
-                 ORDER BY base_score DESC,id
+                 ORDER BY CASE recommendation_level WHEN 'prioritize_validate' THEN 0
+                           WHEN 'collect_more_data' THEN 1 WHEN 'limited_opportunity' THEN 2 ELSE 3 END,
+                           base_score DESC,id
             """,
             "recommendations": """
                 SELECT r.id recommendation_id,r.opportunity_id,r.recommendation_type,

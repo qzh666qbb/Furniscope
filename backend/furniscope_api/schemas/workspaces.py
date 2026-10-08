@@ -53,10 +53,12 @@ class WorkspaceListItem(BaseModel):
 
 class WorkspaceMessageItem(BaseModel):
     message_uuid: UUID
+    turn_uuid: UUID | None = None
     role: MessageRole
     message_kind: MessageKind
     content: str
     seq_no: int
+    message_version: int = Field(default=1, ge=1)
     client_message_id: str | None = None
     analysis_task_uuid: UUID | None = None
     evidence_refs: list[Any] = Field(default_factory=list)
@@ -73,6 +75,7 @@ class WorkspaceArchiveResponse(BaseModel):
 class WorkbenchChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     history: list[dict[str, str]] = Field(default_factory=list, max_length=12)
+    workspace_uuid: UUID | None = None
     product_id: int | None = Field(default=None, gt=0)
     dataset_id: int | None = Field(default=None, gt=0)
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -93,3 +96,17 @@ class WorkbenchChatResponse(BaseModel):
     action_href: str | None = None
     product_candidates: list[WorkbenchChatProduct] = Field(default_factory=list)
     missing_market: dict[str, Any] | None = None
+    memory_updates: list[dict[str, Any]] = Field(default_factory=list)
+    context_sources: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class CustomerMemoryItem(BaseModel):
+    memory_key: str
+    memory_value: dict[str, Any] = Field(default_factory=dict)
+    status: Literal["candidate", "confirmed", "archived"]
+    confidence: float = Field(ge=0, le=1)
+    source: str | None = None
+
+
+class CustomerMemoryList(BaseModel):
+    items: list[CustomerMemoryItem] = Field(default_factory=list)

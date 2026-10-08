@@ -20,7 +20,8 @@ async def provision_enterprise_account(
     entitlements: list[str],
 ) -> dict[str, Any]:
     tenant = (await session.execute(text("""INSERT INTO tenants
-        (tenant_code,name,status,entitlements) VALUES(:code,:name,'active',CAST(:entitlements AS jsonb))
+        (tenant_code,name,status,entitlements,data_class)
+        VALUES(:code,:name,'active',CAST(:entitlements AS jsonb),'business')
         RETURNING id,tenant_code,name,status,entitlements,created_at,updated_at"""), {
         "code": tenant_code, "name": enterprise_name,
         "entitlements": json.dumps(entitlements),

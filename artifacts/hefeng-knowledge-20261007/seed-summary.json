@@ -1,0 +1,63 @@
+{
+  "protocol": "hefeng-knowledge-v1",
+  "tenant_code": "HEFENG",
+  "email": "hefeng@furniscope.local",
+  "product_count": 76,
+  "dataset_name": "HeFeng 美国市场加工数据",
+  "knowledge_bases": [
+    {
+      "name": "HeFeng 产品与制造知识库",
+      "knowledge_base_uuid": "dda48ba0-94e7-4ec1-98e8-449fc4b6662b",
+      "documents": [
+        {
+          "filename": "HeFeng产品主档与目录.xlsx",
+          "action": "unchanged",
+          "document_uuid": "e86fc2fe-43a0-4dc5-afc4-cd9ff87e2cbc",
+          "version": 1
+        },
+        {
+          "filename": "HeFeng制造能力与事实边界.xlsx",
+          "action": "unchanged",
+          "document_uuid": "2fd55d3e-004f-4654-a5dc-0daaed7ada84",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "HeFeng 北美市场证据库",
+      "knowledge_base_uuid": "45a25d7d-43cf-4add-9b1b-21fa53c2622a",
+      "documents": [
+        {
+          "filename": "HeFeng北美沙发授权市场数据说明.xlsx",
+          "action": "unchanged",
+          "document_uuid": "5176548e-7a5c-422f-b06c-874be561d529",
+          "version": 1
+        },
+        {
+          "filename": "HeFeng客户评论证据摘录.xlsx",
+          "action": "unchanged",
+          "document_uuid": "46319aa5-f20e-4c16-a307-5c3e6c05e908",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "HeFeng 业务SOP知识库",
+      "knowledge_base_uuid": "1ef0fbdc-4fc6-4436-bb81-98a7851d0f6a",
+      "documents": [
+        {
+          "filename": "HeFeng销量预测数据接入SOP.xlsx",
+          "action": "unchanged",
+          "document_uuid": "d707d32f-26f1-4116-beb2-134067a8ef7d",
+          "version": 1
+        },
+        {
+          "filename": "FurniScope企业操作与知识使用SOP.xlsx",
+          "action": "unchanged",
+          "document_uuid": "50adf9ee-fe6f-43b0-aa70-e88ee3d2e137",
+          "version": 1
+        }
+      ]
+    }
+  ]
+}

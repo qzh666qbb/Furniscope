@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+import asyncio
 import os
 from uuid import uuid4
 
 import asyncpg
 import pytest
 
+import furniscope_api.worker as worker_module
 from furniscope_api.config import ApiSettings
 from furniscope_api.database import Database
-from furniscope_api.job_queue import DEAD_STREAM, STREAM, QueuedJob, RedisJobQueue
+from furniscope_api.job_queue import (
+    DEAD_STREAM,
+    GROUP,
+    STREAM,
+    JobLeaseLost,
+    QueuedJob,
+    RedisJobQueue,
+    TenantQueueQuotaExceeded,
+)
 from furniscope_api.worker import JobHandlers
 
 
@@ -50,7 +60,157 @@ async def test_queue_deduplicates_and_acknowledges_success() -> None:
     assert await queue.consume_once("test-success", handle, unexpected, unexpected)
     assert handled == ["forecast:x"]
     assert (await queue.client.xpending(STREAM, "furniscope-workers"))["pending"] == 0
+    assert await queue.tenant_metrics_snapshot() == [{
+        "tenant_id": "1",
+        "queued": 0,
+        "running": 0,
+        "deferred": 0,
+        "completed": 1,
+        "failed": 0,
+    }]
     await queue.close()
+
+
+@pytest.mark.asyncio
+async def test_disabled_agent_runtime_cancels_legacy_job(monkeypatch) -> None:
+    calls = {"commits": 0, "sql": [], "state": None, "event": None}
+
+    class Session:
+        async def execute(self, statement, parameters=None):
+            calls["sql"].append((str(statement), parameters))
+
+        async def commit(self):
+            calls["commits"] += 1
+
+    class SessionContext:
+        async def __aenter__(self):
+            return Session()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    class FakeDatabase:
+        @staticmethod
+        def session_factory():
+            return SessionContext()
+
+    class Repository:
+        async def run_context(self, *_args, **_kwargs):
+            return {
+                "id": 19,
+                "goal_id": 23,
+                "plan_id": 29,
+                "status": "queued",
+                "progress_percent": 0,
+                "current_step_id": None,
+            }
+
+        async def set_run_state(self, *_args, **kwargs):
+            calls["state"] = kwargs
+
+        async def append_event(self, *_args, **kwargs):
+            calls["event"] = kwargs
+
+    async def bind(_session, tenant_id):
+        assert tenant_id == 7
+
+    monkeypatch.setattr(worker_module, "AgentRepository", Repository)
+    monkeypatch.setattr(worker_module, "bind_tenant_session", bind)
+    handlers = JobHandlers(settings(), FakeDatabase())
+    await handlers.handle(QueuedJob(
+        message_id="legacy",
+        job_id="agent-run:legacy",
+        kind="agent_run",
+        payload={"tenant_id": 7, "run_uuid": "00000000-0000-4000-8000-000000000019"},
+        attempt=1,
+        max_attempts=2,
+    ))
+
+    assert calls["state"]["status"] == "cancelled"
+    assert calls["state"]["failure_code"] == "AGENT_RUNTIME_DISABLED"
+    assert calls["event"]["event_type"] == "run.cancelled"
+    assert calls["event"]["payload"]["reason"] == "runtime_disabled"
+    assert any("UPDATE agent_plan_steps" in statement for statement, _ in calls["sql"])
+    assert any("UPDATE agent_approvals" in statement for statement, _ in calls["sql"])
+    assert calls["commits"] == 1
+
+
+@pytest.mark.asyncio
+async def test_tenant_queue_quota_is_atomic_and_released_after_terminal_success() -> None:
+    cfg = settings().model_copy(update={"worker_tenant_queue_limit": 2})
+    queue = RedisJobQueue.from_settings(cfg)
+    await queue.client.flushdb()
+    await queue.ensure_group()
+    try:
+        await queue.enqueue("forecast", {"tenant_id": 7}, job_id="quota:one")
+        await queue.enqueue("forecast", {"tenant_id": 7}, job_id="quota:one")
+        await queue.enqueue("forecast", {"tenant_id": 7}, job_id="quota:two")
+        with pytest.raises(TenantQueueQuotaExceeded) as raised:
+            await queue.enqueue("forecast", {"tenant_id": 7}, job_id="quota:three")
+        assert raised.value.tenant_id == "7"
+        assert await queue.client.xlen(STREAM) == 2
+
+        async def handle(_job):
+            return None
+
+        async def unexpected(*_):
+            raise AssertionError("hook must not run")
+
+        assert await queue.consume_once("quota", handle, unexpected, unexpected)
+        await queue.enqueue("forecast", {"tenant_id": 7}, job_id="quota:three")
+        snapshot = (await queue.tenant_metrics_snapshot())[0]
+        assert snapshot["queued"] == 2
+        assert snapshot["completed"] == 1
+    finally:
+        await queue.close()
+
+
+@pytest.mark.asyncio
+async def test_tenant_slot_defers_busy_tenant_and_runs_next_tenant() -> None:
+    cfg = settings().model_copy(update={
+        "worker_tenant_max_in_flight": 1,
+        "worker_tenant_defer_ms": 10,
+    })
+    queue = RedisJobQueue.from_settings(cfg)
+    await queue.client.flushdb()
+    await queue.ensure_group()
+    await queue.enqueue("forecast", {"tenant_id": 1}, job_id="fair:tenant-1-running")
+    await queue.enqueue("forecast", {"tenant_id": 1}, job_id="fair:tenant-1-waiting")
+    await queue.enqueue("forecast", {"tenant_id": 2}, job_id="fair:tenant-2")
+    started, release = asyncio.Event(), asyncio.Event()
+
+    async def hold_first(job):
+        assert job.job_id == "fair:tenant-1-running"
+        started.set()
+        await release.wait()
+
+    async def unexpected(*_):
+        raise AssertionError("hook must not run")
+
+    first = asyncio.create_task(
+        queue.consume_once("fair-first", hold_first, unexpected, unexpected),
+    )
+    try:
+        await asyncio.wait_for(started.wait(), timeout=2)
+        handled = []
+
+        async def collect(job):
+            handled.append(job.job_id)
+
+        assert await queue.consume_once("fair-second", collect, unexpected, unexpected)
+        assert handled == []
+        assert await queue.consume_once("fair-second", collect, unexpected, unexpected)
+        assert handled == ["fair:tenant-2"]
+        snapshots = {
+            row["tenant_id"]: row for row in await queue.tenant_metrics_snapshot()
+        }
+        assert snapshots["1"]["running"] == 1
+        assert snapshots["1"]["deferred"] == 1
+        assert snapshots["2"]["completed"] == 1
+    finally:
+        release.set()
+        await asyncio.wait_for(first, timeout=2)
+        await queue.close()
 
 
 @pytest.mark.asyncio
@@ -205,3 +365,76 @@ async def test_queue_quarantines_malformed_messages() -> None:
     assert dead["failure_code"] == "MALFORMED_JOB_MESSAGE"
     assert "payload" not in dead
     await queue.close()
+
+
+@pytest.mark.asyncio
+async def test_live_queue_heartbeat_prevents_reclaim_and_lost_owner_never_acks():
+    # Accelerate time only for this integration test; production enforces >=10s.
+    cfg = settings().model_copy(update={"worker_lease_ms": 300})
+    queue = RedisJobQueue.from_settings(cfg)
+    await queue.client.flushdb()
+    await queue.ensure_group()
+    await queue.enqueue("forecast_training", {"tenant_id": 1}, job_id="lease-test")
+    started, cancelled = asyncio.Event(), asyncio.Event()
+
+    async def handle(_job):
+        started.set()
+        try:
+            await asyncio.Future()
+        finally:
+            cancelled.set()
+
+    async def unexpected(*_):
+        raise AssertionError("Lease loss must not invoke retry/fail hooks")
+
+    work = asyncio.create_task(queue.consume_once("original", handle, unexpected, unexpected))
+    try:
+        await asyncio.wait_for(started.wait(), timeout=2)
+        await asyncio.sleep(0.7)  # More than two leases, while handler is still alive.
+        assert await queue._next("replacement") is None
+        pending = await queue.client.xpending_range(STREAM, GROUP, "-", "+", 1)
+        message_id = pending[0]["message_id"]
+        await queue.client.xclaim(STREAM, GROUP, "replacement", 0, [message_id])
+        with pytest.raises(JobLeaseLost):
+            await asyncio.wait_for(work, timeout=2)
+        assert cancelled.is_set()
+        pending = await queue.client.xpending_range(STREAM, GROUP, "-", "+", 1)
+        assert pending[0]["consumer"] == "replacement"
+        assert await queue.client.xlen(DEAD_STREAM) == 0
+    finally:
+        work.cancel()
+        await asyncio.gather(work, return_exceptions=True)
+        await queue.close()
+
+
+@pytest.mark.asyncio
+async def test_queue_timeout_waits_for_handler_cleanup_before_retry():
+    cfg = settings().model_copy(update={"worker_job_timeout_seconds": 1})
+    queue = RedisJobQueue.from_settings(cfg)
+    await queue.client.flushdb()
+    await queue.ensure_group()
+    await queue.enqueue("forecast_training", {}, job_id="timeout-test")
+    cleaned, retried = asyncio.Event(), asyncio.Event()
+
+    async def handle(_job):
+        try:
+            await asyncio.Future()
+        finally:
+            await asyncio.sleep(0.05)
+            cleaned.set()
+
+    async def retry(_job, exc):
+        assert isinstance(exc, TimeoutError)
+        assert cleaned.is_set()
+        retried.set()
+
+    async def unexpected(*_):
+        raise AssertionError("failure hook must not run")
+
+    try:
+        assert await queue.consume_once("timeout", handle, retry, unexpected)
+        assert retried.is_set()
+        assert (await queue.client.xpending(STREAM, GROUP))["pending"] == 0
+        assert (await queue.client.xrevrange(STREAM, count=1))[0][1]["attempt"] == "2"
+    finally:
+        await queue.close()

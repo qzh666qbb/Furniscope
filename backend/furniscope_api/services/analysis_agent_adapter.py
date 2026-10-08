@@ -14,6 +14,7 @@ from backend.furniscope_agent.synthetic_toolbox import (
 from backend.furniscope_agent.external_toolbox import ExternalFurnitureToolbox
 
 from ..config import ApiSettings
+from ..database import tenant_pool_setup
 from .model_router_client import ServiceModelRouterClient
 
 
@@ -60,7 +61,8 @@ class AnalysisAgentAdapter:
             raise RuntimeError("In-process synthetic analysis worker is unavailable")
         if self.settings.app_env == "production" and self.settings.analysis_worker_mode != "external":
             raise RuntimeError("Synthetic analysis workers are unavailable in production")
-        pool = await asyncpg.create_pool(_asyncpg_dsn(self.settings.database_url), min_size=1, max_size=5)
+        pool = await asyncpg.create_pool(_asyncpg_dsn(self.settings.database_url), min_size=1, max_size=5,
+                                        setup=tenant_pool_setup(tenant_id))
         model_client = (
             ServiceModelRouterClient(self.settings)
             if self.settings.analysis_worker_mode == "external"
@@ -123,9 +125,10 @@ class AnalysisAgentAdapter:
             await pool.close()
 
     async def accept_confirmation(self, *, confirmation_id: str, selected_option: str,
-                                  user_input, user_id: int) -> dict:
+                                  user_input, user_id: int, tenant_id: int) -> dict:
         pool = await asyncpg.create_pool(
             _asyncpg_dsn(self.settings.database_url), min_size=1, max_size=2,
+            setup=tenant_pool_setup(tenant_id),
         )
         try:
             accepted = await PostgresWorkflowRepository(pool).accept_confirmation(
@@ -141,11 +144,27 @@ class AnalysisAgentAdapter:
         finally:
             await pool.close()
 
-    async def resume_next_confirmation(self) -> dict | None:
+    async def resume_next_confirmation(self, tenant_id: int | None = None) -> dict | None:
         if self.settings.analysis_worker_mode not in {"demo_only", "token_plan_demo", "external"}:
             return None
+        if tenant_id is None:
+            # Trusted scheduler only locates work. Graph execution is restricted
+            # to that tenant, including all subsequent pool acquisitions.
+            connection = await asyncpg.connect(_asyncpg_dsn(self.settings.database_url))
+            try:
+                tenant_id = await connection.fetchval("""
+                    SELECT tenant_id FROM furniscope.workflow_control_events
+                     WHERE event_type='resume_confirmation'
+                       AND (status='pending' OR (status='enqueued' AND enqueued_at<now()-interval '5 minutes'))
+                     ORDER BY requested_at,id LIMIT 1
+                """)
+            finally:
+                await connection.close()
+            if tenant_id is None:
+                return None
         pool = await asyncpg.create_pool(
             _asyncpg_dsn(self.settings.database_url), min_size=1, max_size=5,
+            setup=tenant_pool_setup(tenant_id),
         )
         model_client = (
             ServiceModelRouterClient(self.settings)

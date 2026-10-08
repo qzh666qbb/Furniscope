@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   ArrowClockwise,
   ArrowLeft,
   ArrowRight,
-  Bell,
+  Books,
   CaretDoubleLeft,
   CaretDoubleRight,
   CaretDown,
@@ -37,15 +37,6 @@ import {
   Wrench,
   X,
 } from "@phosphor-icons/react";
-import { AdminControlCenter } from "./Admin.jsx";
-import { ForecastWorkspace as IntegratedForecastWorkspace } from "./ForecastWorkspace.jsx";
-import { AnalysisCenter, WorkflowCanvas } from "./AnalysisCenter.jsx";
-import { MarketDatasetCenter, MarketDatasetDetail } from "./MarketDatasets.jsx";
-import { CompetitorTrackingBoard } from "./CompetitorTracking.jsx";
-import { ProductCatalog } from "./ProductCatalog.jsx";
-import { ReportLibrary } from "./ReportLibrary.jsx";
-import { ReportDetailPage } from "./ReportDetailPage.jsx";
-import { WorkDiaryPage } from "./WorkDiaryPage.jsx";
 import {
   api,
   currentUser,
@@ -57,6 +48,8 @@ import {
   confirmPasswordReset,
   submitRegistration,
 } from "./api.js";
+import { MarketInsightsProvider } from "./MarketInsightsContext.jsx";
+import { ProductModeSwitcher } from "./ProductModeSwitcher.jsx";
 import "./admin.css";
 import "./admin-crud.css";
 import "./admin-crud-actions.css";
@@ -71,11 +64,40 @@ import "./report-score-alignment.css";
 import "./score-label-nowrap.css";
 import "./forecast-workspace.css";
 import "./forecast-layout-fix.css";
-import "./topbar-badge-alignment.css";
 import "./analysis-organization.css";
 import "./live-wizard.css";
-import { Landing } from "./Landing.jsx";
 import "./landing.css";
+
+const lazyNamed = (loader, exportName) => lazy(() =>
+  loader().then((module) => ({ default: module[exportName] })),
+);
+const AdminControlCenter = lazyNamed(() => import("./Admin.jsx"), "AdminControlCenter");
+const IntegratedForecastWorkspace = lazyNamed(() => import("./ForecastWorkspace.jsx"), "ForecastWorkspace");
+const AnalysisCenter = lazyNamed(() => import("./AnalysisCenter.jsx"), "AnalysisCenter");
+const WorkflowCanvas = lazyNamed(() => import("./AnalysisCenter.jsx"), "WorkflowCanvas");
+const MarketDatasetCenter = lazyNamed(() => import("./MarketDatasets.jsx"), "MarketDatasetCenter");
+const MarketDatasetDetail = lazyNamed(() => import("./MarketDatasets.jsx"), "MarketDatasetDetail");
+const MarketInsightsHome = lazyNamed(() => import("./MarketInsightsPages.jsx"), "MarketInsightsHome");
+const MarketDecisionCenter = lazyNamed(() => import("./MarketInsightsPages.jsx"), "MarketDecisionCenter");
+const MarketAutomationCenter = lazyNamed(() => import("./MarketInsightsPages.jsx"), "MarketAutomationCenter");
+const MarketLegacyRedirect = lazyNamed(() => import("./MarketInsightsPages.jsx"), "MarketLegacyRedirect");
+const ProductCatalog = lazyNamed(() => import("./ProductCatalog.jsx"), "ProductCatalog");
+const ProductDetailPage = lazyNamed(() => import("./ProductCatalog.jsx"), "ProductDetailPage");
+const KnowledgeBaseCenter = lazyNamed(() => import("./KnowledgeBaseCenter.jsx"), "KnowledgeBaseCenter");
+const KnowledgeDocumentDetail = lazyNamed(() => import("./KnowledgeDocumentDetail.jsx"), "KnowledgeDocumentDetail");
+const ReportLibrary = lazyNamed(() => import("./ReportLibrary.jsx"), "ReportLibrary");
+const ReportDetailPage = lazyNamed(() => import("./ReportDetailPage.jsx"), "ReportDetailPage");
+const WorkDiaryPage = lazyNamed(() => import("./WorkDiaryPage.jsx"), "WorkDiaryPage");
+const AIEmployeeWorkbench = lazyNamed(() => import("./AIEmployeeWorkbench.jsx"), "AIEmployeeWorkbench");
+const Landing = lazyNamed(() => import("./Landing.jsx"), "Landing");
+
+function DeferredRoute({ children }) {
+  return (
+    <Suspense fallback={<main className="route-loading" aria-live="polite"><Pulse /><span>正在加载页面…</span></main>}>
+      {children}
+    </Suspense>
+  );
+}
 
 const productImage = (sku) =>
   sku
@@ -111,12 +133,25 @@ const primaryNavigation = [
   ["forecast", TrendUp, "销量预测"],
   ["insights", ChartBar, "市场洞察"],
   ["report", FileText, "决策报告"],
+  ["knowledge", Books, "企业知识库"],
 ];
 
 function AppSidebar({ page = "workspace" }) {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem("furniscope-sidebar") === "collapsed",
   );
+  const [connection, setConnection] = useState("unknown");
+  useEffect(() => {
+    let active = true;
+    api("/health/ready", { skipAuth: true })
+      .then((result) => {
+        if (active) setConnection(result.database === "ok" ? "ready" : "partial");
+      })
+      .catch(() => {
+        if (active) setConnection("unavailable");
+      });
+    return () => { active = false; };
+  }, []);
   const toggle = () =>
     setCollapsed((value) => {
       const next = !value;
@@ -164,9 +199,15 @@ function AppSidebar({ page = "workspace" }) {
         src="./assets/furniscope-sofa-intelligence.png"
         alt=""
       />
-      <div className="sidebar-connection" title="已连接真实业务数据">
+      <div className={`sidebar-connection ${connection}`} title="基础服务与数据库实时就绪状态">
         <ShieldCheck />
-        <span>真实数据已连接</span>
+        <span>{connection === "ready"
+          ? "基础服务正常"
+          : connection === "unavailable"
+            ? "服务连接异常"
+            : connection === "partial"
+              ? "部分服务异常"
+              : "连接状态未知"}</span>
       </div>
     </aside>
   );
@@ -404,7 +445,7 @@ function ForgotPassword() {
           <span>FurniScope</span>
         </div>
         <h1>重置企业账号密码</h1>
-        <p>核对企业邮箱后设置新密码。当前演示环境会在本页显示一次性校验码；接入企业邮箱后将改为发送到邮箱。</p>
+        <p>核对企业邮箱后设置新密码。当前环境会在本页显示一次性校验码；接入企业邮箱后将改为发送到邮箱。</p>
         <ul>
           <li><Check weight="bold" /> 校验码 30 分钟内有效，使用后立即失效</li>
           <li><Check weight="bold" /> 新密码至少 12 位</li>
@@ -425,7 +466,7 @@ function ForgotPassword() {
             <header><span>SET NEW PASSWORD</span><h2>设置新密码</h2><p>校验码已生成。请立即设置新密码，不要把校验码发给他人。</p></header>
             {issuedCode && (
               <div className="reset-code-card">
-                <small>演示环境校验码</small>
+                <small>当前环境校验码</small>
                 <strong>{issuedCode}</strong>
                 <span>生产环境将发送到企业邮箱，不会显示在页面上。</span>
               </div>
@@ -625,7 +666,7 @@ function Dashboard({ user, onLogout }) {
   const [dashboardError, setDashboardError] = useState("");
   const pending = confirmations.length;
   const exceptionCount =
-    (summary?.pending_confirmations ?? pending) +
+    (summary?.pending_confirmation_tasks ?? pending) +
     (summary?.failed_tasks ?? 0) +
     (summary?.conflicted_products ?? 0);
   const openExceptions = () => {
@@ -740,11 +781,7 @@ function Dashboard({ user, onLogout }) {
             {user?.tenant?.name || "FurniScope 企业"}
           </div>
           <div className="top-actions">
-            <button onClick={openConfirmation}>
-              <Bell />
-              待确认 {pending > 0 && <b>{pending}</b>}
-            </button>
-            <span />
+            <ProductModeSwitcher />
             <button className="user" onClick={() => setMenu(!menu)}>
               <i>{(user?.name || "用").slice(0, 1)}</i>
               {user?.name || "当前用户"}
@@ -791,7 +828,7 @@ function Dashboard({ user, onLogout }) {
                 "人工确认、失败任务与参数冲突",
                 openExceptions,
               ],
-              [FileText, "已生成报告", summary?.reports ?? "—", "已沉淀可落地出海策略", () => (location.hash = "report")],
+              [FileText, "已生成报告", summary?.reports ?? "—", "已归档决策报告", () => (location.hash = "report")],
             ].map(([Icon, label, value, subtitle, action], i) => (
               <button key={label} onClick={action} disabled={loading}>
                 <Icon className={i === 2 ? "amber" : ""} />
@@ -1006,14 +1043,12 @@ function WizardSidebar({ page = "workspace", showSessions }) {
 
 function WizardTop() {
   const [user, setUser] = useState(null);
-  const [pending, setPending] = useState(null);
   const [menu, setMenu] = useState(false);
   useEffect(() => {
     if (!hasSession()) return undefined;
-    Promise.all([currentUser(), api("/api/v1/user-confirmations?page_size=1")])
-      .then(([identity, confirmations]) => {
+    currentUser()
+      .then((identity) => {
         setUser(identity);
-        setPending(confirmations.total);
       })
       .catch(() => {});
   }, []);
@@ -1028,11 +1063,7 @@ function WizardTop() {
         {user?.tenant?.name || "当前企业"}
       </div>
       <div className="top-actions">
-        <button onClick={() => (location.hash = "workspace")} title="回到工作台处理待确认事项">
-          <Bell />
-          待确认 {pending > 0 && <b>{pending}</b>}
-        </button>
-        <span />
+        <ProductModeSwitcher />
         <button className="user" onClick={() => setMenu((value) => !value)} aria-expanded={menu}>
           <i>{(user?.name || "用").slice(0, 1)}</i>
           {user?.name || "当前用户"}
@@ -3664,13 +3695,13 @@ const reportEvidence = {
     "中端价格带供给密度偏低",
   ],
   工程建议: [
-    "10,000 次开合循环测试规范",
+    "10,000 次开合循环验证规范",
     "EN 12521 家用桌安全标准",
     "用户评论中的稳定性诉求",
   ],
   制造适配: ["供应链成熟度评估", "BOM 与包装成本模型", "40HQ 装柜量测算"],
   风险: ["结构耐久性风险", "运输包装破损风险", "渠道价格接受度风险"],
-  验证清单: ["结构耐久验证方案", "ISTA 3A 跌落测试", "价格敏感度 A/B 测试"],
+  验证清单: ["结构耐久验证方案", "ISTA 3A 跌落验证", "价格敏感度 A/B 实验"],
 };
 function ReportEvidence({ section, onClose }) {
   return (
@@ -3992,7 +4023,7 @@ function DecisionReport() {
                 headers={["风险", "概率", "影响", "应对策略"]}
                 rows={[
                   ["运输包装破损", "中", "高", "ISTA 3A 与多轮样件运输"],
-                  ["结构耐久不足", "中", "高", "加强件与寿命测试"],
+                  ["结构耐久不足", "中", "高", "加强件与寿命验证"],
                   ["销量预测偏差", "中", "中", "滚动回测并分批排产"],
                   ["价格接受度偏低", "中", "中", "小批量 A/B 定价"],
                 ]}
@@ -4012,13 +4043,13 @@ function DecisionReport() {
                 rows={[
                   [
                     "结构耐久验证",
-                    "实验室循环测试",
+                    "实验室循环验证",
                     "≥10,000 次开合且无功能异常",
                     "4–6 周",
                   ],
                   [
                     "包装与运输验证",
-                    "ISTA 3A + 跌落测试",
+                    "ISTA 3A + 跌落验证",
                     "破损率 ≤ 1.0%",
                     "3 周",
                   ],
@@ -4050,13 +4081,21 @@ export function App() {
     const route = location.hash.replace(/^#\/?/, "").split("?")[0];
     const known = [
       "workspace",
+      "employee",
       "products",
+      "product-detail",
       "analysis",
+      "knowledge",
+      "knowledge-document",
       "workflow",
       "work-diary",
       "forecast",
       "wizard",
       "insights",
+      "market-decisions",
+      "market-data",
+      "market-reviews",
+      "market-automation",
       "dataset-detail",
       "competitor-tracking",
       "insight-detail",
@@ -4174,41 +4213,77 @@ export function App() {
   if (route === "forgot-password") return <ForgotPassword />;
   if (route === "landing") {
     if (user) return <Dashboard user={user} onLogout={leave} />;
-    return <Landing />;
+    return <DeferredRoute><Landing /></DeferredRoute>;
   }
   if (route === "admin")
     return user?.role_code === "admin" ? (
-      <AdminControlCenter />
+      <DeferredRoute><AdminControlCenter /></DeferredRoute>
+    ) : user ? (
+      <main className="login-page">
+        <section className="form-panel">
+          <div className="login-form">
+            <h1>无平台管理权限</h1>
+            <p>当前企业账号会话有效，但不能访问平台管理后台。</p>
+            <button type="button" className="login-button" onClick={() => {
+              location.hash = "workspace";
+            }}>返回首页</button>
+          </div>
+        </section>
+      </main>
     ) : (
       <AdminLogin onEnter={(next) => enter(next, "admin")} />
     );
-  if (user?.role_code === "admin") return <AdminControlCenter />;
+  if (user?.role_code === "admin") return <DeferredRoute><AdminControlCenter /></DeferredRoute>;
   if (!user && route !== "login") return <Login onEnter={enter} />;
-  return route === "workspace" ? (
-    <Dashboard user={user} onLogout={leave} />
-  ) : route === "products" ? (
-    <ProductCatalog Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "analysis" ? (
-    <AnalysisCenter Sidebar={WizardSidebar} Topbar={WizardTop} />
-  ) : route === "workflow" ? (
-    <WorkflowCanvas Sidebar={WizardSidebar} Topbar={WizardTop} />
-  ) : route === "work-diary" ? (
-    <WorkDiaryPage Sidebar={WizardSidebar} Topbar={WizardTop} />
-  ) : route === "forecast" ? (
-    <IntegratedForecastWorkspace Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "wizard" ? (
-    <WorkflowCanvas Sidebar={WizardSidebar} Topbar={WizardTop} />
-  ) : route === "insights" || route === "insight-detail" ? (
-    <MarketDatasetCenter Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "dataset-detail" ? (
-    <MarketDatasetDetail Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "competitor-tracking" ? (
-    <CompetitorTrackingBoard Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "report" ? (
-    <ReportLibrary Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : route === "report-detail" ? (
-    <ReportDetailPage Sidebar={AppSidebar} Topbar={WizardTop} />
-  ) : (
-    <Login onEnter={enter} />
+  return (
+    <DeferredRoute>
+      <MarketInsightsProvider>
+      {route === "workspace" ? (
+        <Dashboard user={user} onLogout={leave} />
+      ) : route === "employee" ? (
+        <AIEmployeeWorkbench Topbar={WizardTop} />
+      ) : route === "products" ? (
+        <ProductCatalog Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "product-detail" ? (
+        <ProductDetailPage Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "analysis" ? (
+        <AnalysisCenter Sidebar={WizardSidebar} Topbar={WizardTop} />
+      ) : route === "knowledge" ? (
+        <KnowledgeBaseCenter Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "knowledge-document" ? (
+        <KnowledgeDocumentDetail Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "workflow" ? (
+        <WorkflowCanvas Sidebar={WizardSidebar} Topbar={WizardTop} />
+      ) : route === "work-diary" ? (
+        <WorkDiaryPage Sidebar={WizardSidebar} Topbar={WizardTop} />
+      ) : route === "forecast" ? (
+        <IntegratedForecastWorkspace Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "wizard" ? (
+        <WorkflowCanvas Sidebar={WizardSidebar} Topbar={WizardTop} />
+      ) : route === "insights" ? (
+        <MarketInsightsHome Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "market-decisions" || route === "insight-detail" ? (
+        <MarketDecisionCenter Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "market-data" ? (
+        <MarketDatasetCenter Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "dataset-detail" ? (
+        <MarketDatasetDetail Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "competitor-tracking" ? (
+        <MarketLegacyRedirect target={`market-decisions?capability=${
+          new URLSearchParams(location.hash.split("?")[1] || "").get("tab") === "stream" ? "reviews&view=stream" : `competitors&view=${new URLSearchParams(location.hash.split("?")[1] || "").get("tab") || "prices"}`
+        }`} />
+      ) : route === "market-reviews" ? (
+        <MarketLegacyRedirect target="market-decisions?capability=reviews&view=stream" />
+      ) : route === "market-automation" ? (
+        <MarketAutomationCenter Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "report" ? (
+        <ReportLibrary Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : route === "report-detail" ? (
+        <ReportDetailPage Sidebar={AppSidebar} Topbar={WizardTop} />
+      ) : (
+        <Login onEnter={enter} />
+      )}
+      </MarketInsightsProvider>
+    </DeferredRoute>
   );
 }

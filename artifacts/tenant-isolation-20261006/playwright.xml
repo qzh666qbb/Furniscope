@@ -1,0 +1,108 @@
+<testsuites id="" name="" tests="24" failures="0" skipped="1" errors="0" time="102.46634700000001">
+<testsuite name="admin-model-actions.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="2.467" errors="0">
+<testcase name="租户模型空间解释标准训练要求，不开放直接代码发布" classname="admin-model-actions.spec.js" time="2.467">
+</testcase>
+</testsuite>
+<testsuite name="dashboard-no-fake-activity.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="2" failures="0" skipped="0" time="4.19" errors="0">
+<testcase name="首页工作流节点和运行中计数与真实任务状态同步" classname="dashboard-no-fake-activity.spec.js" time="2.089">
+</testcase>
+<testcase name="首页不展示写死的 AI 实时分析动态" classname="dashboard-no-fake-activity.spec.js" time="2.101">
+</testcase>
+</testsuite>
+<testsuite name="enterprise-delete-contract.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="2.122" errors="0">
+<testcase name="企业账号删除需要确认并携带资源版本" classname="enterprise-delete-contract.spec.js" time="2.122">
+</testcase>
+</testsuite>
+<testsuite name="enterprise-live.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="7" failures="0" skipped="0" time="56.223" errors="0">
+<testcase name="映射修改使旧预检失效；首次建模发布并刷新SKU和模型状态" classname="enterprise-live.spec.js" time="13.673">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="成熟 SKU 与三天新品一起发布，新品预测标记待验证且不生成安全库存" classname="enterprise-live.spec.js" time="13.446">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="历史不足的完整重建显示未达标，现用模型仍可用" classname="enterprise-live.spec.js" time="7.428">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="企业策略、事实和机会反馈通过真实API保存，刷新后可追溯" classname="enterprise-live.spec.js" time="6.136">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="产品资料候选经人工确认成为企业适配事实，画像确认后可分析" classname="enterprise-live.spec.js" time="4.412">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="企业订单模板、取消退款和销量对账经过真实预检，模板复用仍需确认" classname="enterprise-live.spec.js" time="5.068">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+<testcase name="采纳后记录实施与经营观察，刷新持久化并导出完整排序候选" classname="enterprise-live.spec.js" time="6.06">
+<properties>
+<property name="serial" value="">
+</property>
+</properties>
+</testcase>
+</testsuite>
+<testsuite name="forecast-append-tab.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="2.482" errors="0">
+<testcase name="企业用户直接进入标准数据训练，保留V4预测表单" classname="forecast-append-tab.spec.js" time="2.482">
+</testcase>
+</testsuite>
+<testsuite name="forecast-history.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="3.249" errors="0">
+<testcase name="历史预测支持服务端筛选、十条分页、结果弹窗和导出" classname="forecast-history.spec.js" time="3.249">
+</testcase>
+</testsuite>
+<testsuite name="full-stack-no-mock.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="1" time="0.06" errors="0">
+<testcase name="真实后端：登录、产品分析入口与预测入口" classname="full-stack-no-mock.spec.js">
+<properties>
+<property name="skip" value="opt-in full-stack test">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="gold-path-contract.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="3.227" errors="0">
+<testcase name="登录到资料解析、授权数据、分析报告及预测入口的前端金路径契约" classname="gold-path-contract.spec.js" time="3.227">
+</testcase>
+</testsuite>
+<testsuite name="idempotency-key-contract.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="1" failures="0" skipped="0" time="2.164" errors="0">
+<testcase name="HTTP 内网环境缺少 randomUUID 时仍可新增企业用户" classname="idempotency-key-contract.spec.js" time="2.164">
+</testcase>
+</testsuite>
+<testsuite name="market-insights-contract.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="2" failures="0" skipped="0" time="7.645" errors="0">
+<testcase name="市场洞察提供明确的数据导入、清洗和 AI 分析路径" classname="market-insights-contract.spec.js" time="4.078">
+</testcase>
+<testcase name="自动化监控子页按任务提供首次使用引导" classname="market-insights-contract.spec.js" time="3.567">
+</testcase>
+</testsuite>
+<testsuite name="plane-scoped-run.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="4" failures="0" skipped="0" time="13.328" errors="0">
+<testcase name="Plane 对话更宽且画布节点可作为实际运行终点" classname="plane-scoped-run.spec.js" time="3.81">
+</testcase>
+<testcase name="最近记录按分析工作台聚合而不是按分析次数重复" classname="plane-scoped-run.spec.js" time="2.198">
+</testcase>
+<testcase name="从工作台新建分析不带入已有会话，对话后仍只显示当前工作台" classname="plane-scoped-run.spec.js" time="2.379">
+</testcase>
+<testcase name="空白工作台输入电竞椅会列出相近座椅并给出可开跑建议" classname="plane-scoped-run.spec.js" time="4.941">
+</testcase>
+</testsuite>
+<testsuite name="session-expiry-contract.spec.js" timestamp="2026-10-05T19:22:41.599Z" hostname="" tests="2" failures="0" skipped="0" time="4.143" errors="0">
+<testcase name="登录状态失效后清理会话并返回登录页" classname="session-expiry-contract.spec.js" time="2.078">
+</testcase>
+<testcase name="管理员模型接口返回 401 时安全卸载并返回登录页" classname="session-expiry-contract.spec.js" time="2.065">
+</testcase>
+</testsuite>
+</testsuites>

@@ -3,11 +3,34 @@ import { expect, test } from "@playwright/test";
 const success = data => ({ success: true, data, request_id: "plane-scope-e2e" });
 
 function chatStreamBody(data, thinking = "1. 核对企业产品目录。\n2. 核对授权市场数据。") {
+  const suggestedActions = [
+    ...(data.suggested_actions || []),
+    ...(data.suggested_action ? [{
+      action: data.suggested_action,
+      label: data.action_label,
+      href: data.action_href,
+    }] : []),
+    ...(data.suggested_prompts || []).map((value) => ({ action: "send_prompt", label: value, value })),
+  ];
+  const payload = {
+    turn_uuid: "50000000-0000-4000-8000-000000000001",
+    user_message_uuid: "50000000-0000-4000-8000-000000000002",
+    assistant_message_uuid: "50000000-0000-4000-8000-000000000003",
+    context_snapshot_uuid: "50000000-0000-4000-8000-000000000004",
+    answer: data.answer,
+    citations: data.citations || [],
+    memory_candidates: data.memory_candidates || [],
+    context_sources: [],
+    suggested_actions: suggestedActions,
+  };
   return [
-    `event: thinking\ndata: ${JSON.stringify({ delta: thinking })}\n\n`,
-    `event: thinking_done\ndata: ${JSON.stringify({ text: thinking })}\n\n`,
-    `event: token\ndata: ${JSON.stringify({ delta: data.answer })}\n\n`,
-    `event: done\ndata: ${JSON.stringify({ ...data, thinking })}\n\n`,
+    `event: turn_started\ndata: ${JSON.stringify({ turn_uuid: "50000000-0000-4000-8000-000000000001" })}\n\n`,
+    `event: progress\ndata: ${JSON.stringify({ stage: "context_ready", message: thinking })}\n\n`,
+    `event: answer_delta\ndata: ${JSON.stringify({ delta: data.answer })}\n\n`,
+    ...(data.citations || []).map((item) => `event: citation\ndata: ${JSON.stringify(item)}\n\n`),
+    ...(data.memory_candidates || []).map((item) => `event: memory_candidate\ndata: ${JSON.stringify(item)}\n\n`),
+    ...suggestedActions.map((item) => `event: action\ndata: ${JSON.stringify(item)}\n\n`),
+    `event: done\ndata: ${JSON.stringify(payload)}\n\n`,
   ].join("");
 }
 
@@ -176,7 +199,7 @@ test("从工作台新建分析不带入已有会话，对话后仍只显示当�
     if (path === "/api/v1/users/me") data = { user_id: 7, name: "分析员", email: "user@example.com", role_code: "user", tenant: { tenant_id: 3, name: "测试企业" } };
     else if (path === "/api/v1/products" && route.request().method() === "GET") data = { items: [], total: 0, page: 1, page_size: 100, total_pages: 0 };
     else if (path === "/api/v1/market-datasets") data = { items: [], total: 0, page: 1, page_size: 100, total_pages: 0 };
-    else if (path.endsWith("/chat/stream") || path.endsWith("/chat:stream")) {
+    else if (path.endsWith("/turns:stream")) {
       await route.fulfill({
         status: 200,
         contentType: "text/event-stream",
@@ -234,7 +257,13 @@ test("从工作台新建分析不带入已有会话，对话后仍只显示当�
 test("空白工作台输入电竞椅会列出相近座椅并给出可开跑建议", async ({ page }) => {
   const workspaceUuid = "10000000-0000-4000-8000-0000000000aa";
   const taskUuid = "00000000-0000-4000-8000-000000000078";
+  const knowledgeBaseUuid = "60000000-0000-4000-8000-000000000001";
+  const citationUuid = "70000000-0000-4000-8000-000000000001";
+  const candidateMemoryUuid = "80000000-0000-4000-8000-000000000001";
+  const forgetMemoryUuid = "80000000-0000-4000-8000-000000000002";
   let createBody = null;
+  let contextBody = null;
+  const memoryActions = [];
   const chairs = [
     { product_id: 11, sku: "HF-B0142", name: "扶手椅", category_code: "chair", current_profile_version_id: 3, analysis_status: "ready", attributes: [] },
     { product_id: 12, sku: "CHAIR-9b3c4f61fd", name: "Oak lounge chair", category_code: "chair", current_profile_version_id: 4, analysis_status: "ready", attributes: [] },
@@ -278,7 +307,127 @@ test("空白工作台输入电竞椅会列出相近座椅并给出可开跑建�
     else if (path === "/api/v1/products" && method === "GET") data = { items: [...chairs, desk], total: 4, page: 1, page_size: 100, total_pages: 1 };
     else if (path === "/api/v1/products/11") data = chairs[0];
     else if (path === "/api/v1/market-datasets") data = { items: [dataset], total: 1, page: 1, page_size: 100, total_pages: 1 };
-    else if (path.endsWith("/chat/stream") || path.endsWith("/chat:stream")) {
+    else if (path === "/api/v1/knowledge-bases") data = {
+      items: [{
+        knowledge_base_uuid: knowledgeBaseUuid,
+        name: "德国市场合规资料",
+        description: "企业合规文档",
+        status: "active",
+        document_count: 2,
+        ready_document_count: 2,
+        created_at: "2026-09-14T08:00:00Z",
+        updated_at: "2026-09-14T08:00:00Z",
+      }],
+      total: 1,
+      page: 1,
+      page_size: 100,
+      total_pages: 1,
+    };
+    else if (path.endsWith("/context") && method === "GET") data = {
+      workspace_uuid: workspaceUuid,
+      revision: 1,
+      product_id: null,
+      dataset_ids: [],
+      knowledge_base_uuids: [],
+      memory_scope: ["workspace", "user"],
+      task_uuids: [],
+      retrieval_policy: {},
+    };
+    else if (path.endsWith("/context") && method === "PUT") {
+      contextBody = request.postDataJSON();
+      data = { workspace_uuid: workspaceUuid, revision: 2, ...contextBody };
+    }
+    else if (path.endsWith("/context:preview") && method === "POST") data = {
+      workspace_uuid: workspaceUuid,
+      estimated_tokens: 1840,
+      resolved_state: {
+        current_product_label: "HF-B0142 · 扶手椅",
+        current_market: "US",
+      },
+      sources: [
+        {
+          type: "product_profile",
+          source_id: "profile:3",
+          label: "HF-B0142 产品画像",
+          priority: 90,
+          trust_level: "confirmed",
+        },
+        {
+          type: "knowledge_document",
+          source_id: "document:policy-1",
+          label: "德国市场合规要求.pdf",
+          priority: 60,
+          trust_level: "untrusted",
+        },
+      ],
+      conflicts: [{
+        field: "current_market",
+        resolution: "本轮明确的美国市场覆盖长期记忆中的德国市场。",
+      }],
+      truncated_sources: [],
+    };
+    else if (path === "/api/v1/customer-memories" && method === "GET") data = {
+      items: [
+        {
+          memory_uuid: candidateMemoryUuid,
+          memory_type: "unit_cost_limit",
+          value: { amount: 50, currency: "USD", operator: "lte" },
+          scope: "workspace",
+          status: "candidate",
+          confidence: 0.92,
+          source_message_uuid: "50000000-0000-4000-8000-000000000002",
+          supersedes_memory_uuid: forgetMemoryUuid,
+          effective_at: "2026-09-14T08:00:00Z",
+          expires_at: "2027-09-14T08:00:00Z",
+          created_at: "2026-09-14T08:00:00Z",
+        },
+        {
+          memory_uuid: forgetMemoryUuid,
+          memory_type: "target_market",
+          value: { value: "德国" },
+          scope: "user",
+          status: "confirmed",
+          confidence: 1,
+          effective_at: "2026-09-01T08:00:00Z",
+          expires_at: "2027-09-01T08:00:00Z",
+          created_at: "2026-09-01T08:00:00Z",
+        },
+      ],
+      total: 2,
+      page: 1,
+      page_size: 100,
+      total_pages: 1,
+    };
+    else if (path === `/api/v1/customer-memories/${candidateMemoryUuid}/history`) data = [
+      {
+        memory_uuid: candidateMemoryUuid,
+        value: { amount: 50, currency: "USD", operator: "lte" },
+        status: "candidate",
+      },
+      {
+        memory_uuid: forgetMemoryUuid,
+        value: { amount: 40, currency: "USD", operator: "lte" },
+        status: "superseded",
+      },
+    ];
+    else if (path.endsWith("/turns:stream")) {
+      if ((request.postDataJSON()?.question || "").includes("分析扶手椅")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "text/event-stream",
+          body: chatStreamBody({
+            answer: "已识别为分析工作流请求，将运行至市场研究节点。",
+            suggested_actions: [{
+              action: "run_workflow",
+              label: "运行分析",
+              target_node: "market",
+              product_id: 11,
+              dataset_id: 31,
+            }],
+          }),
+        });
+        return;
+      }
       await route.fulfill({
         status: 200,
         contentType: "text/event-stream",
@@ -287,9 +436,57 @@ test("空白工作台输入电竞椅会列出相近座椅并给出可开跑建�
           title: "电竞椅 出海机会分析",
           suggested_prompts: ["分析扶手椅（HF-B0142）在美国的竞品、价格带和用户评论痛点"],
           product_candidates: [{ product_id: 11, sku: "HF-B0142", name: "扶手椅" }],
+          citations: [{
+            citation_uuid: citationUuid,
+            source_type: "knowledge_document",
+            source_id: "document:policy-1",
+            source_version: 1,
+            label: "德国市场合规要求.pdf",
+            locator: { page: 12 },
+          }],
+          memory_candidates: [{
+            memory_uuid: candidateMemoryUuid,
+            memory_type: "unit_cost_limit",
+            value: { amount: 50, currency: "USD", operator: "lte" },
+            scope: "workspace",
+            status: "candidate",
+            confidence: 0.92,
+            source_message_uuid: "50000000-0000-4000-8000-000000000002",
+            supersedes_memory_uuid: forgetMemoryUuid,
+            created_at: "2026-09-14T08:00:00Z",
+          }],
+          suggested_actions: [{
+            action: "forget_memory",
+            requires_confirmation: true,
+            targets: [{ memory_uuid: forgetMemoryUuid, label: "单位成本不超过 40 USD" }],
+          }],
         }),
       });
       return;
+    }
+    else if (path === `/api/v1/citations/${citationUuid}`) data = {
+      citation_uuid: citationUuid,
+      source_type: "knowledge_document",
+      source_id: "document:policy-1",
+      source_version: 1,
+      label: "德国市场合规要求.pdf",
+      locator: { page: 12 },
+      excerpt: "德国软体家具进入渠道前需要核对阻燃与标签要求。",
+    };
+    else if (path.startsWith("/api/v1/customer-memories/")) {
+      memoryActions.push({ method, path });
+      const confirmed = path.endsWith(":confirm");
+      data = {
+        memory_uuid: confirmed ? candidateMemoryUuid : forgetMemoryUuid,
+        memory_type: "unit_cost_limit",
+        value: { amount: confirmed ? 50 : 40, currency: "USD", operator: "lte" },
+        scope: "workspace",
+        status: confirmed ? "confirmed" : "archived",
+        confidence: 0.92,
+        source_message_uuid: "50000000-0000-4000-8000-000000000002",
+        supersedes_memory_uuid: confirmed ? forgetMemoryUuid : null,
+        created_at: "2026-09-14T08:00:00Z",
+      };
     }
     else if (path.endsWith("/analysis-workspaces/chat") && method === "POST") data = {
       answer: "目录里没有完全叫「电竞椅」的产品。下面是相近的已建档产品。\n1. 扶手椅（HF-B0142）\n2. Oak lounge chair（CHAIR-9b3c4f61fd）\n3. 休闲椅（HF-A0101）\n已找到美国市场数据集「美国授权市场数据」。",
@@ -325,13 +522,41 @@ test("空白工作台输入电竞椅会列出相近座椅并给出可开跑建�
   await expect(page.getByText("当前还没有分析任务")).toHaveCount(0);
   await expect(page.locator(".conversation-history > button")).toHaveCount(1);
   await expect(page.locator(".conversation-history")).not.toContainText("扶手椅 HF-B0142 出海机会分析");
+  await expect(page.getByRole("group", { name: "本轮记忆范围" })).toHaveCount(0);
+  await page.getByTitle("查看已记住内容与本轮上下文").click();
+  await expect(page.getByRole("complementary", { name: "工作台记忆与上下文" })).toBeVisible();
+  await expect(page.getByText("单位成本上限", { exact: true })).toBeVisible();
+  await expect(page.getByText("目标市场", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "版本历史" }).first().click();
+  await expect(page.getByText("superseded", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "预览本轮上下文" }).click();
+  await expect(page.getByText("1840 tokens", { exact: true })).toBeVisible();
+  await expect(page.getByText(/本轮明确的美国市场覆盖长期记忆/)).toBeVisible();
+  await page.screenshot({ path: "../artifacts/context-lifecycle-20261006/memory-drawer-desktop.png", fullPage: true });
+  await page.getByTitle("关闭").click();
+  await page.locator(".conversation-knowledge-picker summary").click();
+  await page.getByRole("checkbox", { name: /德国市场合规资料/ }).check();
   await page.getByLabel("分析问题").fill("我想分析一下电竞椅的市场");
   await page.getByRole("button", { name: "发送并执行" }).click();
+  await expect.poll(() => contextBody?.knowledge_base_uuids).toEqual([knowledgeBaseUuid]);
   await expect(page.getByText(/当前还没有分析任务/)).toHaveCount(0);
   await expect(page.getByText(/目录里没有完全叫「电竞椅」/)).toBeVisible();
   await expect(page.locator(".chat-thinking")).toHaveCount(1);
   await expect(page.locator(".chat-thinking")).not.toHaveAttribute("open");
-  await expect(page.locator(".chat-thinking summary")).toHaveText("已思考，点击展开");
+  await expect(page.locator(".chat-thinking summary")).toHaveText("执行摘要");
+  await expect(page.getByRole("button", { name: /德国市场合规要求.pdf/ })).toBeVisible();
+  await expect(page.getByTitle("确认记忆")).toBeVisible();
+  await expect(page.getByRole("button", { name: /单位成本不超过 40 USD/ })).toBeVisible();
+  await page.screenshot({ path: "../artifacts/context-lifecycle-20261006/chat-memory-citation-desktop.png", fullPage: true });
+  await page.getByRole("button", { name: /德国市场合规要求.pdf/ }).click();
+  await expect(page.getByText(/需要核对阻燃与标签要求/)).toBeVisible();
+  await page.getByTitle("确认记忆").click();
+  await expect(page.getByText("已确认", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /单位成本不超过 40 USD/ }).click();
+  await expect.poll(() => memoryActions).toEqual([
+    { method: "POST", path: `/api/v1/customer-memories/${candidateMemoryUuid}:confirm` },
+    { method: "DELETE", path: `/api/v1/customer-memories/${forgetMemoryUuid}` },
+  ]);
   await expect(page.locator(".vertical-chat-messages")).toContainText("扶手椅");
   await expect(page.locator(".vertical-chat-messages")).toContainText("休闲椅");
   await expect(page.locator(".vertical-chat-messages")).not.toContainText("办公桌");
@@ -345,7 +570,14 @@ test("空白工作台输入电竞椅会列出相近座椅并给出可开跑建�
   await page.getByRole("button", { name: "发送并执行" }).click();
   await expect.poll(() => createBody?.product_id).toBe(11);
   expect(createBody.analysis_config.target_node).toBe("market");
-  await expect(page.getByText(/已载入 扶手椅/)).toBeVisible();
+  await expect(page.getByText(/工作流已启动并运行至“市场研究”/)).toBeVisible();
   await expect(page.locator(".conversation-history > button")).toHaveCount(1);
   await expect(page.getByText("4 个工作台")).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+  await page.screenshot({ path: "../artifacts/context-lifecycle-20261006/chat-memory-citation-mobile.png", fullPage: true });
+  await page.getByTitle("查看已记住内容与本轮上下文").click();
+  await expect(page.getByRole("complementary", { name: "工作台记忆与上下文" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)).toBe(false);
+  await page.screenshot({ path: "../artifacts/context-lifecycle-20261006/memory-drawer-mobile.png", fullPage: false });
 });

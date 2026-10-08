@@ -80,7 +80,7 @@ def test_parse_model_chat_text_extracts_json_answer():
     assert parsed["answer"] == "目录已命中休闲椅"
 
 
-def test_stream_events_emit_thinking_then_fallback_answer():
+def test_stream_events_emit_progress_without_private_reasoning():
     class FakeClient:
         closed = False
 
@@ -103,10 +103,11 @@ def test_stream_events_emit_thinking_then_fallback_answer():
         ):
             chunks.append(item)
         body = "".join(chunks)
-        assert "event: thinking" in body
-        assert "核对目录" in body
-        assert "event: thinking_done" in body
+        assert "event: progress" in body
+        assert "event: thinking" not in body
+        assert "核对目录" not in body
         assert "请先选产品" in body
+        assert "event: answer_delta" in body
         assert "event: done" in body
         assert client.closed is True
 

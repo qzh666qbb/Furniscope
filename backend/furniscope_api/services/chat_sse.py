@@ -13,8 +13,12 @@ from .workbench_chat import parse_model_chat_text
 FinalizeFn = Callable[[str], dict[str, Any]]
 
 
-def sse(event: str, data: dict[str, Any]) -> str:
-    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+def sse(event: str, data: dict[str, Any], *, event_id: str | None = None) -> str:
+    identifier = f"id: {event_id}\n" if event_id else ""
+    return (
+        f"{identifier}event: {event}\n"
+        f"data: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+    )
 
 
 def text_chunks(text: str, size: int = 16) -> list[str]:
@@ -37,30 +41,20 @@ async def stream_chat_events(
     fallback: dict[str, Any],
     finalize: FinalizeFn,
 ) -> AsyncIterator[str]:
-    collected_thinking = thinking or ""
+    del thinking
     try:
         yield ": connected\n\n"
-        for part in text_chunks(thinking, size=8):
-            yield sse("thinking", {"delta": part})
-            await asyncio.sleep(0.02)
+        yield sse("progress", {
+            "stage": "context_ready",
+            "message": "上下文已核对，正在生成回答",
+        })
         answer = ""
         buffered = ""
         json_mode: bool | None = None
-        thinking_open = True
-
-        async def close_thinking() -> AsyncIterator[str]:
-            nonlocal thinking_open
-            if thinking_open:
-                yield sse("thinking_done", {"text": collected_thinking})
-                thinking_open = False
 
         try:
             async for delta in client.stream_chat(messages=messages):
-                reasoning = str(delta.get("reasoning") or "")
                 content = str(delta.get("content") or "")
-                if reasoning:
-                    collected_thinking += reasoning
-                    yield sse("thinking", {"delta": reasoning})
                 if not content:
                     continue
                 if json_mode is None:
@@ -68,23 +62,18 @@ async def stream_chat_events(
                 if json_mode:
                     buffered += content
                     continue
-                async for event in close_thinking():
-                    yield event
                 answer += content
-                yield sse("token", {"delta": content})
+                yield sse("answer_delta", {"delta": content})
         except Exception:
             answer = ""
             buffered = ""
             json_mode = False
 
-        async for event in close_thinking():
-            yield event
-
         parsed = parse_model_chat_text(buffered) if json_mode and buffered else None
         if parsed and str(parsed.get("answer") or "").strip():
             answer = str(parsed.get("answer") or "").strip()
             for part in text_chunks(answer):
-                yield sse("token", {"delta": part})
+                yield sse("answer_delta", {"delta": part})
                 await asyncio.sleep(0.01)
             payload = finalize(json.dumps(parsed, ensure_ascii=False))
         elif str(answer).strip():
@@ -92,11 +81,10 @@ async def stream_chat_events(
         else:
             answer = str(fallback.get("answer") or "")
             for part in text_chunks(answer):
-                yield sse("token", {"delta": part})
+                yield sse("answer_delta", {"delta": part})
                 await asyncio.sleep(0.01)
             payload = dict(fallback)
             payload["answer"] = answer
-        payload["thinking"] = collected_thinking
         yield sse("done", payload)
     except Exception:
         yield sse("error", {"message": "暂时无法完成这次问询。"})

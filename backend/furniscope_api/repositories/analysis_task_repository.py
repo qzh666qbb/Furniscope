@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..services.opportunity_policy import OpportunityPolicyService
 
 class AnalysisTaskRepository:
     async def list(self, session: AsyncSession, *, tenant_id: int,
@@ -96,6 +97,16 @@ class AnalysisTaskRepository:
               ),'[]'::jsonb))
         """), {"tenant_id": tenant_id})
         snapshot = snapshot or {"profile_version": 0, "profile": None, "capabilities": []}
+        snapshot["opportunity_policy"] = await OpportunityPolicyService().current(session, tenant_id)
+        snapshot["product_facts"] = await session.scalar(text("""
+            SELECT COALESCE(jsonb_object_agg(attribute_code,jsonb_build_object(
+                'value',value,'unit',unit,'confirmation_status',confirmation_status,
+                'confidence',confidence,'source_type',source_type,'source_locator',source_locator)), '{}'::jsonb)
+              FROM product_attributes WHERE tenant_id=:t AND profile_version_id=:p
+        """), {"t": tenant_id, "p": payload["product_profile_version_id"]})
+        snapshot["product_context"] = {"category_code": await session.scalar(text("""
+            SELECT category_code FROM products WHERE id=:p AND tenant_id=:t
+        """), {"t": tenant_id, "p": payload["product_id"]})}
         params = {**payload, **versions, "tenant_id": tenant_id, "user_id": user_id,
                   "idempotency_key": idempotency_key,
                   "analysis_config_json": json.dumps(payload["analysis_config"], ensure_ascii=False),

@@ -32,6 +32,7 @@ lightgbm==4.7.0
 langsmith==0.10.17
 Mako==1.4.1
 MarkupSafe==3.0.3
+minio==7.2.18
 orjson==3.11.9
 ormsgpack==1.12.2
 packaging==26.3

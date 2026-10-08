@@ -1,308 +1,390 @@
-"""Tenant-isolated weekly data append, retraining, and atomic model publication."""
+"""Confirmed tenant data -> independent training -> holdout gate -> atomic release."""
 
 from __future__ import annotations
 
-import hashlib
-import io
+import asyncio
 import json
 import shutil
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-import pandas as pd
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from furniscope_forecast import tenant_engine
 
 from ..config import ApiSettings
 from ..errors import BusinessError
 from ..repositories.forecast_repository import ForecastRepository
-from .demo_storage import DemoStorage
+from ..schemas.data_imports import ImportRules
+from .forecast_catalog import ForecastCatalog
+from .forecast_data_service import ForecastDataService
+from .forecast_publication import ForecastPublication
 from .forecast_runtime import ForecastRuntime, TenantForecastRuntimeRegistry, coerce_training_date
+from .sales_data_cleaner import sha256, stable_json
+from .training_lifecycle import TrainingLifecycle
+
+SELECT_RUN = """SELECT training_uuid::text,status,update_kind,source_snapshot,metrics,
+    data_version_id,parent_data_version_id,code_sha256,
+    execution_attempts,heartbeat_at,lease_expires_at,
+    error_code,error_message,created_at,started_at,completed_at FROM forecast_training_runs"""
 
 
 class ForecastTrainingService:
-    def __init__(self, settings: ApiSettings,
-                 registry: TenantForecastRuntimeRegistry) -> None:
+    def __init__(self, settings: ApiSettings, registry: TenantForecastRuntimeRegistry):
         self.settings = settings
         self.registry = registry
-        self.storage = DemoStorage(settings)
+        self.data = ForecastDataService(settings)
+        self.lifecycle = TrainingLifecycle(settings)
 
-    @staticmethod
-    def _validate_workbook(filename: str, content: bytes, label: str) -> None:
-        if Path(filename).suffix.lower() != ".xlsx":
-            raise BusinessError("FORECAST_APPEND_FILE_INVALID",
-                                f"{label}必须是 .xlsx 工作簿", status_code=415)
-        if not content:
-            raise BusinessError("FILE_EMPTY", f"{label}为空", status_code=400)
-        if not content.startswith(b"PK"):
-            raise BusinessError("FORECAST_APPEND_FILE_INVALID",
-                                f"{label}不是有效的 Excel 工作簿", status_code=422)
+    async def _inputs(self, session, *, tenant_id, version_uuid, mode):
+        data = await self.data.row(session, tenant_id, version_uuid)
+        incoming = self.data.records(tenant_id, data)
+        current = await ForecastRepository().active_deployment(session, tenant_id=tenant_id)
+        parent = None
+        if current and current["model_scope"] == "tenant_private":
+            parent = (await session.execute(text("""
+                SELECT data_version_id,source_snapshot FROM forecast_training_runs
+                 WHERE tenant_id=:tenant AND artifact_model_id=:model AND status='succeeded'
+                   AND data_version_id IS NOT NULL ORDER BY id DESC LIMIT 1
+            """), {"tenant": tenant_id, "model": current["model_id"]})).mappings().one_or_none()
+        if mode == "append" and parent is None:
+            raise BusinessError("FORECAST_TRUSTED_HISTORY_REQUIRED",
+                                "当前模型没有本企业标准数据血缘，请上传完整历史进行首次建模",
+                                status_code=409)
+        if mode == "initial" and parent:
+            raise BusinessError("FORECAST_ALREADY_INITIALIZED", "已有企业模型，请选择追加或完整重建",
+                                status_code=409)
+        ids = list(parent["source_snapshot"]["data_versions"]) if mode == "append" else []
+        ids = [version for version in ids if version != data["version_uuid"]] + [data["version_uuid"]]
+        rows = [await self.data.row(session, tenant_id, version) for version in ids]
+        basis = data["rules"]["sales_basis"]
+        if any(row["rules"].get("sales_basis") != basis for row in rows):
+            raise BusinessError("DATA_CONTRACT_MISMATCH", "不能合并不同销量口径的数据版本",
+                                status_code=422)
+        merged = {}
+        overwritten = []
+        overlap = 0
+        for row in rows:
+            for record in self.data.records(tenant_id, row):
+                key = (record["date"], record["sku"], record["site"])
+                if key in merged and row["version_uuid"] == data["version_uuid"]:
+                    overlap += 1
+                    if merged[key]["sales"] != record["sales"]:
+                        overwritten.append({"date": key[0], "sku": key[1], "site": key[2],
+                                            "old_sales": merged[key]["sales"],
+                                            "new_sales": record["sales"]})
+                merged[key] = record
+        records = sorted(merged.values(), key=lambda r: (r["sku"], r["site"], r["date"]))
+        order_locations = {}
+        for record in records:
+            for order_key in record.get("order_keys", []):
+                key = tuple(order_key)
+                location = (record["date"], record["sku"], record["site"])
+                if key in order_locations and order_locations[key] != location:
+                    raise BusinessError("DATA_ORDER_CONFLICT",
+                        "合并历史后同一订单行出现在不同日期或SKU，请更正原日期快照后重新预览", status_code=422)
+                order_locations[key] = location
+        gaps = []
+        last_by_pair = {}
+        for record in records:
+            pair = (record["sku"], record["site"])
+            day = date.fromisoformat(record["date"])
+            previous = last_by_pair.get(pair)
+            if previous and (day - previous).days > 1:
+                gaps.append({"sku": pair[0], "site": pair[1],
+                             "after": previous.isoformat(), "before": day.isoformat(),
+                             "missing_days": (day - previous).days - 1})
+            last_by_pair[pair] = day
+        pairs = sorted({(r["sku"], r["site"]) for r in records})
+        catalog = await ForecastCatalog().preview(session, tenant_id, [
+            {"sku": sku, "site": site} for sku, site in pairs])
+        return data, current, parent, rows, records, {
+            "mode": mode, "input_rows": len(incoming), "merged_rows": len(records),
+            "overlap_rows": overlap, "overwritten_rows": len(overwritten),
+            "overwrites": overwritten[:50],
+            "data_versions": ids, "sales_basis": basis,
+            "missing_days": sum(gap["missing_days"] for gap in gaps), "gaps": gaps[:50],
+            "catalog": catalog,
+        }
 
-    @staticmethod
-    def _workbook_columns(content: bytes) -> set[str]:
-        frame = pd.read_excel(io.BytesIO(content), engine="openpyxl", nrows=0)
-        return {str(column).strip().lower() for column in frame.columns}
+    async def preview(self, session, *, tenant_id, version_uuid, mode):
+        *_, preview = await self._inputs(session, tenant_id=tenant_id,
+                                        version_uuid=version_uuid, mode=mode)
+        return preview
 
-    def _validate_orders_workbook(self, filename: str, content: bytes) -> None:
-        self._validate_workbook(filename, content, "订单文件")
-        columns = self._workbook_columns(content)
-        has_settlement = {"date/time", "sku", "product sales"} <= columns or (
-            "product sales" in columns and "sku" in columns)
-        has_simple = (
-            ("sales" in columns or "销量" in columns or "daily_sales" in columns)
-            and ("sku" in columns)
-            and ("site" in columns or "站点" in columns)
-            and ("date" in columns or "日期" in columns)
-        )
-        if has_settlement or has_simple:
-            return
-        if "inventory" in columns or "库存" in columns or "库存数量" in columns:
-            raise BusinessError(
-                "FORECAST_APPEND_ORDERS_REQUIRED",
-                "当前上传的是库存文件。请把 append_orders_*.xlsx 放到「订单数据（必选）」，"
-                "把库存文件放到第二个「库存数据（可选）」",
-                status_code=422,
-            )
-        raise BusinessError(
-            "FORECAST_APPEND_FILE_INVALID",
-            "订单文件至少需要 date、sku、site、sales（或中文：日期/站点/销量），"
-            "也可以使用 Amazon 结算报告（date/time、sku、product sales）",
-            status_code=422,
-        )
-
-    def _validate_inventory_workbook(self, filename: str, content: bytes) -> None:
-        self._validate_workbook(filename, content, "库存文件")
-        columns = self._workbook_columns(content)
-        has_inventory = "inventory" in columns or "库存" in columns or "库存数量" in columns
-        has_sku = "sku" in columns
-        has_date = "date" in columns or "日期" in columns or "时间" in columns
-        has_site = "site" in columns or "site_code" in columns or "站点" in columns
-        if has_inventory and has_sku and has_date and has_site:
-            return
-        if "sales" in columns or "销量" in columns or "product sales" in columns:
-            raise BusinessError(
-                "FORECAST_APPEND_FILE_INVALID",
-                "当前上传的是订单文件。库存请使用 date、sku、inventory、site 四列",
-                status_code=422,
-            )
-        raise BusinessError(
-            "FORECAST_APPEND_FILE_INVALID",
-            "库存文件至少需要 date、sku、inventory、site（或中文：日期/SKU/库存数量/站点）",
-            status_code=422,
-        )
+    async def create(self, session: AsyncSession, *, tenant_id: int, user_id: int,
+                     version_uuid: str, mode: str, allow_history_overwrite: bool,
+                     idempotency_key: str) -> tuple[int, dict]:
+        if mode not in {"initial", "append", "rebuild"}:
+            raise BusinessError("TRAINING_MODE_INVALID", "训练模式无效", status_code=422)
+        await session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
+                              {"key": 7_040_000 + tenant_id})
+        request_hash = sha256(stable_json({"version": version_uuid, "mode": mode,
+                                          "overwrite": allow_history_overwrite}))
+        existing = (await session.execute(text(SELECT_RUN + """
+            WHERE tenant_id=:tenant AND idempotency_key=:idem
+        """), {"tenant": tenant_id, "idem": idempotency_key})).mappings().one_or_none()
+        if existing:
+            if existing["source_snapshot"].get("request_hash") != request_hash:
+                raise BusinessError("IDEMPOTENCY_KEY_REUSED", "幂等键已用于不同训练请求", status_code=409)
+            return 200, self.projection(existing)
+        active = (await session.execute(text("""
+            SELECT id FROM forecast_training_runs WHERE tenant_id=:tenant
+             AND status IN ('queued','running') LIMIT 1
+        """), {"tenant": tenant_id})).scalar_one_or_none()
+        if active:
+            raise BusinessError("FORECAST_TRAINING_IN_PROGRESS", "已有训练任务正在执行", status_code=409)
+        data, current, parent, sources, _, preview = await self._inputs(
+            session, tenant_id=tenant_id, version_uuid=version_uuid, mode=mode)
+        if preview["missing_days"]:
+            raise BusinessError("DATA_MERGED_GAPS",
+                                "数据版本之间存在日期缺口，请补齐完整历史后再训练",
+                                status_code=422, details=[preview])
+        ForecastCatalog.require_valid(preview["catalog"])
+        if preview["overwritten_rows"] and not allow_history_overwrite:
+            raise BusinessError("DATA_OVERWRITE_CONFIRMATION_REQUIRED",
+                                f"将修改{preview['overwritten_rows']}条历史销量，请先查看合并预览再确认",
+                                status_code=409, details=[preview])
+        code_sha = sha256(Path(tenant_engine.__file__).read_bytes())
+        snapshot = {**preview, "request_hash": request_hash,
+                    "orders": {"filename": data["filename"]},
+                    "sources": [{"uuid": row["version_uuid"], "sha256": row["canonical_sha256"]}
+                                for row in sources]}
+        result = (await session.execute(text("""
+            INSERT INTO forecast_training_runs
+              (tenant_id,created_by,source_snapshot,algorithm_version,feature_version,
+               status,update_kind,idempotency_key,input_hash,data_version_id,parent_data_version_id,
+               baseline_deployment_id,code_sha256)
+            VALUES(:tenant,:user,CAST(:snapshot AS jsonb),:algorithm,'causal-lags-v1',
+                   'queued',:mode,:idem,:hash,:data,:parent,:deployment,:code)
+            RETURNING training_uuid::text
+        """), {"tenant": tenant_id, "user": user_id, "snapshot": json.dumps(snapshot),
+                 "algorithm": tenant_engine.ENGINE_VERSION, "mode": mode, "idem": idempotency_key,
+                 "hash": sha256(stable_json(snapshot)), "data": data["id"],
+                 "parent": parent["data_version_id"] if mode == "append" else None,
+                 "deployment": current["deployment_id"] if current else None,
+                 "code": code_sha})).scalar_one()
+        return 202, await self.get(session, tenant_id=tenant_id, training_uuid=result)
 
     async def accept(self, session: AsyncSession, *, tenant_id: int, user_id: int,
                      idempotency_key: str, orders_filename: str, orders_content: bytes,
-                     inventory_filename: str | None, inventory_content: bytes | None) -> tuple[int, dict[str, Any]]:
-        self._validate_orders_workbook(orders_filename, orders_content)
-        if inventory_content is not None:
-            self._validate_inventory_workbook(inventory_filename or "inventory.xlsx",
-                                             inventory_content)
-        orders_digest = hashlib.sha256(orders_content).hexdigest()
-        inventory_digest = (hashlib.sha256(inventory_content).hexdigest()
-                            if inventory_content is not None else None)
-        input_hash = hashlib.sha256(
-            f"{orders_digest}:{inventory_digest or ''}".encode()).hexdigest()
+                     inventory_filename: str | None, inventory_content: bytes | None,
+                     allow_history_overwrite: bool):
+        """Compatibility path: strict daily ISO inputs only; same quality gate.
 
-        await session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
-                              {"key": 7_040_000 + tenant_id})
-        existing = (await session.execute(text("""
-            SELECT training_uuid::text,status,input_hash,source_snapshot,metrics,
-                   error_code,error_message,created_at,started_at,completed_at
-              FROM forecast_training_runs
-             WHERE tenant_id=:tenant AND idempotency_key=:idem
+        Posting append explicitly confirms its documented daily gross-unit
+        contract. Ambiguous formats must use the interactive preflight endpoints.
+        """
+        if inventory_content is not None:
+            inventory = await self.data.upload(session, tenant_id=tenant_id, user_id=user_id,
+                                              filename=inventory_filename or "inventory.xlsx",
+                                              content=inventory_content)
+            checked = await self.data.preflight(
+                session, tenant_id=tenant_id, version_uuid=inventory["version_uuid"],
+                rules=ImportRules(**{**inventory["rules"], "kind": "inventory"}))
+            await self.data.confirm(session, tenant_id=tenant_id,
+                                    version_uuid=inventory["version_uuid"],
+                                    preview_sha256=checked["preview_sha256"])
+            # Inventory snapshots are retained separately and never treated as unit-sales labels.
+        upload = await self.data.upload(session, tenant_id=tenant_id, user_id=user_id,
+                                        filename=orders_filename, content=orders_content)
+        if upload["rules"]["kind"] != "sales":
+            raise BusinessError("FORECAST_APPEND_ORDERS_REQUIRED", "订单文件不能是库存表", status_code=422)
+        checked = await self.data.preflight(session, tenant_id=tenant_id,
+                                           version_uuid=upload["version_uuid"],
+                                           rules=ImportRules(**upload["rules"]))
+        await self.data.confirm(session, tenant_id=tenant_id, version_uuid=upload["version_uuid"],
+                                preview_sha256=checked["preview_sha256"])
+        existing = (await session.execute(text(SELECT_RUN + """
+            WHERE tenant_id=:tenant AND idempotency_key=:idem
         """), {"tenant": tenant_id, "idem": idempotency_key})).mappings().one_or_none()
-        if existing is not None:
-            if existing["input_hash"] != input_hash:
-                raise BusinessError("IDEMPOTENCY_KEY_REUSED",
-                                    "幂等键已用于不同的追加文件", status_code=409)
-            return 200, self.projection(existing)
-
-        active = (await session.execute(text("""
-            SELECT training_uuid::text FROM forecast_training_runs
-             WHERE tenant_id=:tenant AND status IN ('queued','running') LIMIT 1
-        """), {"tenant": tenant_id})).scalar_one_or_none()
-        if active:
-            raise BusinessError("FORECAST_TRAINING_IN_PROGRESS",
-                                "已有数据追加任务正在执行，请等待完成", status_code=409)
-
-        orders_key, _ = self.storage.store(
-            tenant_id=tenant_id, filename=orders_filename,
-            mime_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            content=orders_content)
-        inventory_key = None
-        if inventory_content is not None:
-            inventory_key, _ = self.storage.store(
-                tenant_id=tenant_id, filename=inventory_filename or "inventory.xlsx",
-                mime_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                content=inventory_content)
-        snapshot = {
-            "orders": {"filename": Path(orders_filename).name, "storage_key": orders_key,
-                       "size": len(orders_content), "sha256": orders_digest},
-            "inventory": ({"filename": Path(inventory_filename or "inventory.xlsx").name,
-                           "storage_key": inventory_key, "size": len(inventory_content or b""),
-                           "sha256": inventory_digest} if inventory_key else None),
-        }
-        row = (await session.execute(text("""
-            INSERT INTO forecast_training_runs
-              (tenant_id,created_by,source_snapshot,algorithm_version,feature_version,
-               status,update_kind,idempotency_key,input_hash)
-            VALUES(:tenant,:user,CAST(:snapshot AS jsonb),'sales-forecast-v4','v4',
-                   'queued','append',:idem,:input_hash)
-            RETURNING training_uuid::text,status,input_hash,source_snapshot,metrics,
-                      error_code,error_message,created_at,started_at,completed_at
-        """), {"tenant": tenant_id, "user": user_id, "snapshot": json.dumps(snapshot),
-                 "idem": idempotency_key, "input_hash": input_hash})).mappings().one()
-        return 202, self.projection(row)
+        current = await ForecastRepository().active_deployment(session, tenant_id=tenant_id)
+        mode = (existing["update_kind"] if existing else
+                "append" if current and current["model_scope"] == "tenant_private" else "initial")
+        return await self.create(session, tenant_id=tenant_id, user_id=user_id,
+                                 version_uuid=upload["version_uuid"], mode=mode,
+                                 allow_history_overwrite=allow_history_overwrite,
+                                 idempotency_key=idempotency_key)
 
     @staticmethod
-    def projection(row: Any) -> dict[str, Any]:
+    def projection(row: Any) -> dict:
         data = dict(row)
         snapshot = data.pop("source_snapshot", {}) or {}
-        data.pop("input_hash", None)
         data["orders_filename"] = (snapshot.get("orders") or {}).get("filename")
-        data["inventory_filename"] = (snapshot.get("inventory") or {}).get("filename")
+        data["inventory_filename"] = None
+        data["data_versions"] = snapshot.get("data_versions", [])
         return data
 
-    async def list(self, session: AsyncSession, *, tenant_id: int,
-                   limit: int = 20) -> list[dict[str, Any]]:
-        rows = (await session.execute(text("""
-            SELECT training_uuid::text,status,input_hash,source_snapshot,metrics,
-                   error_code,error_message,created_at,started_at,completed_at
-              FROM forecast_training_runs WHERE tenant_id=:tenant
-             ORDER BY created_at DESC LIMIT :limit
+    async def list(self, session: AsyncSession, *, tenant_id: int, limit: int = 20):
+        rows = (await session.execute(text(SELECT_RUN + """
+            WHERE tenant_id=:tenant ORDER BY created_at DESC LIMIT :limit
         """), {"tenant": tenant_id, "limit": limit})).mappings().all()
         return [self.projection(row) for row in rows]
 
-    async def get(self, session: AsyncSession, *, tenant_id: int,
-                  training_uuid: str) -> dict[str, Any] | None:
-        row = (await session.execute(text("""
-            SELECT training_uuid::text,status,input_hash,source_snapshot,metrics,
-                   error_code,error_message,created_at,started_at,completed_at
-              FROM forecast_training_runs
-             WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid)
+    async def get(self, session: AsyncSession, *, tenant_id: int, training_uuid: str):
+        row = (await session.execute(text(SELECT_RUN + """
+            WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid)
         """), {"tenant": tenant_id, "uuid": training_uuid})).mappings().one_or_none()
         return self.projection(row) if row else None
 
-    def _stored_path(self, storage_key: str) -> Path:
-        root = Path(self.settings.demo_storage_root).resolve()
-        target = (root / storage_key).resolve()
-        if root not in target.parents or not target.is_file():
-            raise RuntimeError("上传工作簿已丢失或路径无效")
-        return target
-
-    async def execute(self, session: AsyncSession, *, tenant_id: int,
-                      training_uuid: str) -> None:
-        stage: Path | None = None
-        final: Path | None = None
-        published = False
+    async def execute(self, session: AsyncSession, *, tenant_id: int, training_uuid: str,
+                      execution_token: str | None = None):
+        token = execution_token or str(uuid4())
+        row = (await session.execute(text("""
+            UPDATE forecast_training_runs
+               SET status='running',started_at=now(),completed_at=NULL,
+                   error_code=NULL,error_message=NULL,execution_token=CAST(:token AS uuid),
+                   execution_attempts=execution_attempts+1,heartbeat_at=clock_timestamp(),
+                   lease_expires_at=clock_timestamp()+:seconds*interval '1 second'
+             WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid)
+               AND status='queued' AND execution_attempts<:maximum
+             RETURNING *
+        """), {"tenant": tenant_id, "uuid": training_uuid, "token": token,
+                 "seconds": self.settings.worker_lease_ms / 1000,
+                 "maximum": self.settings.worker_max_attempts})).mappings().one_or_none()
+        await session.commit()
+        if row is None:
+            return
+        work = asyncio.create_task(self._execute_owned(
+            session, tenant_id=tenant_id, training_uuid=training_uuid, row=row, token=token))
+        pulse = asyncio.create_task(self.lifecycle.heartbeat(
+            session.bind, tenant_id=tenant_id, training_uuid=training_uuid, token=token))
+        tasks = (work, pulse)
         try:
-            row = (await session.execute(text("""
-                SELECT id,created_by,status,source_snapshot FROM forecast_training_runs
-                 WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid) FOR UPDATE
-            """), {"tenant": tenant_id, "uuid": training_uuid})).mappings().one_or_none()
-            if row is None or row["status"] in {"succeeded", "cancelled"}:
-                return
-            if row["status"] == "running":
-                return
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED,
+                                         timeout=self.settings.worker_job_timeout_seconds)
+            if not done:
+                raise TimeoutError("训练执行超时")
+            await (work if work in done else pulse)
+        except (Exception, asyncio.CancelledError) as exc:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            await session.rollback()
+            interrupted = isinstance(exc, asyncio.CancelledError)
             await session.execute(text("""
-                UPDATE forecast_training_runs SET status='running',started_at=now(),
-                       error_code=NULL,error_message=NULL
-                 WHERE id=:id
-            """), {"id": row["id"]})
+                UPDATE forecast_training_runs
+                   SET status=CASE WHEN :interrupted AND execution_attempts<:maximum
+                                   THEN 'queued' ELSE 'failed' END,
+                       error_code=:code,error_message=:message,lease_expires_at=NULL,
+                       completed_at=CASE WHEN :interrupted AND execution_attempts<:maximum
+                                         THEN NULL ELSE now() END
+                 WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid)
+                   AND execution_token=CAST(:token AS uuid) AND status='running'
+            """), {"tenant": tenant_id, "uuid": training_uuid, "token": token,
+                     "maximum": self.settings.worker_max_attempts, "interrupted": interrupted,
+                     "code": "FORECAST_INTERRUPTED" if interrupted else "FORECAST_TRAINING_FAILED",
+                     "message": "训练中断，将恢复执行" if interrupted else
+                                "训练失败；当前模型保持不变，请检查数据版本或联系管理员"})
             await session.commit()
+            raise
+        finally:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
 
-            deployment = (await session.execute(text("""
-                SELECT d.id deployment_id,d.route_policy,m.id model_id,m.state_uri,m.version
-                  FROM forecast_model_deployments d JOIN forecast_models m ON m.id=d.model_id
-                 WHERE d.tenant_id=:tenant AND d.scenario_code='sales_forecast'
-                   AND d.status='active' AND m.status='active'
-                 ORDER BY d.deployed_at DESC LIMIT 1
-            """), {"tenant": tenant_id})).mappings().one_or_none()
-            if deployment is None:
-                raise RuntimeError("当前租户尚未发布可追加的预测模型")
-
-            source = self.registry.state_dir(tenant_id=tenant_id,
-                                             state_uri=deployment["state_uri"])
-            artifact_root = Path(self.settings.forecast_artifact_root).resolve()
-            tenant_root = artifact_root / str(tenant_id)
+    async def _execute_owned(self, session, *, tenant_id, training_uuid, row, token):
+        stage = final = None
+        published = False
+        artifact_name = f"{training_uuid}-{token}"
+        try:
+            code = Path(tenant_engine.__file__).read_bytes()
+            if sha256(code) != row["code_sha256"]:
+                raise ValueError("排队期间训练代码已变化，请创建新训练任务")
+            merged = {}
+            for source in row["source_snapshot"]["sources"]:
+                data = await self.data.row(session, tenant_id, source["uuid"])
+                if data["canonical_sha256"] != source["sha256"]:
+                    raise ValueError("训练数据版本校验失败")
+                for record in self.data.records(tenant_id, data):
+                    merged[(record["date"], record["sku"], record["site"])] = record
+            await session.commit()  # Do not hold a database transaction through CPU training.
+            tenant_root = Path(self.settings.forecast_artifact_root).resolve() / str(tenant_id)
             tenant_root.mkdir(parents=True, exist_ok=True, mode=0o700)
-            stage = tenant_root / f".staging-{training_uuid}"
-            final = tenant_root / training_uuid
+            stage, final = tenant_root / f".staging-{artifact_name}", tenant_root / artifact_name
             if stage.exists() or final.exists():
-                raise RuntimeError("训练制品目录已存在")
-            shutil.copytree(source, stage)
-
-            snapshot = row["source_snapshot"]
-            orders_path = self._stored_path(snapshot["orders"]["storage_key"])
-            inventory = snapshot.get("inventory")
-            inventory_path = self._stored_path(inventory["storage_key"]) if inventory else None
+                raise ValueError("训练制品目录已存在，请创建新任务")
+            stage.mkdir(mode=0o700)
+            (stage / "forecast.py").write_bytes(code)
+            lineage = {"tenant_id": tenant_id, "training_uuid": training_uuid, "execution_token": token,
+                       "sources": row["source_snapshot"]["sources"], "code_sha256": row["code_sha256"]}
+            evaluation = await self.lifecycle.train(list(merged.values()), stage, lineage)
+            if not evaluation["passed"]:
+                await self.lifecycle.fence(session, tenant_id=tenant_id,
+                                            training_uuid=training_uuid, token=token)
+                await session.execute(text("""
+                    UPDATE forecast_training_runs SET status='rejected',metrics=CAST(:metrics AS jsonb),
+                      error_code='FORECAST_QUALITY_GATE',error_message=:message,completed_at=now(),
+                      lease_expires_at=NULL
+                     WHERE id=:id AND tenant_id=:tenant
+                """), {"id": row["id"], "tenant": tenant_id, "metrics": json.dumps(evaluation),
+                         "message": "；".join(evaluation["reasons"])})
+                await session.commit()
+                return
             runtime = ForecastRuntime(self.settings, state_dir=stage,
-                                      model_version=f"sales-forecast-v4-append-{training_uuid[:8]}")
-            append_metrics = await runtime.append_and_train(orders_path, inventory_path)
+                                      model_version=f"{tenant_engine.ENGINE_VERSION}-{training_uuid[:8]}")
             metadata = runtime.metadata()
             if not metadata.get("ready"):
-                raise RuntimeError(metadata.get("error", "新模型校验失败"))
-            sku_rows = await runtime.list_skus(None, 5000)
-            catalog_skus, catalog_pairs = await ForecastRepository().replace_catalog_from_engine(
-                session, tenant_id=tenant_id, sku_rows=sku_rows)
+                raise ValueError("训练制品未通过完整性校验")
+            sku_rows = await runtime.list_skus(None, 100_000)
+            await session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
+                                  {"key": 7_040_000 + tenant_id})
+            await self.lifecycle.fence(session, tenant_id=tenant_id,
+                                        training_uuid=training_uuid, token=token)
+            current = await ForecastRepository().active_deployment(session, tenant_id=tenant_id)
+            if (current["deployment_id"] if current else None) != row["baseline_deployment_id"]:
+                raise ValueError("训练期间部署已变化，新模型未发布，请重新训练")
+            frozen = row["source_snapshot"].get("catalog", {}).get("items")
+            if not frozen:
+                raise ValueError("旧训练任务缺少SKU映射快照，请重新创建任务")
+            catalog = ForecastCatalog.require_valid(await ForecastCatalog().preview(
+                session, tenant_id, sku_rows, frozen=frozen))
             stage.rename(final)
             stage = None
-
-            final_runtime = ForecastRuntime(self.settings, state_dir=final,
-                                            model_version=runtime.model_version)
-            final_metadata = final_runtime.metadata()
-            checksum = final_metadata["state_checksum"]
-            state_uri = f"server-managed://tenant/{tenant_id}/{training_uuid}"
-            model_metrics = {"append": append_metrics, "sku_count": final_metadata.get("sku_count"),
-                             "granularities": final_metadata.get("granularities")}
-            training_date = coerce_training_date(final_metadata.get("data_through"))
-            model = (await session.execute(text("""
+            checksum = metadata["state_checksum"]
+            model_metrics = {"evaluation": evaluation, "lineage": lineage,
+                             "checksum_algorithm": "sha256-content-v1", "catalog_snapshot": catalog}
+            model_id = (await session.execute(text("""
                 INSERT INTO forecast_models
                   (model_code,owner_tenant_id,model_scope,version,engine,state_uri,state_checksum,
                    status,training_data_through,metrics)
                 VALUES('sales_forecast',:tenant,'tenant_private',:version,:engine,:uri,:checksum,
-                       'active',CAST(:through AS date),CAST(:metrics AS jsonb)) RETURNING id
-            """), {"tenant": tenant_id, "version": runtime.model_version,
-                     "engine": final_metadata["engine"], "uri": state_uri,
-                     "checksum": checksum, "through": training_date,
-                     "metrics": json.dumps(model_metrics)})).mappings().one()
-            await session.execute(text("""
-                UPDATE forecast_model_deployments SET status='inactive',retired_at=now()
-                 WHERE tenant_id=:tenant AND scenario_code='sales_forecast' AND status='active'
-            """), {"tenant": tenant_id})
-            await session.execute(text("""
-                INSERT INTO forecast_model_deployments
-                  (tenant_id,model_id,scenario_code,status,route_policy,deployed_by)
-                VALUES(:tenant,:model,'sales_forecast','active',CAST(:policy AS jsonb),:user)
-            """), {"tenant": tenant_id, "model": model["id"],
-                     "policy": json.dumps(deployment["route_policy"] or {}),
-                     "user": row["created_by"]})
-            result_metrics = {**append_metrics, "model_version": runtime.model_version,
-                              "state_checksum": checksum, "catalog_pairs": catalog_pairs,
-                              "catalog_skus": catalog_skus}
+                       'active',:through,CAST(:metrics AS jsonb)) RETURNING id
+            """), {"tenant": tenant_id, "version": runtime.model_version, "engine": metadata["engine"],
+                     "uri": f"server-managed://tenant/{tenant_id}/{artifact_name}", "checksum": checksum,
+                     "through": coerce_training_date(metadata["data_through"]),
+                     "metrics": json.dumps(model_metrics)})).scalar_one()
+            deployed = await ForecastPublication().activate(
+                session, tenant_id=tenant_id, model_id=model_id, user_id=row["created_by"],
+                catalog=catalog, expected_deployment_id=row["baseline_deployment_id"],
+                source="standard_training")
             await session.execute(text("""
                 UPDATE forecast_training_runs SET status='succeeded',metrics=CAST(:metrics AS jsonb),
-                       artifact_model_id=:model,completed_at=now()
-                 WHERE id=:id
-            """), {"metrics": json.dumps(result_metrics), "model": model["id"], "id": row["id"]})
+                       artifact_model_id=:model,completed_at=now(),lease_expires_at=NULL
+                 WHERE id=:id AND tenant_id=:tenant
+            """), {"id": row["id"], "tenant": tenant_id, "model": model_id,
+                     "metrics": json.dumps({**model_metrics, "model_version": runtime.model_version,
+                                            "state_checksum": checksum,
+                                            "catalog_pairs": deployed["catalog_pairs"],
+                                            "catalog_skus": deployed["catalog_skus"]})})
             await session.commit()
             published = True
-        except Exception as exc:
-            await session.rollback()
-            safe_message = str(exc)[:1000] or "数据追加与训练失败"
-            await session.execute(text("""
-                UPDATE forecast_training_runs SET status='failed',error_code='FORECAST_TRAINING_FAILED',
-                       error_message=:message,completed_at=now()
-                 WHERE tenant_id=:tenant AND training_uuid=CAST(:uuid AS uuid)
-                   AND status<>'succeeded'
-            """), {"tenant": tenant_id, "uuid": training_uuid, "message": safe_message})
-            await session.commit()
-            raise
         finally:
             if stage and stage.exists():
                 shutil.rmtree(stage, ignore_errors=True)
             if final and final.exists() and not published:
-                shutil.rmtree(final, ignore_errors=True)
+                # A lost connection can make COMMIT's outcome unknown. Never
+                # delete artifacts until the DB proves they are unreferenced.
+                try:
+                    await session.rollback()
+                    referenced = await session.scalar(text("""
+                        SELECT EXISTS(SELECT FROM forecast_models
+                         WHERE owner_tenant_id=:tenant AND state_uri=:uri)
+                    """), {"tenant": tenant_id, "uri": f"server-managed://tenant/{tenant_id}/{artifact_name}"})
+                except Exception:
+                    referenced = True  # Retain for reconciliation when DB returns.
+                if not referenced:
+                    shutil.rmtree(final, ignore_errors=True)

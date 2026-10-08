@@ -3,7 +3,7 @@
   "data_class": "authorized_market_data",
   "listings": [
     {
-      "platform_listing_id": "SYN-HF-001",
+      "platform_listing_id": "PROC-HF-001",
       "title": "带脚凳休闲椅 HF-A0393",
       "currency": "USD",
       "sale_price": 129.0,
@@ -13,9 +13,9 @@
   ],
   "reviews": [
     {
-      "external_id": "SYN-REV-R10-001",
-      "asin": "SYN-HF-001",
-      "platform_listing_id": "SYN-HF-001",
+      "external_id": "PROC-REV-R10-001",
+      "asin": "PROC-HF-001",
+      "platform_listing_id": "PROC-HF-001",
       "rating": 4,
       "content_original": "The fabric color matches the photos and is easy to clean. Pack refresh 2026-09-15."
     }

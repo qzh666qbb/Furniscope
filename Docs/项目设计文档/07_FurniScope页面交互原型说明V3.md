@@ -1,8 +1,38 @@
 # FurniScope 页面交互原型说明 V3.0
 
+## 2026-10-07 现行信息架构与复盘状态
+
+现行产品以七个企业一级入口组织：`首页 / 产品中心 / AI 工作台 / 企业知识库 / 销量预测 / 市场洞察 / 决策报告`；工作日记、分析画布、数据集详情、竞品监控和报告详情是子页。管理员入口独立，只保留企业登录账号/租户生命周期和租户预测模型两个一级域。
+
+决策报告支持在线阅读及只读 PDF 打印/下载；PDF必须复用服务端冻结值，不得在浏览器端补算金额。自动记忆抽取关闭，输入区不显示三档写入控件；企业知识库是独立持久化资源，工作台绑定只改变检索范围。
+
+2026-10-07运行复盘发现移动端首页、工作日记、报告展示层派生金额、定价口径和多账号管理等未关闭问题，当前发布门槛及问题编号以[16号系统复盘](./16_FurniScope_系统功能与业务流程复盘V1.md)为准。本文后续 S01—S06 章节保留核心交互语义，路由和一级导航以本节及§3为准。
+
+## 2026-10-05 企业闭环复核增量
+
+以[15总体设计](./15_FurniScope_企业决策与数据闭环总体设计V1.md)和[API实现说明](../开发文档/FurniScope_企业决策与标准数据API实现说明V1.md)为本轮增量依据，沿用现有页面和导航：
+
+| 入口 | 已实现交互 |
+|---|---|
+| 市场洞察 → AI智能选品 | 经营目标模板、五项权重及适配强度；企业事实与必要条件分别保存；旧任务保持原快照 |
+| 机会 → 判断依据与处理结果 | 市场原分、修正分、满足/不满足/待确认明细；采纳/拒绝/待验证、原因、修改历史与反馈导出 |
+| 机会 → 实施与经营观察 | 最新采纳关联、计划/实施/完成/放弃、实际日期、完整观察区间、目标达成、核验依据、可选确认销量/企业收支；保留修订 |
+| AI智能选品 → 导出排序评测数据 | 固定截点按任务完整分页；保留未标注候选，标识旧特征、回溯实施和采纳更新的排除原因 |
+| 产品中心 → 事实核验 | 带原文的未勾选候选、冲突纠正、独立成本/报价、记录依据、保存草稿后显式确认画像 |
+| 销量预测 → 模型训练 | CSV/XLSX/JSON上传；字段映射、日期/销量/粒度口径；质量、样本、SHA与审计；确认标准版本 |
+| 模型训练 → 导入与映射 | 不可变模板修订、SKU一一映射、订单取消/退货/重复、仓库站点、独立销量/库存对账 |
+| 模型训练 → 训练范围 | 首次/追加/重建、合并与历史改写预览；排队/训练中/已发布/未达标/失败状态，评测与基线对照 |
+| 训练记录 → 分层评测 | 逐SKU三窗口、加权/平均/最差误差及覆盖；稀疏仅整窗总量；新品和全零明确未验证 |
+| 销量预测 | 发布后刷新SKU与当前数据日期；企业新引擎禁用未学习的价格/促销/库存情景 |
+| 管理员 → 企业私有模型空间 | 展示部署和标准数据训练说明；直接上传代码发布尚未开放 |
+
+映射或口径变化立即使旧预检失效；旧摘要不能用于确认。未达标或失败保留现用部署。权重标注“未校准启发式”；反馈表示用户决策，不能显示为已实现业务收益。本文原“六维机会评分”统一理解为五个市场因子及独立企业适配，竞品的六维可比性仍保持不变。
+
+新品、手动基线、参考SKU或超范围预测缺乏误差依据时，区间及自动安全库存/生产建议显示“待验证”。经营观察只记录企业报告结果，不展示因果收益。桌面与390px移动端证据及7条真实API链路见[本轮验收](../../artifacts/enterprise-20261005/README.md)。
+
 ## 1. 文档目标
 
-本文定义“跨境家具超级 AI 员工”的 Web 页面、信息架构和交互反馈，供赛事材料、Figma 原型和 React 19 + Vite 前端开发使用。页面不按传统岗位或内部 Agent 拆分，一个 `user` 可以独立完成产品资料输入、市场数据配置、分析启动、必要确认、洞察查看和决策报告阅读；`admin` 只管理账号、模型、Prompt、运行配置和诊断。
+本文定义“跨境家具超级 AI 员工”的 Web 页面、信息架构和交互反馈，供赛事材料、Figma 原型和 React 19 + Vite 前端开发使用。页面不按传统岗位或内部 Agent 拆分，一个 `user` 可以独立完成产品资料输入、市场数据配置、分析启动、必要确认、洞察查看和决策报告阅读；`admin` 只管理企业账号/租户生命周期和租户预测模型。
 
 文档字段以《FurniScope产品数据字典V3》为准，接口以《FurniScope RESTful API接口设计V3》为准，任务与恢复行为以《FurniScope Agent工作流设计V2》为准。
 
@@ -15,12 +45,12 @@
 5. `stage_runs`、`partial_failures`、`checkpoint_stage` 和请求 ID 只在“技术详情”抽屉展示，不提供 user 手工节点重试按钮。
 6. 所有数字结论同时展示数据范围、置信度或限制；机会分与置信度不得混为一个视觉指标。
 7. 评论原文和翻译分列；证据高亮以原文 `evidence_start/evidence_end/evidence_quote` 为准。
-8. 页面不包含 Listing 生成、报告文件导出、验证任务、多人评审、发布审批或产品运营事件。
+8. 页面不包含 Listing 生成、业务执行表格、验证任务、多人评审、发布审批或产品运营事件；只读报告 PDF 除外。
 
 ### 2.1 全局应用框架
 
-- 桌面优先，内容最大宽度 1440px；赛事 Demo 适配 1280px 以上屏幕。
-- 左侧导航：AI工作台、新建分析；进入任务后增加市场洞察、决策报告上下文入口。admin 额外看到“管理后台”。
+- 桌面优先，同时保证390px移动端无整页横向溢出、关键字段不被裁切。
+- 企业左侧/移动底部导航固定为：首页、产品中心、AI工作台、企业知识库、销量预测、市场洞察、决策报告。admin使用独立管理壳。
 - 顶栏：租户简称、当前页面、全局“新建分析”、待确认数量、用户菜单。
 - user 不显示内部 Agent 名、节点编号、模型切换和重试按钮；admin 诊断区允许查看脱敏内部 Stage。
 - 主色深海军蓝 `#102A43`，行动色青绿 `#16A085`，背景 `#F6F8FB`；警告琥珀、失败红、成功绿、未知灰。
@@ -52,39 +82,36 @@
 
 | 编号 | 页面 | 路由 | 可见角色 | 核心接口 |
 |---|---|---|---|---|
-| S01 | 登录 | `/login` | Public | API-AUTH-01/02/03 |
-| S02 | AI工作台 | `/workspace` | user/admin | API-AUTH-03、API-DSH-01、API-CFM-01 |
-| S03 | 新建分析 | `/analyses/new` | user | API-PRD-01—07、API-DAT-01—04、API-INS-01/02 |
-| S04 | AI执行中 | `/analyses/:taskUuid/run` | user；admin只读诊断 | API-INS-03、API-CFM-01/02、API-ADM-07/08(P1) |
-| S05 | 市场洞察 | `/analyses/:taskUuid/insights` | user | API-INS-04、API-CMP-01、API-REV-01/02、API-EVD-01、API-OPP-01、API-RPT-01 |
-| S06 | 决策报告 | `/reports/:reportUuid` | user | API-RPT-01、API-REC-01、API-OPP-01、API-EVD-01 |
-| A01 | 管理后台 | `/admin` | admin | API-ADM-01—08 |
+| P01 | 登录/注册/找回 | `#login/#register/#forgot-password` | Public | 认证接口 |
+| E01 | 首页 | `#workspace` | user | Dashboard、任务、报告、确认 |
+| E02 | 产品中心 | `#products` | user | 产品、画像、关系、库存、批量导入 |
+| E03 | AI工作台 | `#analysis/#workflow/#work-diary` | user | 工作台、Turn、任务、SSE、结果 |
+| E04 | 企业知识库 | `#knowledge` | user | 知识库、文档、版本、索引、Context |
+| E05 | 销量预测 | `#forecast` | user | 标准数据、目录映射、训练、预测历史 |
+| E06 | 市场洞察 | `#insights/#dataset-detail/#competitor-tracking` | user | 数据集、竞品、评论、机会、定价、政策 |
+| E07 | 决策报告 | `#report/#report-detail` | user | 报告集合、冻结详情、证据、PDF、归档 |
+| A01 | 管理后台 | `#admin/#admin-login` | admin | 企业账号/租户生命周期、租户预测模型 |
 
 ## 4. 页面跳转关系
 
 ```mermaid
 flowchart TD
-    S01[S01 登录] -->|user| S02[S02 AI工作台]
-    S01 -->|admin| S02
-    S02 -->|新建分析| S03[S03 新建分析向导]
-    S03 -->|创建并启动| S04[S04 AI执行中]
-    S04 -->|出现阻断条件| C[user_confirmation卡片]
-    C -->|回答并恢复| S04
-    S04 -->|已有阶段性综合结果| S05[S05 市场洞察]
-    S04 -->|completed且report_uuid有效| S06[S06 决策报告]
-    S02 -->|最近任务| S04
-    S02 -->|最近报告| S06
-    S02 -->|待确认| S04
-    S05 -->|查看完整报告| S06
-    S06 -->|查看市场证据| S05
-    S02 -->|admin导航| A01[A01 管理后台]
-    A01 -->|查看任务诊断| S04
-    S04 -->|返回工作台| S02
-    S05 -->|返回工作台| S02
-    S06 -->|返回工作台| S02
+    P01[公共认证] -->|user| E01[首页]
+    P01 -->|admin| A01[管理后台]
+    E01 --> E02[产品中心]
+    E01 --> E03[AI工作台]
+    E03 --> W[分析画布与对话]
+    W -->|阻断条件| C[user_confirmation]
+    C -->|回答并恢复| W
+    W --> E04[企业知识库]
+    W -->|阶段结果| E06[市场洞察]
+    W -->|完成报告| E07[决策报告]
+    E02 --> E05[销量预测]
+    E06 --> E07
+    E07 --> E06
 ```
 
-路由守卫：未登录访问业务页跳 S01；user 访问 `/admin` 返回 S02 并显示无权限提示；admin进入 user 任务时只获得API允许的只读/脱敏诊断范围，不能代答确认。
+路由守卫：未登录访问企业业务页跳 P01；user 访问 `#admin` 返回 E01 并显示无权限提示；admin不进入企业业务壳，也不能代答企业确认。
 
 ## 5. S01 登录
 
@@ -285,7 +312,7 @@ flowchart TD
 |---|---|---|
 | `understanding_product` | 理解产品与企业能力 | 产品画像、冲突和未知项 |
 | `researching_market` | 研究市场与可比商品 | 数据质量、竞品样本、评论抽取 |
-| `evaluating_opportunity` | 评估需求与机会 | 聚类、价格与六维评分 |
+| `evaluating_opportunity` | 评估需求与机会 | 聚类、价格、市场分、企业修正和条件检查 |
 | `generating_recommendation` | 生成产品与制造建议 | 工程建议、适配和风险审计 |
 | `completed` | 分析完成 | 综合洞察与在线报告 |
 
@@ -359,7 +386,7 @@ flowchart TD
 | 竞品 | 类型分布、六维雷达、商品表、匹配原因抽屉 | API-CMP-01 `competitor_set_version/competitor_summary/available_review_count/items` |
 | 评论需求 | 聚类气泡/排行、观点表、原文证据 | API-REV-02聚类；API-REV-01观点 |
 | 价格 | 价格摘要、币种/时间口径、价格与机会关联 | API-RPT-01 `price_summary/data_scope_snapshot`；报告未生成时显示处理中 |
-| 机会 | 六维评分、base_score与confidence、制造适配摘要 | API-OPP-01 |
+| 机会 | 五市场因子、market_score/adjusted_score、confidence和条件摘要 | API-OPP-01 |
 | 证据 | claim筛选、支持/反驳/限制、EvidenceDrawer | API-EVD-01 |
 
 ### 9.4 筛选字段
@@ -392,7 +419,15 @@ flowchart TD
 - 错误态：局部Tab失败不清空其他Tab；显示request_id和重试本Tab。
 - 成功态：筛选更新URL；打开证据时高亮对应结论；不使用“审核通过”文案。
 
-### 9.7 UI生成Prompt
+### 9.7 决策中心现行分页与下钻
+
+- AI智能选品、竞品动态追踪、评论深挖均提供“洞察概览”；选品另有经营配置工作台，竞品和评论分别进入监控工作台、舆情工作台。
+- 三个概览列表统一支持`page/page_size`、上一页、下一页和详情返回位置保留。
+- 选品列表每条表示由评论需求主题和市场信号形成的候选机会方向，不表示商品或 SKU。
+- 竞品详情展示变更前后值和最近快照；评论主题详情展示情绪分布与受保护评论原文证据。
+- 当旧后端尚未加载新增分页路由时，页面只显示总览预览和“需重启 API 服务”提示，并禁用翻页与详情入口，不再同时显示通用 404 错误和可操作列表。
+
+### 9.8 UI生成Prompt
 
 > Cross-border furniture market insights dashboard with top data-scope banner and separate opportunity score/confidence badges, six tabs for overview, competitors, review needs, pricing, opportunities and evidence. Include radar chart, ranked need clusters, opportunity score cards, dense data table and right evidence drawer, premium navy teal analytics UI.
 
@@ -410,7 +445,7 @@ flowchart TD
 - 主体顺序：市场机会→产品建议→制造适配→风险→待验证事项→完整章节。
 - 右侧固定目录，根据 `sections.sort_order` 生成。
 - 每个核心结论提供“为什么”按钮，打开EvidenceDrawer。
-- 页面只在线查看，不显示发布、审批、导出、生成Listing按钮。
+- 页面不显示发布、审批或生成Listing按钮；允许从集合页和详情页下载与冻结在线内容一致的只读 PDF。
 
 ### 10.3 展示字段
 
@@ -422,7 +457,7 @@ flowchart TD
 | 市场与风险 | `target_user_summary/price_summary/risk_summary/partial_failures_snapshot` | API-RPT-01 |
 | 待验证 | `pending_validation_items` | API-RPT-01；仅展示，不创建validation_task |
 | 章节 | `sections` | API-RPT-01，按sort_order |
-| 机会 | 六项评分、base_score、confidence、manufacturing_fit | API-OPP-01 |
+| 机会 | 五个市场因子、market_score、adjusted_score、confidence、recommendation_level、manufacturing_fit | API-OPP-01 |
 | 建议 | problem、hypotheses、action、benefit、impact、priority、confidence、validation_method、risk_level | API-REC-01 |
 
 ### 10.4 操作与 API
@@ -430,9 +465,10 @@ flowchart TD
 | 操作 | API编号、方法与完整路径 | 成功反馈 | 失败反馈 |
 |---|---|---|---|
 | 加载在线报告 | API-RPT-01 `GET /api/v1/reports/{report_uuid}?include_model_trace=true` | 渲染冻结快照、章节和限制 | 未就绪返回S04；证据审计失败显示阻断说明 |
-| 加载机会详情 | API-OPP-01 `GET /api/v1/analysis-tasks/{task_uuid}/opportunities` | 展开六维评分和manufacturing_fit | 局部失败仍保留报告快照并标注限制 |
+| 加载机会详情 | API-OPP-01 `GET /api/v1/analysis-tasks/{task_uuid}/opportunities` | 展开市场分、企业修正和manufacturing_fit | 局部失败仍保留报告快照并标注限制 |
 | 加载产品建议 | API-REC-01 `GET /api/v1/analysis-tasks/{task_uuid}/recommendations` | 展示建议卡与风险，不显示复核按钮 | 无建议时说明数据不足或能力缺口 |
 | 查看结论证据 | API-EVD-01 `GET /api/v1/analysis-tasks/{task_uuid}/evidence?claim_type={claim_type}&claim_id={claim_id}&claim_path={claim_path}` | 原文、支持关系和范围快照进入抽屉 | 证据缺失标记validation_required，不伪装完整可信 |
+| 下载只读 PDF | 浏览器打印/PDF；输入只能来自已加载冻结报告 | 集合页和详情页均可下载；数值与在线报告一致 | 冻结字段缺失时显示待核算，不允许展示层推算 |
 | 返回市场洞察 | API-INS-04 `GET /api/v1/analysis-tasks/{task_uuid}/result` | 跳S05并保持任务上下文 | 结果不可访问返回S02 |
 
 ### 10.5 弹窗与页面状态
@@ -447,53 +483,59 @@ flowchart TD
 
 > Executive decision report for a furniture market AI product, strong conclusion hero with recommendation, separate opportunity score and confidence, sections for opportunities, product engineering recommendations, manufacturing fit, risks and validation items, sticky table of contents, evidence drawer, premium report-like navy teal SaaS design, no export or approval buttons.
 
+### 10.7 S07 企业知识库
+
+- 路由：`#knowledge`；从分析工作台进入时携带`workspace`与`return`参数。
+- 布局：左侧知识库清单，右侧文档和索引表，文档检查器承载内容预览与版本历史。
+- 知识库操作：创建、编辑、归档；权限仅允许`企业共享(tenant)`和`仅自己(user)`。
+- 文档操作：上传、删除、重索引、同类型新版本上传；展示SHA、大小、版本和索引状态。
+- 回溯规则：历史版本只读；回溯会克隆历史内容为新的当前版本并重新索引。
+- 工作台绑定：仅修改该工作台Context的`knowledge_base_uuids`，不改变资料持久化与访问权限。
+- 对话界面只保留知识库多选器和“前往知识库管理”；不再承载创建、上传、删除或版本管理。
+- 自动记忆抽取关闭，输入区不显示“本轮/工作台/个人”写入范围控件。
+
 ## 11. A01 管理后台
 
 ### 11.1 页面用途与目标用户
 
-- 用途：管理user、模型路由、Prompt版本、算力配置和脱敏运行诊断。
-- 目标用户：仅admin。admin不在此代替user回答产品、竞品或高风险建议确认。
-- 优先级：本页接口均为P1，不属于比赛Demo核心user闭环。
+- 用途：管理企业登录账号及租户生命周期，查看各租户的销量预测模型状态。
+- 目标用户：仅admin。admin不进入企业业务工作台，也不代替企业用户回答确认。
+- 不把模型路由、Prompt、数据源、SKU目录或工作流诊断恢复为一级管理员导航。
 
 ### 11.2 整体布局与 Tabs
 
 - 独立admin侧栏，顶部持续显示“平台管理模式”。
-- Tabs：User管理、模型与算力、Prompt版本、运行诊断。
-- 不提供角色策略编辑器、权限矩阵、部门、岗位或审批流配置。
+- 仅两个一级域：企业用户、租户预测模型。
+- 企业用户按真实登录账号逐一展示；预测模型按租户分组。
 
 ### 11.3 字段与组件
 
 | Tab | 字段/组件 | API来源 |
 |---|---|---|
-| User管理 | user_id/tenant_id/email/name/role_code/status/last_login_at/created_at | API-ADM-01/02 |
-| 模型与算力 | task_type/primary_model_id/fallback_model_ids/timeout_ms/max_retries/batch_size/concurrency_limit/compute_config/active/updated_at | API-ADM-03/04 |
-| Prompt版本 | code/version/task_type/template_content/output_schema/status/created_at/updated_at | API-ADM-05/06 |
-| 运行诊断 | internal_stage/stage_runs/checkpoint_stage/retryable/partial_failures/model_runs/workflow_control_events/version_bundle | API-ADM-07 |
+| 企业用户 | user_id、tenant_id、企业、联系人、邮箱、账号状态、租户状态、授权、最近登录 | `/api/v1/admin/enterprise-users` |
+| 租户预测模型 | tenant_id、部署状态、引擎、数据截至日、SKU覆盖、最近训练、部署历史和回滚 | `/api/v1/admin/forecast-models` |
 
 ### 11.4 操作与 API
 
-| 操作 | API编号、方法与完整路径 | 成功反馈 | 失败反馈 |
-|---|---|---|---|
-| 查询user【P1】 | API-ADM-01 `GET /api/v1/admin/users` | 分页列表；role_code只显示user/admin | 非admin立即退出A01；筛选错误恢复默认 |
-| 更新user【P1】 | API-ADM-02 `PATCH /api/v1/admin/users/{user_id}` | Toast“账号已更新”，刷新版本并记录审计 | 角色非法定位role_code；版本冲突刷新当前行 |
-| 查询模型路由【P1】 | API-ADM-03 `GET /api/v1/admin/model-routes/{task_type}` | 展示非敏感路由与compute_config | 不存在显示“尚未配置”，不填默认模型ID |
-| 更新模型路由【P1】 | API-ADM-04 `PUT /api/v1/admin/model-routes/{task_type}` | 保存成功，显示updated_at和审计提示 | Schema/配额错误定位字段；不接受API Key |
-| 查询Prompt【P1】 | API-ADM-05 `GET /api/v1/admin/prompt-templates` | 分页版本列表 | 失败不影响模型路由Tab |
-| 创建Prompt版本【P1】 | API-ADM-06 `POST /api/v1/admin/prompt-templates` | 新版本置顶；发布后只读 | 版本冲突保留编辑内容；Schema错误定位JSON |
-| 查看任务诊断【P1】 | API-ADM-07 `GET /api/v1/admin/analysis-tasks/{task_uuid}/diagnostics` | 打开stage/model/control事件时间线 | 敏感范围不足只显示脱敏摘要 |
-| 安全恢复或停止【P1】 | API-ADM-08 `POST /api/v1/admin/analysis-tasks/{task_uuid}:recover` | 显示event_uuid和pending，随后刷新诊断 | pending user_confirmation时禁止代答或强制跨过 |
+| 操作 | 成功反馈 | 失败反馈 |
+|---|---|---|
+| 创建/审批企业账号 | 创建租户、登录账号和预测模型记录；显示审计结果 | 邮箱/租户冲突定位字段，不部分创建 |
+| 停用/启用单个账号 | 只改变目标登录账号 | 不影响同租户其他账号 |
+| 关闭企业租户 | 停用全部企业账号、撤销会话、创建可恢复删除任务 | 弹窗明确这是租户级操作；当前admin所在租户不可关闭 |
+| 恢复企业租户 | 取消删除任务，并按关闭前快照恢复全部原active账号 | 人工停用账号不被误恢复 |
+| 重置密码 | 只重置目标user并撤销其会话 | 不影响同租户其他账号 |
+| 查看/更新模型 | 说明企业标准数据训练路径；评测通过后刷新部署 | 不提供直接上传Python发布 |
 
 ### 11.5 弹窗与页面状态
 
-- 弹窗：停用user、启用模型路由、安全停止任务均二次确认并说明影响；创建Prompt为全屏抽屉。
-- 加载：各Tab独立骨架；诊断时间线分页/分段加载。
-- 空态：无路由或Prompt时展示“由admin创建配置”，不自动写入虚构模型；无诊断结果时提示输入task_uuid。
-- 错误态：403立即离开；敏感字段不在错误中回显；更新失败保留表单。
-- 成功态：所有写操作显示审计已记录；模型和Prompt变更只影响新任务冻结版本。
+- 关闭租户、恢复租户和重置密码均二次确认并说明账号范围。
+- “已删除”筛选保留关闭租户；默认列表不展示关闭租户。
+- 所有写操作显示审计已记录，并使用资源版本避免并发覆盖。
+- 当前实现仍有同租户只展示一个账号和恢复单账号问题，整改要求见16号复盘 FS-ADM-001/002。
 
 ### 11.6 UI生成Prompt
 
-> Admin-only FurniScope control center with tabs for users, model routing and compute config, prompt versions, and workflow diagnostics. Dense enterprise tables, JSON configuration drawer, stage-run timeline, navy sidebar with amber admin mode badge, clean secure operations UI, only user/admin roles, no RBAC matrix.
+> Admin-only FurniScope control center with two domains: enterprise login accounts and tenant forecast models. Show every real login account, group deployments by tenant, support audited reversible tenant closure and recovery, and keep direct code publishing unavailable.
 
 ## 12. 页面—API V3 完整映射
 
@@ -504,8 +546,8 @@ flowchart TD
 | S03 | API-PRD-01—07、API-DAT-01—04、API-INS-01/02 | 无 | 模型ID编辑、岗位审批 |
 | S04 | API-INS-03/04、API-CFM-01/02、API-RPT-01 | API-ADM-07/08（admin） | user手工Stage重试、竞品/专家独立复核 |
 | S05 | API-INS-04、API-CMP-01、API-REV-01/02、API-EVD-01、API-OPP-01、API-RPT-01 | 无 | 评论人工校正、竞品人工改类 |
-| S06 | API-RPT-01、API-OPP-01、API-REC-01、API-EVD-01、API-INS-04 | 无 | 发布、审批、导出、Listing |
-| A01 | 无 | API-ADM-01—08 | 代user回答确认、动态RBAC |
+| S06 | API-RPT-01、API-OPP-01、API-REC-01、API-EVD-01、API-INS-04 | 只读PDF | 发布、审批、业务执行表格、Listing |
+| A01 | 无 | 企业账号/租户生命周期、租户预测模型接口 | 代user回答确认、动态RBAC、一级Prompt/路由/诊断台 |
 
 ## 13. Demo演示主路径
 
@@ -533,17 +575,17 @@ flowchart TD
 | P10 选品趋势报告页 | S05市场洞察 + S06决策报告 | 拆分重组 | 分析探索在S05，决策结果在S06 |
 | P11 产品建议复核页 | S04确认卡 + S06产品建议 | 合并 | 高风险才触发统一确认，无专家审批页 |
 | P12 Listing编辑预览页 | 无 | 移出核心 | 不进入V3导航、路由或API |
-| P13 报告导出页面 | 无 | 移出核心 | V3只提供在线报告 |
-| V2管理员分散入口 | A01管理后台 | 合并 | 只管理user、模型、Prompt、算力配置与诊断 |
+| P13 报告导出页面 | E07决策报告 | 合并收口 | 不恢复独立导出中心，只提供与冻结在线报告一致的PDF |
+| V2管理员分散入口 | A01管理后台 | 合并 | 只保留企业账号/租户生命周期和租户预测模型两个一级域 |
 
 ## 15. 后续跨文档依赖
 
-1. Mermaid图文档需更新为七页面、五阶段、统一确认和综合结果路径。
-2. 测试用例需按S01—S06/A01重写，覆盖向导中断恢复、轮询退避、确认幂等、技术详情脱敏和user/admin边界。
-3. React路由与组件需使用本文件页面编号和API V3，不复用V2岗位权限守卫；UI视觉与组件实现以 `frontend/` 为迁移起点，但业务范围仍以本文件为准。
+1. Mermaid图文档需同步七个企业一级入口、关联子页、五阶段、统一确认和综合结果路径。
+2. 测试用例需按E01—E07/A01覆盖中断恢复、确认幂等、技术详情脱敏、user/admin边界和390px响应式。
+3. React路由与组件使用§3现行Hash路由和API契约，不复用V2岗位权限守卫；UI视觉与组件实现以 `frontend/` 为准。
 4. Figma原型需先建立全局色板、组件状态和证据/置信度规范，再逐页使用本文Prompt。
 5. API V3后续若新增独立价格下钻接口，须先更新数据字典；当前价格Tab只读取API-RPT-01已有 `price_summary`。
-6. admin系统级通用配置若超出 `model_route_configs.compute_config`，必须先经PRD和数据字典确认，页面不得自行增加字段。
+6. 管理后台若要恢复Prompt、模型路由或诊断一级域，必须先经PRD和信息架构评审，页面不得自行增加。
 
 ## 16. 版本记录
 
@@ -551,13 +593,14 @@ flowchart TD
 |---|---|---|
 | V2.0 | 2026-08-08 | 13页面、多岗位、独立竞品/专家复核及Listing/导出扩展形态 |
 | V3.0 | 2026-08-09 | 重构为一个user驾驭超级AI员工的6个业务页面+1个admin页面 |
+| V3.1 | 2026-10-07 | 同步七个企业一级入口、知识库/记忆边界、销量预测、报告PDF和双域管理员后台；登记16号复盘整改门槛 |
 
 ## 17. 本次变更摘要
 
-- 页面从13个收敛为S01—S06和A01共7个。
+- 现行页面组织为7个企业一级入口、关联子页和1个独立admin入口。
 - 将产品、资料解析、画像确认、市场数据和任务配置合并为一个新建分析向导。
 - 将竞品确认与建议复核合并为S04统一 `user_confirmation` 卡片，并按Checkpoint安全恢复。
 - S04主界面仅展示五阶段；内部运行信息收进技术详情抽屉。
 - S05使用Tabs整合竞品、评论需求、价格、机会和证据；S06突出决策与可信依据。
-- 删除岗位按钮权限、Listing页、导出页、发布审批和多人评审交互。
+- 删除岗位按钮权限、Listing页、独立导出中心、发布审批和多人评审交互；保留冻结报告PDF。
 - 所有操作已绑定API V3完整编号、方法和路径；P1能力仅保留在admin后台。

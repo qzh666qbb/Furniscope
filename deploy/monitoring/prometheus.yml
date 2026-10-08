@@ -15,6 +15,10 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets: ["backend:8000"]
+  - job_name: furniscope-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["worker:9108"]
   - job_name: postgres
     static_configs:
       - targets: ["postgres-exporter:9187"]

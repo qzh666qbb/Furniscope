@@ -1,0 +1,70 @@
+{
+  "version": "agent-tool-eval-v1",
+  "intent_cases": [
+    {"id": "historical-sales", "question": "最近30天销量是多少", "expected": "data_query"},
+    {"id": "historical-inventory", "question": "按SKU看期末库存", "expected": "data_query"},
+    {"id": "future-forecast", "question": "预测下个月销量", "expected": "forecast"},
+    {"id": "knowledge-policy", "question": "根据认证手册说明德国要求", "expected": "rag"},
+    {"id": "workflow-market", "question": "开始分析这款产品的美国市场竞品", "expected": "workflow"},
+    {"id": "conversation-followup", "question": "为什么会得出这个结论？", "expected": "conversation"}
+  ],
+  "plan_cases": [
+    {
+      "id": "monthly-all-sku-sales",
+      "question": "按月看最近90天各SKU在美国的销量",
+      "context": {"current_sku": "HF-A0590", "current_market": "DE"},
+      "expected": {
+        "metrics": ["sales_units"],
+        "grain": "monthly",
+        "group_by": ["sku"],
+        "skus": [],
+        "sites": ["US"],
+        "relative_days": 90
+      }
+    },
+    {
+      "id": "current-sku-average",
+      "question": "这个产品2025年1月的日均销量",
+      "context": {"current_sku": "HF-A0590", "current_market": "US"},
+      "expected": {
+        "metrics": ["average_daily_sales"],
+        "grain": "total",
+        "group_by": [],
+        "skus": ["HF-A0590"],
+        "sites": ["US"],
+        "date_from": "2025-01-01",
+        "date_to": "2025-01-31"
+      }
+    },
+    {
+      "id": "weekly-stockout",
+      "question": "按周看德国各SKU缺货天数",
+      "context": {"current_sku": "HF-A0590", "current_market": "US"},
+      "expected": {
+        "metrics": ["stockout_days"],
+        "grain": "weekly",
+        "group_by": ["sku"],
+        "skus": [],
+        "sites": ["DE"]
+      }
+    },
+    {
+      "id": "known-revenue",
+      "question": "最近7天这个产品销售额",
+      "context": {"current_sku": "HF-A0590", "current_market": "US"},
+      "expected": {
+        "metrics": ["sales_revenue"],
+        "grain": "total",
+        "group_by": [],
+        "skus": ["HF-A0590"],
+        "sites": ["US"],
+        "relative_days": 7
+      }
+    }
+  ],
+  "rag_threshold_cases": [
+    {"id": "strong-match", "score": 0.91, "threshold": 0.35, "expected": "accepted"},
+    {"id": "boundary-match", "score": 0.35, "threshold": 0.35, "expected": "accepted"},
+    {"id": "weak-match", "score": 0.18, "threshold": 0.35, "expected": "rejected"}
+  ]
+}

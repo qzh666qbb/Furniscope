@@ -33,7 +33,7 @@
 - 文件以租户目录隔离，权限为私有文件；
 - 文件内容不写入 PostgreSQL；
 - 合成数据必须使用 `source_type=demo_synthetic` 或在来源名称中明确标识；
-- production 环境没有对象存储配置时返回 `STORAGE_UNAVAILABLE`，不会伪装成功；
+- production 环境强制使用S3兼容私有对象存储与TLS；缺少端点/凭据、桶不存在或服务不可用时返回 `STORAGE_UNAVAILABLE`，不会伪装成功；
 - 当前 Demo 解析器完成安全入库和文件级任务闭环，不把空结果伪装成模型抽取属性；真实语义抽取应由后续 Model Router Worker 接管。
 
 P0 JSON 市场导入固定使用 `platform_id_latest` 去重策略和数据集已确认字段映射，避免执行未经登记的转换表达式。
@@ -49,4 +49,6 @@ P0 JSON 市场导入固定使用 `platform_id_latest` 去重策略和数据集�
 
 ## 6. 下一迭代
 
-可以进入“分析任务与 Agent API”迭代。生产部署前仍需接入真实对象存储、恶意文件扫描和独立持久化 Worker；这些是基础设施替换，不改变当前 API V3 业务契约。
+现行实现已接入S3兼容对象存储抽象和独立Redis Worker。生产部署前仍需在目标云桶完成
+权限、版本、加密和故障演练，并接入恶意文件扫描；这些是基础设施验收，不改变当前
+API V3业务契约。

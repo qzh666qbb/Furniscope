@@ -1,7 +1,6 @@
 """Product asset intake and development/test parse worker."""
 
 import json
-from pathlib import Path
 from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,10 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import ApiSettings
 from ..errors import BusinessError
 from ..repositories.parse_repository import ParseRepository
-from .demo_storage import DemoStorage
+from .demo_storage import create_object_storage
 from .idempotency_service import IdempotencyService
-from .document_parser import DocumentParseError, DocumentParser, ProductDocumentExtraction
+from .document_parser import DocumentParser, ProductDocumentExtraction
 from .model_router_client import ServiceModelRouterClient
+from ..repositories.product_repository import ProductRepository
 import hashlib
 import re
 
@@ -30,7 +30,7 @@ class ParseService:
     def __init__(self, settings: ApiSettings) -> None:
         self.settings = settings
         self.repository = ParseRepository()
-        self.storage = DemoStorage(settings)
+        self.storage = create_object_storage(settings)
         self.idempotency = IdempotencyService()
 
     def require_model_parse_ready(self) -> None:
@@ -102,8 +102,8 @@ class ParseService:
         parser = DocumentParser(max_bytes=self.settings.upload_max_bytes)
         router = ServiceModelRouterClient(self.settings)
         extracted: dict[str, tuple[Any, int, str]] = {}
+        conflicts: dict[str, list[dict]] = {}
         succeeded = failed = 0
-        root = Path(self.settings.demo_storage_root).resolve()
         try:
             try:
                 self.require_model_parse_ready()
@@ -122,10 +122,11 @@ class ParseService:
                 return
             for item in files:
                 try:
-                    source = (root / item["storage_key"]).resolve()
-                    if root not in source.parents or not source.is_file():
-                        raise DocumentParseError("FILE_STORAGE_INVALID", "解析源文件不可用")
-                    document = parser.parse(item["file_name"], item["mime_type"], source.read_bytes())
+                    content = self.storage.read(
+                        tenant_id=tenant_id,
+                        key=item["storage_key"],
+                    )
+                    document = parser.parse(item["file_name"], item["mime_type"], content)
                     catalog_match = next((entry for entry in document.catalog_items
                                           if entry.sku.casefold() == job["product_sku"].casefold()), None)
                     catalog_context = ({
@@ -148,7 +149,14 @@ class ParseService:
                         {"role": "user", "content": json.dumps(catalog_context, ensure_ascii=False) + "\n" + source_text},
                     ], output_type=ProductDocumentExtraction)
                     for attribute in result.attributes:
+                        if not attribute.evidence_text.strip() or attribute.evidence_text.strip() not in source_text:
+                            continue
                         current = extracted.get(attribute.attribute_code)
+                        if current is not None and current[0].value != attribute.value:
+                            conflicts.setdefault(attribute.attribute_code, []).extend([
+                                {"value": current[0].value, "asset_id": current[1], "evidence_text": current[0].evidence_text},
+                                {"value": attribute.value, "asset_id": item["asset_id"], "evidence_text": attribute.evidence_text},
+                            ])
                         if current is None or attribute.confidence > current[0].confidence:
                             extracted[attribute.attribute_code] = (attribute, item["asset_id"], document.extraction_method)
                     await session.execute(text("""UPDATE product_parse_job_files SET parse_status='succeeded',
@@ -164,6 +172,8 @@ class ParseService:
                     await session.execute(text("UPDATE file_assets SET parse_status='failed' WHERE tenant_id=:tenant AND id=:asset"), {"tenant": tenant_id, "asset": item["asset_id"]})
                     failed += 1
             if extracted:
+                await ProductRepository().get_product(session, tenant_id=tenant_id,
+                    product_id=job["product_id"], for_update=True)
                 profile_id = int((await session.execute(text("""INSERT INTO product_profile_versions
                   (tenant_id,product_id,version_no,schema_version,status,completeness_score,source_summary)
                   SELECT :tenant,:product,COALESCE(max(version_no),0)+1,'product-document-v1','parsed',
@@ -177,7 +187,7 @@ class ParseService:
                        source_locator,confidence,confirmation_status)
                       VALUES(:tenant,:profile,:code,CAST(:value AS jsonb),:unit,:source,:asset,
                              CAST(:locator AS jsonb),:confidence,:confirmation)"""),
-                      {"tenant": tenant_id, "profile": profile_id, "code": code, "value": json.dumps(attribute.value, ensure_ascii=False), "unit": attribute.unit, "source": "image" if method == "image_ocr" else "document", "asset": asset_id, "locator": json.dumps({"evidence_text": attribute.evidence_text, "method": method}, ensure_ascii=False), "confidence": attribute.confidence, "confirmation": "unconfirmed" if attribute.confidence < .7 else "confirmed"})
+                      {"tenant": tenant_id, "profile": profile_id, "code": code, "value": json.dumps(attribute.value, ensure_ascii=False), "unit": attribute.unit, "source": "image" if method == "image_ocr" else "document", "asset": asset_id, "locator": json.dumps({"evidence_text": attribute.evidence_text, "method": method, "conflicting_observations": conflicts.get(code, [])}, ensure_ascii=False), "confidence": attribute.confidence, "confirmation": "conflicted" if code in conflicts else "unconfirmed"})
                 # Factory-entered facts always win over document extraction and visual inference.
                 # Preserve the lower-priority observation in source_locator so the UI can expose
                 # a real conflict instead of silently discarding the disagreement.
@@ -190,7 +200,6 @@ class ParseService:
                       FROM product_attributes pa
                       JOIN products p ON p.current_profile_version_id=pa.profile_version_id
                      WHERE p.id=:product AND p.tenant_id=:tenant
-                       AND pa.source_type IN ('user_input','confirmed_structured')
                     ON CONFLICT(profile_version_id,attribute_code) DO UPDATE SET
                       value=excluded.value,
                       unit=excluded.unit,
@@ -198,14 +207,17 @@ class ParseService:
                       source_asset_id=excluded.source_asset_id,
                       confidence=GREATEST(excluded.confidence,product_attributes.confidence),
                       confirmation_status=CASE
-                        WHEN product_attributes.value IS DISTINCT FROM excluded.value THEN 'conflicted'
-                        ELSE 'confirmed'
+                        WHEN product_attributes.value IS DISTINCT FROM excluded.value
+                          OR product_attributes.confirmation_status='conflicted' THEN 'conflicted'
+                        ELSE excluded.confirmation_status
                       END,
                       source_locator=COALESCE(excluded.source_locator,'{}'::jsonb) ||
                         CASE WHEN product_attributes.value IS DISTINCT FROM excluded.value
+                          OR product_attributes.confirmation_status='conflicted'
                           THEN jsonb_build_object(
                             'conflicting_source_type',product_attributes.source_type,
-                            'conflicting_value',product_attributes.value
+                            'conflicting_value',product_attributes.value,
+                            'conflicting_source_locator',product_attributes.source_locator
                           )
                           ELSE '{}'::jsonb
                         END

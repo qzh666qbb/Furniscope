@@ -14,7 +14,8 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { api, idempotencyKey, createUuid } from "./api.js";
-import { TrackingEntry } from "./CompetitorTracking.jsx";
+import { useMarketInsights } from "./MarketInsightsContext.jsx";
+import { MarketPageFrame } from "./MarketWorkspace.jsx";
 import { ParentPageTab } from "./ParentPageTab.jsx";
 import "./market-datasets.css";
 
@@ -221,41 +222,47 @@ function Pager({ page, total, pageSize, onPage }) {
 }
 
 export function MarketDatasetCenter({ Sidebar, Topbar }) {
-  const [datasets, setDatasets] = useState([]);
+  const {
+    datasets,
+    datasetsLoading: loading,
+    datasetsLoaded,
+    datasetsError,
+    refreshDatasets,
+    upsertDataset,
+    removeDataset: removeCachedDataset,
+  } = useMarketInsights();
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("");
   const [period, setPeriod] = useState("");
   const [modal, setModal] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cleaning, setCleaning] = useState(null);
   const [listPage, setListPage] = useState(1);
   const pageSize = 10;
 
-  const load = (quiet = false) => {
-    if (!quiet) setLoading(true);
-    api(`/api/v1/market-datasets?page_size=100${country ? `&market_country=${country}` : ""}`)
-      .then((page) => setDatasets(page.items || []))
-      .catch((reason) => setError(messageOf(reason)))
-      .finally(() => setLoading(false));
-  };
+  const load = (force = false) => refreshDatasets({ force }).catch((reason) => setError(messageOf(reason)));
 
-  useEffect(() => { load(); }, [country]);
+  useEffect(() => { load(); }, [refreshDatasets]);
+  useEffect(() => {
+    const importRequested = new URLSearchParams(location.hash.split("?")[1] || "").get("import") === "1";
+    if (importRequested) setModal("new");
+  }, []);
   useEffect(() => {
     if (!datasets.some((item) => ["uploaded", "validating"].includes(item.status))) return undefined;
     const timer = window.setInterval(() => load(true), 2200);
     return () => window.clearInterval(timer);
-  }, [datasets, country]);
+  }, [datasets, refreshDatasets]);
 
   const visible = useMemo(() => datasets.filter((item) => {
     const searchMatch = `${item.name} ${item.market_country} ${countries[item.market_country] || ""} ${item.category_code}`
       .toLowerCase()
       .includes(query.trim().toLowerCase());
-    if (!searchMatch || !period) return searchMatch;
+    const countryMatch = !country || item.market_country === country;
+    if (!searchMatch || !countryMatch || !period) return searchMatch && countryMatch;
     const created = new Date(item.created_at || item.updated_at || item.data_end_date);
     const days = (Date.now() - created.getTime()) / 86400000;
     return period === "30" ? days <= 30 : period === "90" ? days <= 90 : days > 90;
-  }), [datasets, query, period]);
+  }), [datasets, query, country, period]);
   useEffect(() => { setListPage(1); }, [query, country, period]);
   const paged = useMemo(() => {
     const start = (listPage - 1) * pageSize;
@@ -277,23 +284,20 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
     if (!window.confirm(`确认删除数据集“${item.name}”？数据将进入归档状态。`)) return;
     try {
       await api(`/api/v1/market-datasets/${item.dataset_id}`, { method: "DELETE" });
-      setDatasets((items) => items.filter((value) => value.dataset_id !== item.dataset_id));
+      removeCachedDataset(item.dataset_id);
     } catch (reason) {
       setError(messageOf(reason));
     }
   };
 
   return (
-    <main className="workspace market-dataset-page">
-      <Sidebar page="insights" />
-      <section className="workspace-main">
-        <Topbar />
-        <div className="market-dataset-shell">
+    <MarketPageFrame Sidebar={Sidebar} Topbar={Topbar} active="data">
+        <div className="market-page-canvas market-dataset-shell">
           <header className="market-dataset-hero">
             <div>
               <span>MARKET DATA ASSETS</span>
-              <h1>市场洞察</h1>
-              <p>统一入口：导入市场数据，并监测竞品价格与舆情。点击数据卡片进入明细，绑定任务可跳转报告与工作流。</p>
+              <h1>市场数据资产</h1>
+              <p>管理授权数据集、导入质量和数据版本，为决策中心与持续监测提供统一证据范围。</p>
             </div>
             <div className="market-hero-actions">
               <small>第一次使用？从导入一份市场数据开始</small>
@@ -301,21 +305,26 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
               <a href="/api/v1/market-datasets/import-template">下载填写模板</a>
             </div>
           </header>
-          <TrackingEntry />
-          <section className="dataset-getting-started" aria-label="市场数据使用流程">
-            <div><i>1</i><span><strong>导入数据</strong><small>上传 CSV、JSON 或 Excel</small></span></div>
-            <ArrowRight />
-            <div><i>2</i><span><strong>自动清洗</strong><small>过滤空评、乱码、重复和水文</small></span></div>
-            <ArrowRight />
-            <div><i>3</i><span><strong>用于 AI 分析</strong><small>选择产品后直接运行工作流</small></span></div>
-          </section>
+          <div className="dataset-section-heading dataset-assets-heading">
+            <div><span>ASSET HEALTH</span><h2>资产概览</h2><p>统计只包含当前企业已落库的竞品和评论记录。</p></div>
+            <details className="dataset-access-rules">
+              <summary>数据接入规则</summary>
+              <div>
+                <span><i>1</i><strong>上传</strong><small>CSV、JSON 或 Excel</small></span>
+                <ArrowRight />
+                <span><i>2</i><strong>清洗</strong><small>去空值、乱码、重复与水文</small></span>
+                <ArrowRight />
+                <span><i>3</i><strong>使用</strong><small>进入 AI 分析与持续监测</small></span>
+              </div>
+            </details>
+          </div>
           <section className="dataset-summary">
             <article><Database /><span><small>可用于分析</small><strong>{summary.ready}</strong><em>{datasets.length} 组档案</em></span></article>
             <article><Globe /><span><small>已入库竞品</small><strong>{summary.listings.toLocaleString("zh-CN")}</strong><em>实际商品行</em></span></article>
             <article><Star /><span><small>已入库评论</small><strong>{summary.reviews.toLocaleString("zh-CN")}</strong><em>含已过滤</em></span></article>
             <article><ShieldCheck /><span><small>有效评论</small><strong>{summary.valid.toLocaleString("zh-CN")}</strong><em>可作证据</em></span></article>
           </section>
-          <p className="dataset-summary-note">顶部数字按库里真实商品/评论条数汇总。只有名称、没有导入正文的演示档案会计入「档案」数，不会把虚假的 600+ 商品加进来。</p>
+          <p className="dataset-summary-note">顶部数字按库里实际商品/评论条数汇总。只有名称、没有导入正文的空内容档案会计入「档案」数，不会把未入库的商品计入统计。</p>
           <div className="dataset-section-heading">
             <div><h2>市场数据集</h2><p>每组数据代表一个国家、平台和品类范围，可被多个分析工作台重复使用。</p></div>
           </div>
@@ -334,9 +343,9 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
             <span>共 <b>{visible.length}</b> 组 · 每页 {pageSize} 条</span>
             <button type="button" onClick={() => setModal("new")}><CloudArrowUp />导入数据集</button>
           </div>
-          {error && <div className="dataset-error"><WarningCircle />{error}<button onClick={() => setError("")}>×</button></div>}
+          {(error || datasetsError) && <div className="dataset-error"><WarningCircle />{error || datasetsError}<button onClick={() => setError("")}>×</button></div>}
           <CleaningBanner report={cleaning?.quality_report} name={cleaning?.name} onClose={() => setCleaning(null)} />
-          {loading ? (
+          {(!datasetsLoaded || loading) && !datasets.length ? (
             <div className="dataset-empty">正在读取市场数据资产…</div>
           ) : !visible.length ? (
             <div className="dataset-empty"><Database /><strong>{datasets.length ? "没有符合筛选条件的数据集" : "还没有市场数据集"}</strong><p>{datasets.length ? "清除搜索词或筛选条件后再试。" : "导入竞品与海外评论文件，系统将自动完成清洗和质量统计。"}</p>{!datasets.length && <button type="button" onClick={() => setModal("new")}><CloudArrowUp />导入第一份数据</button>}</div>
@@ -361,25 +370,25 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
                       const retention = item.review_count ? Math.round((item.valid_review_count / item.review_count) * 100) : 0;
                       return (
                         <tr key={item.dataset_id}>
-                          <td>
+                          <td data-label="数据集">
                             <strong>{item.name}</strong>
                             <small>#{item.dataset_id} · v{item.version_no || 1} · 更新 {dateText(item.updated_at || item.data_end_date)}</small>
                           </td>
-                          <td>{countryName(item.market_country)} · {item.platform} · {item.category_code}</td>
-                          <td><span className={`dataset-status ${item.status}`}><i />{statusLabels[item.status] || item.status}</span></td>
-                          <td><b>{item.listing_count?.toLocaleString("zh-CN") || 0}</b></td>
-                          <td>
+                          <td data-label="市场范围">{countryName(item.market_country)} · {item.platform} · {item.category_code}</td>
+                          <td data-label="状态"><span className={`dataset-status ${item.status}`}><i />{statusLabels[item.status] || item.status}</span></td>
+                          <td data-label="竞品"><b>{item.listing_count?.toLocaleString("zh-CN") || 0}</b></td>
+                          <td data-label="评论 / 有效">
                             <b>{item.review_count?.toLocaleString("zh-CN") || 0}</b>
                             <small>有效 {item.valid_review_count?.toLocaleString("zh-CN") || 0} · 过滤 {invalid.toLocaleString("zh-CN")}</small>
                           </td>
-                          <td>
+                          <td data-label="质量">
                             <div className="dataset-quality-cell">
                               <strong>{Number(item.quality_score || 0).toFixed(0)}</strong>
                               <i><b style={{ width: `${retention}%` }} /></i>
                               <small>留存 {retention}%</small>
                             </div>
                           </td>
-                          <td>
+                          <td className="dataset-actions-cell">
                             <div className="dataset-row-actions">
                               <button className="dataset-use-action" disabled={item.status !== "ready"} onClick={() => analyzeWith(item)}>用于 AI 分析</button>
                               <button onClick={() => { location.hash = `dataset-detail?id=${item.dataset_id}`; }}>详情</button>
@@ -397,7 +406,6 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
             </>
           )}
         </div>
-      </section>
       {modal && (
         <ImportDatasetModal
           dataset={modal === "new" ? null : modal}
@@ -405,18 +413,21 @@ export function MarketDatasetCenter({ Sidebar, Topbar }) {
           onDone={(detail) => {
             setModal(null);
             setCleaning(detail);
-            load();
+            upsertDataset(detail);
+            load(true);
           }}
         />
       )}
-    </main>
+    </MarketPageFrame>
   );
 }
 
 export function MarketDatasetDetail({ Sidebar, Topbar }) {
   const id = new URLSearchParams(location.hash.split("?")[1] || "").get("id");
+  const { datasets, upsertDataset } = useMarketInsights();
+  const cachedDataset = datasets.find((item) => String(item.dataset_id) === String(id));
   const pageSize = 20;
-  const [dataset, setDataset] = useState(null);
+  const [dataset, setDataset] = useState(cachedDataset || null);
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [listingTotal, setListingTotal] = useState(0);
@@ -441,10 +452,11 @@ export function MarketDatasetDetail({ Sidebar, Topbar }) {
     if (!id) return;
     api(`/api/v1/market-datasets/${id}`).then((detail) => {
       setDataset(detail);
+      upsertDataset(detail);
       setListingTotal(detail.listing_count || 0);
       setReviewTotal(detail.review_count || 0);
     }).catch((reason) => setError(messageOf(reason)));
-  }, [id]);
+  }, [id, upsertDataset]);
 
   useEffect(() => {
     if (!id) return;
@@ -468,13 +480,10 @@ export function MarketDatasetDetail({ Sidebar, Topbar }) {
   const invalid = Math.max(0, (dataset?.review_count || 0) - (dataset?.valid_review_count || 0));
 
   return (
-    <main className="workspace market-dataset-page">
-      <Sidebar page="insights" />
-      <section className="workspace-main">
-        <Topbar />
+    <MarketPageFrame Sidebar={Sidebar} Topbar={Topbar} active="data" className="market-detail-module">
         <div className={`dataset-detail-shell ${selected ? "with-record" : ""}`}>
           <div className="dataset-detail-main">
-            <ParentPageTab label="市场洞察" current="数据集详情" to="insights" />
+            <ParentPageTab label="数据资产" current="数据集详情" to="market-data" />
             {error && <div className="dataset-error"><WarningCircle />{error}</div>}
             {!dataset && !error ? <div className="dataset-empty">正在加载数据集详情…</div> : dataset && (
               <>
@@ -615,7 +624,6 @@ export function MarketDatasetDetail({ Sidebar, Topbar }) {
             </aside>
           )}
         </div>
-      </section>
-    </main>
+    </MarketPageFrame>
   );
 }

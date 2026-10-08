@@ -35,8 +35,8 @@ GitHub 原始文件（可下载/播放）：https://github.com/qzh666qbb/Furnisc
 
 五、项目文档位置
 
-当前文档导航：Docs/README.md
-复赛材料清单：Docs/参赛提交/README.md
-系统使用说明书：Docs/参赛提交/05_FurniScope系统使用说明书.pdf
-技术架构及模型说明：Docs/FurniScope_技术架构及调用模型说明.pdf
-核心功能清单：Docs/FurniScope_核心功能清单.pdf
+决赛材料导航：Docs/参赛提交决赛/README.md
+决赛入围定稿作品：Docs/参赛提交决赛/SuperSoldier_FurniScope跨境家具超级AI员工_决赛入围定稿作品.pdf
+系统使用说明书：Docs/参赛提交决赛/05_FurniScope系统使用说明书.pdf
+技术架构及模型说明：Docs/参赛提交决赛/FurniScope_技术架构及调用模型说明.pdf
+核心功能清单：Docs/参赛提交决赛/FurniScope_核心功能清单.pdf

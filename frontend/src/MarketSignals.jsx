@@ -6,6 +6,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { api } from "./api.js";
+import "./competitor-tracking.css";
 
 const countries = { US: "美国", GB: "英国", DE: "德国", FR: "法国", CA: "加拿大", AU: "澳大利亚", JP: "日本" };
 const sentimentLabels = { positive: "正向", neutral: "中性", negative: "负向" };
@@ -122,7 +123,7 @@ export function SentimentStreamPanel({ datasets = [] }) {
         <option value="live">实时采集</option>
       </select>
       <select aria-label="情感筛选" value={sentiment} onChange={(event) => setSentiment(event.target.value)}><option value="">全部情感</option><option value="positive">正向</option><option value="neutral">中性</option><option value="negative">负向</option></select>
-      <label><MagnifyingGlass /><input aria-label="搜索舆情" value={query} onChange={(event) => setQuery(event.target.value)} onBlur={() => load(1)} onKeyDown={(event) => { if (event.key === "Enter") load(1); }} placeholder="搜索评论、ASIN 或编号" /></label>
+      <label className="signal-search-field"><MagnifyingGlass /><input aria-label="搜索舆情" value={query} onChange={(event) => setQuery(event.target.value)} onBlur={() => load(1)} onKeyDown={(event) => { if (event.key === "Enter") load(1); }} placeholder="搜索评论、ASIN 或编号" /></label>
       <button type="button" onClick={() => load(1)}>搜索</button>
     </div></header>
     <div className="review-preview-list">
@@ -139,7 +140,7 @@ export function SentimentStreamPanel({ datasets = [] }) {
           <b>评分 {item.rating ?? "—"}{item.sentiment_score != null ? ` · 置信 ${item.sentiment_score}` : ""}</b>
         </footer>
       </article>)}
-      {!events.length && <div className="tracking-guided-empty"><Pulse /><strong>当前范围没有评论</strong><p>先导入带评论的市场数据集，或粘贴评论页点击「获取舆情」。没有商品正文的演示档案不会出现在这里。</p></div>}
+      {!events.length && <div className="tracking-guided-empty"><Pulse /><strong>当前范围没有评论</strong><p>先导入带评论的市场数据集，或粘贴评论页点击「获取舆情」。没有商品正文的空内容档案不会出现在这里。</p></div>}
     </div>
     {stats.total > stats.page_size && (
       <nav className="dataset-pager">

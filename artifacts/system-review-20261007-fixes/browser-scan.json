@@ -1,0 +1,491 @@
+{
+  "generated_at": "2026-10-07T04:35:59.180Z",
+  "results": [
+    {
+      "label": "workspace",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#workspace",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "今天要研究哪个产品？",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "work-diary",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#work-diary?from=workspace",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "工作日记",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 4,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "products",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#products",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "产品中心",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "analysis",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#analysis",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "AI 工作台",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "knowledge",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#knowledge",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "企业知识库",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "forecast",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#forecast",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "商品销量预测",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "insights",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#insights",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "市场洞察",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 6,
+      "tableCount": 1,
+      "errors": []
+    },
+    {
+      "label": "report",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#report",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "决策报告",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "IMG",
+          "cls": "side-sofa",
+          "left": -24,
+          "right": 306,
+          "width": 330
+        }
+      ],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "admin-denied",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#admin",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "无平台管理权限",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "workspace",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#workspace",
+      "document": {
+        "width": 390,
+        "height": 1301
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "今天要研究哪个产品？",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "work-diary",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#work-diary?from=workspace",
+      "document": {
+        "width": 390,
+        "height": 991
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "工作日记",
+      "routeLoading": false,
+      "overflow": [
+        {
+          "tag": "BUTTON",
+          "cls": "",
+          "left": 357,
+          "right": 417,
+          "width": 60
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "",
+          "left": 423,
+          "right": 471,
+          "width": 48
+        },
+        {
+          "tag": "BUTTON",
+          "cls": "",
+          "left": 477,
+          "right": 537,
+          "width": 60
+        }
+      ],
+      "mobileCards": 4,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "products",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#products",
+      "document": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "产品中心",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "analysis",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#analysis",
+      "document": {
+        "width": 390,
+        "height": 1314
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "AI 工作台",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "knowledge",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#knowledge",
+      "document": {
+        "width": 390,
+        "height": 912
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "企业知识库",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "forecast",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#forecast",
+      "document": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "商品销量预测",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "insights",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#insights",
+      "document": {
+        "width": 390,
+        "height": 2434
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "市场洞察",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 6,
+      "tableCount": 1,
+      "errors": []
+    },
+    {
+      "label": "report",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#report",
+      "document": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "决策报告",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "admin-denied",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#admin",
+      "document": {
+        "width": 390,
+        "height": 844
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "无平台管理权限",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 0,
+      "errors": []
+    },
+    {
+      "label": "admin",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "http://127.0.0.1:4173/#admin",
+      "document": {
+        "width": 1440,
+        "height": 1000
+      },
+      "bodyWidth": 1440,
+      "horizontalOverflow": false,
+      "h1": "企业用户",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 1,
+      "errors": []
+    },
+    {
+      "label": "admin",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "http://127.0.0.1:4173/#admin",
+      "document": {
+        "width": 390,
+        "height": 1563
+      },
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "h1": "企业用户",
+      "routeLoading": false,
+      "overflow": [],
+      "mobileCards": 0,
+      "tableCount": 1,
+      "errors": []
+    }
+  ]
+}

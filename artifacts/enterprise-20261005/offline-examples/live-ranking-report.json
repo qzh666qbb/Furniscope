@@ -1,0 +1,52 @@
+{
+  "protocol": "ranking-audit-v1",
+  "label": "outcome",
+  "k": 5,
+  "as_of": "2026-10-05T11:06:42.754554Z",
+  "validation_start": "2026-10-05T00:00:00+00:00",
+  "partitions": {
+    "train": {
+      "groups": 0,
+      "candidates": 0,
+      "eligible_candidates": 0,
+      "evaluated_groups": 0,
+      "evaluated_group_coverage": 0,
+      "exclusions": {},
+      "tasks": [],
+      "market_mean_ndcg": null,
+      "adjusted_mean_ndcg": null,
+      "mean_paired_delta": null
+    },
+    "validation": {
+      "groups": 1,
+      "candidates": 1,
+      "eligible_candidates": 1,
+      "evaluated_groups": 0,
+      "evaluated_group_coverage": 0.0,
+      "exclusions": {
+        "fewer_than_two_candidates": 1
+      },
+      "tasks": [],
+      "market_mean_ndcg": null,
+      "adjusted_mean_ndcg": null,
+      "mean_paired_delta": null
+    }
+  },
+  "readiness": "NO_GO_INSUFFICIENT_GROUPS",
+  "minimum_groups": {
+    "train": 30,
+    "validation": 20
+  },
+  "limits": [
+    "任务按创建时间整组划分；训练特征和标签须在验证开始前已存在。",
+    "只评估完整标注且同时有正负标签的任务，缺失标签不视为失败；覆盖筛选会产生选择偏差。",
+    "采纳标签是偏好，经营结果是企业报告的目标达成，均不证明因果收益。",
+    "当前导出只包含截点时最新修订；晚到修订会保守排除旧训练任务，不推测旧标签。",
+    "最小任务数是可配置工程门槛，达标仅支持开展模型实验，不构成统计显著性或上线批准。",
+    "未训练模型；NDCG比较不替代硬约束门控、真实试点及独立留出验证。"
+  ],
+  "provenance": {
+    "input_sha256": "73b2520e9961df5d42dabb5685c994595e9b5b1ecc037bbe99236fd8b017ccd5",
+    "code_sha256": "15995ba05f16523cd27656f5404e8b177ca50ceb0a4c52bb194822636f7d26ab"
+  }
+}

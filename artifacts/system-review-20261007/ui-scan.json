@@ -1,0 +1,2375 @@
+[
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "workspace",
+    "url": "http://127.0.0.1:4173/#workspace",
+    "headings": [
+      "今天要研究哪个产品？",
+      "AI 工作流任务",
+      "最近报告"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\nFurniScope 企业\n待确认\n工\n工程验收员\nFURNISCOPE INTELLIGENCE\n今天要研究哪个产品？\n\n从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。\n\n选择产品\n进入 AI 工作台\n产品总数\n1\n企业产品资产持续更新\n运行中任务\n0\n排队或正在执行的分析任务\n待确认异常\n0\n人工确认、失败任务与参数冲突\n已生成报告\n0\n已沉淀可落地出海策略\nAI 工作流任务\n更多\n暂无分析任务\n\n产品已进入产品中心，但只有实际启动分析后，任务进度才会显示在这里。\n\n选择产品开始分析\n最近报告\n\n近期生成的产品机会报告\n\n还没有决策报告\n\n分析任务完成后，报告会自动出现在这里。\n\n查看全部报告 ›\n当前页面使用企业授权数据，并按租户隔离",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "选择产品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "进入 AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品总数1企业产品资产持续更新",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "运行中任务0排队或正在执行的分析任务",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认异常0人工确认、失败任务与参数冲突",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "已生成报告0已沉淀可落地出海策略",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更多",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "选择产品开始分析",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看全部报告 ›",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "products",
+    "url": "http://127.0.0.1:4173/#products",
+    "headings": [
+      "产品中心",
+      "工程校验沙发"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\nENTERPRISE PRODUCT PROFILES\n产品中心\n\n统一管理工厂产品资料，由多模态 AI 生成可校验的标准化产品画像。\n\nExcel 批量导入\n新增产品\n全部品类\n沙发\n全部创建时间\n近 7 天\n近 30 天\n近 90 天\n全部解析状态\n解析完成\n未解析\n待确认\n参数冲突\n共 1 个产品\n未解析\n沙发\n工程校验沙发\n\nSKU SAME-SKU\n\nMOQ\n—\n出厂价\n—\n创建于 2026/10/06\n等待上传资料并解析\n查看档案\n销量预测\n先确认画像",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "Excel 批量导入",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "新增产品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看档案",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "先确认画像",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "analysis",
+    "url": "http://127.0.0.1:4173/#analysis",
+    "headings": [
+      "AI 工作台",
+      "工作日记"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\nAI WORKFLOW STUDIO\nAI 工作台\n\n用分析工作台持续沉淀同一产品与市场目标的多次分析。每次运行都保留节点范围、结果与证据。\n\n进入分析工作台\n从产品中心快捷启动\nWORKBENCH PREVIEW\n支持分段或完整运行\n开始\n数据入口\n01\n产品解析\n02\n市场研究\n03\n机会评估\n04\n方案生成\n分析工作台\n0\n正在运行\n0\n累计分析\n0\n最近已完成\n0\n工作日记\n\n最近 10 条分析工作台\n\n更多\n还没有工作日记\n\n新建工作台后，分析记录会按时间沉淀在这里。",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.workbench-plane-preview",
+        "text": "WORKBENCH PREVIEW支持分段或完整运行开始数据入口01产品解析02市场研究03机会评估04方案生成",
+        "left": 772,
+        "right": 1369,
+        "width": 597,
+        "ownOverflow": true
+      },
+      {
+        "key": "div",
+        "text": "开始数据入口01产品解析02市场研究03机会评估04方案生成",
+        "left": 788,
+        "right": 1353,
+        "width": 565,
+        "ownOverflow": true
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "进入分析工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "从产品中心快捷启动",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更多",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "knowledge",
+    "url": "http://127.0.0.1:4173/#knowledge",
+    "headings": [
+      "企业知识库"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\n企业知识库\n\n企业资料资产\n\n知识库\n0\n可检索文档\n0\n新建知识库\n正在读取知识库",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "新建知识库",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "forecast",
+    "url": "http://127.0.0.1:4173/#forecast",
+    "headings": [
+      "商品销量预测",
+      "选择使用方式"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\n商品销量预测\n\n按 SKU 和站点生成销量区间，并形成可执行的备货建议。\n\n当前模型\n正在检查模型状态\n销量预测\n历史预测记录\n模型训练\n选择使用方式\n\n普通预测只需填写 SKU、站点和预测周期\n\n天预测\n查看未来每天的销量和波动区间\n周预测\n查看未来每周汇总销量\n复杂业务预测\n指定价格、库存、促销或新品参数\n产品中心 SKU\n站点 可多选 · 已选 1\nUS\nCA\nDE\nFR\nIT\nES\nNL\n预测天数\n起始日期\n可选\n正在检查模型…",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "历史预测记录",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "模型训练",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "天预测查看未来每天的销量和波动区间",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "周预测查看未来每周汇总销量",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "复杂业务预测指定价格、库存、促销或新品参数",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "US",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "CA",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "DE",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "FR",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "IT",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "ES",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "NL",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "正在检查模型…",
+        "aria": null,
+        "title": "模型就绪后才能开始预测"
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "insights",
+    "url": "http://127.0.0.1:4173/#insights",
+    "headings": [
+      "市场洞察",
+      "企业经营策略",
+      "市场数据集"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\nMARKET DATA ASSETS\n市场洞察\n\n统一入口：导入市场数据，并监测竞品价格与舆情。点击数据卡片进入明细，绑定任务可跳转报告与工作流。\n\n第一次使用？从导入一份市场数据开始\n导入竞品与评论数据\n下载填写模板\nMARKET INTELLIGENCE\n五项市场决策能力\n\nAI 智能选品、竞品动态、评论需求、定价与跨境合规共用同一份授权证据。\n\n分析数据集\n工程接口验收样本\nAI 智能选品\n竞品动态追踪\n评论深挖\n智能定价\n跨境合规预警\nAI 智能选品\n工程接口验收样本\n更新 2026/10/7\n企业经营策略\n\n权重是可解释的启发式，尚未用企业标签校准。明确的硬条件不满足时，高市场分也不能覆盖。\n\n导出反馈数据\n导出排序评测数据\n均衡判断\n需求热度 30% · 需求增长 15% · 未满足需求 25% · 竞争空间 20% · 利润空间代理 10%\n需求增长\n需求热度 30% · 需求增长 30% · 未满足需求 20% · 竞争空间 15% · 利润空间代理 5%\n利润空间\n需求热度 20% · 需求增长 10% · 未满足需求 15% · 竞争空间 20% · 利润空间代理 35%\n调整业务偏好 · 当前策略版本 0\n保存经营策略\n确认企业事实与必要条件\n1\n包装条件待验证\n\n工程校验样本，不代表真实市场结论\n\n证据置信度 50% · 能力条件不满足\n企业修正分\n60\n市场原分\n75\n企业适配\n50\n\n条件不满足，暂缓 · 企业事实置信度 40% · 策略版本 0\n\n查看判断依据与处理结果\n跟踪实施与经营结果\n待补数据\n价格与需求历史样本不足，暂不输出价格弹性\n尚未配置官方政策源\n1\n导入数据\n上传 CSV、JSON 或 Excel\n2\n自动清洗\n过滤空评、乱码、重复和水文\n3\n用于 AI 分析\n选择产品后直接运行工作流\n可用于分析\n1\n1 组档案\n已入库竞品\n0\n实际商品行\n已入库评论\n0\n含已过滤\n有效评论\n0\n可作证据\n\n顶部数字按库里实际商品/评论条数汇总。只有名称、没有导入正文的空内容档案会计入「档案」数，不会把未入库的商品计入统计。\n\n市场数据集\n\n每组数据代表一个国家、平台和品类范围，可被多个分析工作台重复使用。\n\n全部国家\n美国\n英国\n德国\n法国\n加拿大\n澳大利亚\n日本\n全部创建时间\n近 30 天\n近 90 天\n90 天以前\n共 1 组 · 每页 10 条\n导入数据集\n数据集\t市场范围\t状态\t竞品\t评论 / 有效\t质量\t\n\n工程接口验收样本\n#1 · v1 · 更新 2026年10月6日\n\t美国 · amazon · sofa\t\n可用于分析\t0\t0\n有效 0 · 过滤 0\n\t\n0\n留存 0%\n\t\n用于 AI 分析\n详情\n更新\n删除",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导入竞品与评论数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "下载填写模板",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 智能选品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "竞品动态追踪",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "评论深挖",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "智能定价",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "跨境合规预警",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导出反馈数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导出排序评测数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "均衡判断需求热度 30% · 需求增长 15% · 未满足需求 25% · 竞争空间 20% · 利润空间代理 10%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "需求增长需求热度 30% · 需求增长 30% · 未满足需求 20% · 竞争空间 15% · 利润空间代理 5%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "利润空间需求热度 20% · 需求增长 10% · 未满足需求 15% · 竞争空间 20% · 利润空间代理 35%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "保存经营策略",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "添加能力事实",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "增加业务条件",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "确认并保存企业事实",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "读取最新处理历史",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "保存处理结果",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导入数据集",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "用于 AI 分析",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "详情",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更新",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "删除",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "report",
+    "url": "http://127.0.0.1:4173/#report",
+    "headings": [
+      "决策报告"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\nDECISION REPORT ARCHIVE\n决策报告\n\nAI 工作流完成后自动归档至此。支持检索、批量导出 PDF 与归档删除，报告结论均可溯源原始市场证据。\n\n去 AI 工作台\n全部产品\n全部市场\n全部时间\n近 7 天\n近 30 天\n近 90 天\n检索\n共 0 份报告\n暂无决策报告。完成一次 AI 工作流分析后，报告会自动沉淀到这里。",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "去 AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "检索",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000
+    },
+    "route": "work-diary?from=workspace",
+    "url": "http://127.0.0.1:4173/#work-diary?from=workspace",
+    "headings": [
+      "工作日记"
+    ],
+    "mainText": "FurniScope\n首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n真实数据已连接\n工程验收企业\n待确认\n工\n工程验收员\n返回\n首页\n工作日记\nWORK DIARY\n工作日记\n\n查找、查看或删除分析工作台记录。删除后对应决策报告会一并归档，首页任务列表同步更新。\n\n工作台\n1\n累计分析\n1\n运行中\n0\n已完成\n1\n全部\n已完成\n部分完成\n运行中\n排队中\n待确认\n异常\n待运行\n工作台\n产品与市场\n分析次数\n最近状态\n最后更新\n操作\n工程接口验收\n56c54a95\nSAME-SKU · US / amazon\n1 次\n已完成\n2026/10/6 13:24:32\n查看\n报告\n删除\n第 1 / 1 页 · 共 1 条\n上一页\n下一页",
+    "layout": {
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "documentWidth": 1440,
+      "documentHeight": 1000
+    },
+    "overflow": [
+      {
+        "key": "aside.sidebar",
+        "text": "FurniScope首页产品中心AI 工作台企业知识库销量预测市场洞察决策报告真实数据已连接",
+        "left": 0,
+        "right": 228,
+        "width": 228,
+        "ownOverflow": true
+      },
+      {
+        "key": "img.side-sofa",
+        "text": "",
+        "left": -24,
+        "right": 306,
+        "width": 330,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "折叠导航栏",
+        "aria": "折叠导航栏",
+        "title": "折叠导航栏"
+      },
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "返回首页",
+        "aria": null,
+        "title": "返回首页"
+      },
+      {
+        "text": "全部",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "已完成",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "部分完成",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "运行中",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "排队中",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "异常",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待运行",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "删除",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "上一页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "下一页",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "workspace",
+    "url": "http://127.0.0.1:4173/#workspace",
+    "headings": [
+      "今天要研究哪个产品？",
+      "AI 工作流任务",
+      "最近报告"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\nFurniScope 企业\n待确认\n工\n工程验收员\nFURNISCOPE INTELLIGENCE\n今天要研究哪个产品？\n\n从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。\n\n选择产品\n进入 AI 工作台\n产品总数\n1\n企业产品资产持续更新\n运行中任务\n0\n排队或正在执行的分析任务\n待确认异常\n0\n人工确认、失败任务与参数冲突\n已生成报告\n0\n已沉淀可落地出海策略\nAI 工作流任务\n更多\n暂无分析任务\n\n产品已进入产品中心，但只有实际启动分析后，任务进度才会显示在这里。\n\n选择产品开始分析\n最近报告\n\n近期生成的产品机会报告\n\n还没有决策报告\n\n分析任务完成后，报告会自动出现在这里。\n\n查看全部报告 ›\n当前页面使用企业授权数据，并按租户隔离",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 872,
+      "documentHeight": 1005
+    },
+    "overflow": [
+      {
+        "key": "section.workspace-main",
+        "text": "FurniScope 企业待确认 工工程验收员FURNISCOPE INTELLIGENCE今天要研究哪个产品？从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。选择产品进入 AI 工作台产品",
+        "left": -203,
+        "right": 187,
+        "width": 390,
+        "ownOverflow": true
+      },
+      {
+        "key": "header.topbar",
+        "text": "FurniScope 企业待确认 工工程验收员",
+        "left": -203,
+        "right": 187,
+        "width": 390,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.company.tenant-label",
+        "text": "FurniScope 企业",
+        "left": -189,
+        "right": -89,
+        "width": 100,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.top-actions",
+        "text": "待确认 工工程验收员",
+        "left": -9,
+        "right": 173,
+        "width": 182,
+        "ownOverflow": false
+      },
+      {
+        "key": "button",
+        "text": "待确认",
+        "left": -9,
+        "right": 56,
+        "width": 65,
+        "ownOverflow": false
+      },
+      {
+        "key": "svg",
+        "text": "",
+        "left": -3,
+        "right": 8,
+        "width": 11,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.canvas",
+        "text": "FURNISCOPE INTELLIGENCE今天要研究哪个产品？从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。选择产品进入 AI 工作台产品总数1企业产品资产持续更新运行中任务0排队或正",
+        "left": -203,
+        "right": 187,
+        "width": 390,
+        "ownOverflow": true
+      },
+      {
+        "key": "div.hero",
+        "text": "FURNISCOPE INTELLIGENCE今天要研究哪个产品？从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。选择产品进入 AI 工作台",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "div",
+        "text": "FURNISCOPE INTELLIGENCE今天要研究哪个产品？从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "span.eyebrow",
+        "text": "FURNISCOPE INTELLIGENCE",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "h1",
+        "text": "今天要研究哪个产品？",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "p",
+        "text": "从产品资料和授权市场数据出发，获得可追溯的洞察与决策报告。",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.analysis-mode-actions",
+        "text": "选择产品进入 AI 工作台",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "button",
+        "text": "选择产品",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "svg",
+        "text": "",
+        "left": -46,
+        "right": -26,
+        "width": 20,
+        "ownOverflow": false
+      },
+      {
+        "key": "path",
+        "text": "",
+        "left": -40,
+        "right": -32,
+        "width": 8,
+        "ownOverflow": false
+      },
+      {
+        "key": "button.primary",
+        "text": "进入 AI 工作台",
+        "left": -187,
+        "right": 171,
+        "width": 358,
+        "ownOverflow": false
+      },
+      {
+        "key": "svg",
+        "text": "",
+        "left": -61,
+        "right": -41,
+        "width": 20,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "选择产品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "进入 AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品总数1企业产品资产持续更新",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "运行中任务0排队或正在执行的分析任务",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认异常0人工确认、失败任务与参数冲突",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "已生成报告0已沉淀可落地出海策略",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更多",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "选择产品开始分析",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看全部报告 ›",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "products",
+    "url": "http://127.0.0.1:4173/#products",
+    "headings": [
+      "产品中心",
+      "工程校验沙发"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\nENTERPRISE PRODUCT PROFILES\n产品中心\n\n统一管理工厂产品资料，由多模态 AI 生成可校验的标准化产品画像。\n\nExcel 批量导入\n新增产品\n全部品类\n沙发\n全部创建时间\n近 7 天\n近 30 天\n近 90 天\n全部解析状态\n解析完成\n未解析\n待确认\n参数冲突\n共 1 个产品\n未解析\n沙发\n工程校验沙发\n\nSKU SAME-SKU\n\nMOQ\n—\n出厂价\n—\n创建于 2026/10/06\n等待上传资料并解析\n查看档案\n销量预测\n先确认画像",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 844
+    },
+    "overflow": [],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "Excel 批量导入",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "新增产品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看档案",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "先确认画像",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "analysis",
+    "url": "http://127.0.0.1:4173/#analysis",
+    "headings": [
+      "AI 工作台",
+      "工作日记"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\nAI WORKFLOW STUDIO\nAI 工作台\n\n用分析工作台持续沉淀同一产品与市场目标的多次分析。每次运行都保留节点范围、结果与证据。\n\n进入分析工作台\n从产品中心快捷启动\nWORKBENCH PREVIEW\n支持分段或完整运行\n开始\n数据入口\n01\n产品解析\n02\n市场研究\n03\n机会评估\n04\n方案生成\n分析工作台\n0\n正在运行\n0\n累计分析\n0\n最近已完成\n0\n工作日记\n\n最近 10 条分析工作台\n\n更多\n还没有工作日记\n\n新建工作台后，分析记录会按时间沉淀在这里。",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 1090
+    },
+    "overflow": [
+      {
+        "key": "div.workbench-plane-preview",
+        "text": "WORKBENCH PREVIEW支持分段或完整运行开始数据入口01产品解析02市场研究03机会评估04方案生成",
+        "left": 38,
+        "right": 352,
+        "width": 314,
+        "ownOverflow": true
+      },
+      {
+        "key": "div",
+        "text": "开始数据入口01产品解析02市场研究03机会评估04方案生成",
+        "left": 54,
+        "right": 624,
+        "width": 570,
+        "ownOverflow": true
+      },
+      {
+        "key": "div.preview-node",
+        "text": "02市场研究",
+        "left": 287,
+        "right": 414,
+        "width": 127,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "进入分析工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "从产品中心快捷启动",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更多",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "knowledge",
+    "url": "http://127.0.0.1:4173/#knowledge",
+    "headings": [
+      "企业知识库"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\n企业知识库\n\n企业资料资产\n\n新建知识库\n尚未创建知识库\n创建第一个知识库\n新建知识库",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 912
+    },
+    "overflow": [],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "新建知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "新建知识库",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "forecast",
+    "url": "http://127.0.0.1:4173/#forecast",
+    "headings": [
+      "商品销量预测",
+      "选择使用方式"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\n商品销量预测\n\n按 SKU 和站点生成销量区间，并形成可执行的备货建议。\n\n当前模型\n模型暂不可用\n销量预测\n历史预测记录\n模型训练\n选择使用方式\n\n普通预测只需填写 SKU、站点和预测周期\n\n天预测\n查看未来每天的销量和波动区间\n周预测\n查看未来每周汇总销量\n复杂业务预测\n指定价格、库存、促销或新品参数\n产品中心 SKU\n站点 可多选 · 已选 1\nUS\nCA\nDE\nFR\nIT\nES\nNL\n预测天数\n起始日期\n可选\n模型暂不可用",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 844
+    },
+    "overflow": [],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "历史预测记录",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "模型训练",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "天预测查看未来每天的销量和波动区间",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "周预测查看未来每周汇总销量",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "复杂业务预测指定价格、库存、促销或新品参数",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "US",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "CA",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "DE",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "FR",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "IT",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "ES",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "NL",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "模型暂不可用",
+        "aria": null,
+        "title": "模型就绪后才能开始预测"
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "insights",
+    "url": "http://127.0.0.1:4173/#insights",
+    "headings": [
+      "市场洞察",
+      "企业经营策略",
+      "市场数据集"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\nMARKET DATA ASSETS\n市场洞察\n\n统一入口：导入市场数据，并监测竞品价格与舆情。点击数据卡片进入明细，绑定任务可跳转报告与工作流。\n\n第一次使用？从导入一份市场数据开始\n导入竞品与评论数据\n下载填写模板\nMARKET INTELLIGENCE\n五项市场决策能力\n\nAI 智能选品、竞品动态、评论需求、定价与跨境合规共用同一份授权证据。\n\n分析数据集\n工程接口验收样本\nAI 智能选品\n竞品动态追踪\n评论深挖\n智能定价\n跨境合规预警\nAI 智能选品\n工程接口验收样本\n更新 2026/10/7\n企业经营策略\n\n权重是可解释的启发式，尚未用企业标签校准。明确的硬条件不满足时，高市场分也不能覆盖。\n\n导出反馈数据\n导出排序评测数据\n均衡判断\n需求热度 30% · 需求增长 15% · 未满足需求 25% · 竞争空间 20% · 利润空间代理 10%\n需求增长\n需求热度 30% · 需求增长 30% · 未满足需求 20% · 竞争空间 15% · 利润空间代理 5%\n利润空间\n需求热度 20% · 需求增长 10% · 未满足需求 15% · 竞争空间 20% · 利润空间代理 35%\n调整业务偏好 · 当前策略版本 0\n保存经营策略\n确认企业事实与必要条件\n1\n包装条件待验证\n\n工程校验样本，不代表真实市场结论\n\n证据置信度 50% · 能力条件不满足\n企业修正分\n60\n市场原分\n75\n企业适配\n50\n\n条件不满足，暂缓 · 企业事实置信度 40% · 策略版本 0\n\n查看判断依据与处理结果\n跟踪实施与经营结果\n待补数据\n价格与需求历史样本不足，暂不输出价格弹性\n尚未配置官方政策源\n1\n导入数据\n上传 CSV、JSON 或 Excel\n2\n自动清洗\n过滤空评、乱码、重复和水文\n3\n用于 AI 分析\n选择产品后直接运行工作流\n可用于分析\n1\n1 组档案\n已入库竞品\n0\n实际商品行\n已入库评论\n0\n含已过滤\n有效评论\n0\n可作证据\n\n顶部数字按库里实际商品/评论条数汇总。只有名称、没有导入正文的空内容档案会计入「档案」数，不会把未入库的商品计入统计。\n\n市场数据集\n\n每组数据代表一个国家、平台和品类范围，可被多个分析工作台重复使用。\n\n全部国家\n美国\n英国\n德国\n法国\n加拿大\n澳大利亚\n日本\n全部创建时间\n近 30 天\n近 90 天\n90 天以前\n共 1 组 · 每页 10 条\n导入数据集\n数据集\t市场范围\t状态\t竞品\t评论 / 有效\t质量\t\n\n工程接口验收样本\n#1 · v1 · 更新 2026年10月6日\n\t美国 · amazon · sofa\t\n可用于分析\t0\t0\n有效 0 · 过滤 0\n\t\n0\n留存 0%\n\t\n用于 AI 分析\n详情\n更新\n删除",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 844
+    },
+    "overflow": [
+      {
+        "key": "div.dataset-table.dataset-asset-table",
+        "text": "数据集市场范围状态竞品评论 / 有效质量工程接口验收样本#1 · v1 · 更新 2026年10月6日美国 · amazon · sofa可用于分析00有效 0 · 过滤 00留存 0%用于 AI 分",
+        "left": 30,
+        "right": 360,
+        "width": 330,
+        "ownOverflow": true
+      },
+      {
+        "key": "table",
+        "text": "数据集市场范围状态竞品评论 / 有效质量工程接口验收样本#1 · v1 · 更新 2026年10月6日美国 · amazon · sofa可用于分析00有效 0 · 过滤 00留存 0%用于 AI 分",
+        "left": 31,
+        "right": 1111,
+        "width": 1080,
+        "ownOverflow": false
+      },
+      {
+        "key": "thead",
+        "text": "数据集市场范围状态竞品评论 / 有效质量",
+        "left": 31,
+        "right": 1111,
+        "width": 1080,
+        "ownOverflow": false
+      },
+      {
+        "key": "tr",
+        "text": "数据集市场范围状态竞品评论 / 有效质量",
+        "left": 31,
+        "right": 1111,
+        "width": 1080,
+        "ownOverflow": false
+      },
+      {
+        "key": "th",
+        "text": "市场范围",
+        "left": 230,
+        "right": 410,
+        "width": 181,
+        "ownOverflow": false
+      },
+      {
+        "key": "tbody",
+        "text": "工程接口验收样本#1 · v1 · 更新 2026年10月6日美国 · amazon · sofa可用于分析00有效 0 · 过滤 00留存 0%用于 AI 分析详情更新删除",
+        "left": 31,
+        "right": 1111,
+        "width": 1080,
+        "ownOverflow": false
+      },
+      {
+        "key": "tr",
+        "text": "工程接口验收样本#1 · v1 · 更新 2026年10月6日美国 · amazon · sofa可用于分析00有效 0 · 过滤 00留存 0%用于 AI 分析详情更新删除",
+        "left": 31,
+        "right": 1111,
+        "width": 1080,
+        "ownOverflow": false
+      },
+      {
+        "key": "td",
+        "text": "美国 · amazon · sofa",
+        "left": 230,
+        "right": 410,
+        "width": 181,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导入竞品与评论数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "下载填写模板",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 智能选品",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "竞品动态追踪",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "评论深挖",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "智能定价",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "跨境合规预警",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导出反馈数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导出排序评测数据",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "均衡判断需求热度 30% · 需求增长 15% · 未满足需求 25% · 竞争空间 20% · 利润空间代理 10%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "需求增长需求热度 30% · 需求增长 30% · 未满足需求 20% · 竞争空间 15% · 利润空间代理 5%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "利润空间需求热度 20% · 需求增长 10% · 未满足需求 15% · 竞争空间 20% · 利润空间代理 35%",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "保存经营策略",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "添加能力事实",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "增加业务条件",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "确认并保存企业事实",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "读取最新处理历史",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "保存处理结果",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "导入数据集",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "用于 AI 分析",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "详情",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "更新",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "删除",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "report",
+    "url": "http://127.0.0.1:4173/#report",
+    "headings": [
+      "决策报告"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\nDECISION REPORT ARCHIVE\n决策报告\n\nAI 工作流完成后自动归档至此。支持检索、批量导出 PDF 与归档删除，报告结论均可溯源原始市场证据。\n\n去 AI 工作台\n全部产品\n全部市场\n全部时间\n近 7 天\n近 30 天\n近 90 天\n检索\n共 0 份报告\n暂无决策报告。完成一次 AI 工作流分析后，报告会自动沉淀到这里。",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 844
+    },
+    "overflow": [],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "去 AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "检索",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  },
+  {
+    "viewport": {
+      "name": "mobile",
+      "width": 390,
+      "height": 844
+    },
+    "route": "work-diary?from=workspace",
+    "url": "http://127.0.0.1:4173/#work-diary?from=workspace",
+    "headings": [
+      "工作日记"
+    ],
+    "mainText": "首页\n产品中心\nAI 工作台\n企业知识库\n销量预测\n市场洞察\n决策报告\n工程验收企业\n待确认\n工\n工程验收员\n首页\nWORK DIARY\n工作日记\n\n查找、查看或删除分析工作台记录。删除后对应决策报告会一并归档，首页任务列表同步更新。\n\n工作台\n1\n累计分析\n1\n运行中\n0\n已完成\n1\n全部\n已完成\n部分完成\n运行中\n排队中\n待确认\n异常\n待运行\n工作台\n产品与市场\n分析次数\n最近状态\n最后更新\n操作\n工程接口验收\n56c54a95\nSAME-SKU · US / amazon\n1 次\n已完成\n2026/10/6 13:24:32\n查看\n报告\n删除\n第 1 / 1 页 · 共 1 条\n上一页\n下一页",
+    "layout": {
+      "viewportWidth": 390,
+      "viewportHeight": 844,
+      "documentWidth": 390,
+      "documentHeight": 864
+    },
+    "overflow": [
+      {
+        "key": "header.work-diary-hero",
+        "text": "WORK DIARY工作日记查找、查看或删除分析工作台记录。删除后对应决策报告会一并归档，首页任务列表同步更新。工作台1累计分析1运行中0已完成1",
+        "left": 14,
+        "right": 376,
+        "width": 362,
+        "ownOverflow": true
+      },
+      {
+        "key": "div.work-diary-hero-stats",
+        "text": "工作台1累计分析1运行中0已完成1",
+        "left": 39,
+        "right": 351,
+        "width": 312,
+        "ownOverflow": true
+      },
+      {
+        "key": "article",
+        "text": "已完成1",
+        "left": 333,
+        "right": 421,
+        "width": 88,
+        "ownOverflow": false
+      },
+      {
+        "key": "small",
+        "text": "已完成",
+        "left": 348,
+        "right": 406,
+        "width": 58,
+        "ownOverflow": false
+      },
+      {
+        "key": "strong",
+        "text": "1",
+        "left": 348,
+        "right": 406,
+        "width": 58,
+        "ownOverflow": false
+      },
+      {
+        "key": "div.workbench-list.work-diary-list",
+        "text": "工作台产品与市场分析次数最近状态最后更新操作工程接口验收56c54a95SAME-SKU · US / amazon1 次已完成2026/10/6 13:24:32查看报告删除",
+        "left": 33,
+        "right": 357,
+        "width": 324,
+        "ownOverflow": true
+      },
+      {
+        "key": "div.workbench-list-head",
+        "text": "工作台产品与市场分析次数最近状态最后更新操作",
+        "left": 34,
+        "right": 356,
+        "width": 322,
+        "ownOverflow": true
+      },
+      {
+        "key": "span",
+        "text": "产品与市场",
+        "left": 284,
+        "right": 444,
+        "width": 160,
+        "ownOverflow": false
+      },
+      {
+        "key": "article",
+        "text": "工程接口验收56c54a95SAME-SKU · US / amazon1 次已完成2026/10/6 13:24:32查看报告删除",
+        "left": 34,
+        "right": 356,
+        "width": 322,
+        "ownOverflow": true
+      },
+      {
+        "key": "span",
+        "text": "SAME-SKU · US / amazon",
+        "left": 284,
+        "right": 444,
+        "width": 160,
+        "ownOverflow": false
+      }
+    ],
+    "buttons": [
+      {
+        "text": "首页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "产品中心",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "AI 工作台",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "企业知识库",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "销量预测",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "市场洞察",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "决策报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": "回到工作台处理待确认事项"
+      },
+      {
+        "text": "工工程验收员",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "返回首页",
+        "aria": null,
+        "title": "返回首页"
+      },
+      {
+        "text": "全部",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "已完成",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "部分完成",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "运行中",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "排队中",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待确认",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "异常",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "待运行",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "查看",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "报告",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "删除",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "上一页",
+        "aria": null,
+        "title": null
+      },
+      {
+        "text": "下一页",
+        "aria": null,
+        "title": null
+      }
+    ],
+    "loadingText": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "failedRequests": []
+  }
+]

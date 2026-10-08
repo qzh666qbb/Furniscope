@@ -90,8 +90,6 @@ class DatasetRepository:
     async def list_reviews(self, session: AsyncSession, *, tenant_id: int, dataset_id: int,
                            offset: int, limit: int, query: str | None,
                            sentiment: str | None) -> tuple[list[dict[str, Any]], int]:
-        await session.execute(text("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reviewer_location VARCHAR(100)"))
-        await session.execute(text("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS sentiment VARCHAR(16)"))
         filters = ["r.tenant_id=:tenant", "r.dataset_id=:dataset"]
         params: dict[str, Any] = {"tenant": tenant_id, "dataset": dataset_id, "offset": offset, "limit": limit}
         if query:

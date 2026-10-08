@@ -11,6 +11,7 @@ class DashboardSummary(BaseModel):
     products: int = Field(ge=0)
     running_tasks: int = Field(ge=0)
     pending_confirmations: int = Field(ge=0)
+    pending_confirmation_tasks: int = Field(default=0, ge=0)
     failed_tasks: int = Field(default=0, ge=0)
     conflicted_products: int = Field(default=0, ge=0)
     reports: int = Field(ge=0)

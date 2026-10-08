@@ -13,8 +13,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { api } from "./api.js";
-import { SentimentStreamPanel } from "./MarketSignals.jsx";
-import { ParentPageTab } from "./ParentPageTab.jsx";
+import { useMarketInsights } from "./MarketInsightsContext.jsx";
 import "./market-datasets.css";
 import "./competitor-tracking.css";
 
@@ -159,7 +158,7 @@ function PriceChart({ series }) {
     ? [{ ...raw[0], sale_price: raw[0].list_price }, raw[0]]
     : raw.filter((item) => Number.isFinite(Number(item.sale_price)));
   if (points.length < 2) {
-    return <div className="tracking-empty-chart">{points.length ? "暂无足够快照绘制曲线，刷新或重新导入数据后即可对比价格。" : "添加监控并生成快照后，将在此展示价格波动。"}</div>;
+    return <div className="tracking-empty-chart">{points.length ? "暂无足够快照绘制曲线，刷新或重新导入数据后即可对比价格。" : "添加监控并积累价格快照后，将在此展示价格波动。"}</div>;
   }
   const values = points.map((item) => Number(item.sale_price));
   const min = Math.min(...values);
@@ -234,29 +233,31 @@ export function TrackingEntry() {
     ]).then(([tracking, signals]) => setSummary({ ...tracking, ...signals }));
   }, []);
   return (
-    <section className="market-capability-hub">
+    <section className="market-capability-hub market-collection-hub">
       <header>
         <div>
-          <span>市场监测</span>
-          <strong>竞品分析与评论舆情</strong>
-          <p>用本企业产品对照外部竞品，或粘贴评论页获取舆情。采集已包含在评论舆情中。</p>
+          <span>DATA COLLECTION</span>
+          <strong>两类独立采集模块</strong>
+          <p>竞品商品页与评论页分别采集、分别入库；通知渠道只负责投递变化告警，不参与数据采集。</p>
         </div>
       </header>
       <div className="market-capability-grid">
-        <button type="button" onClick={() => { location.hash = "competitor-tracking?tab=prices"; }}>
+        <button type="button" onClick={() => { location.hash = "market-decisions?capability=competitors&view=prices"; }}>
           <i><ChartLine /></i>
           <span>
+            <b>商品页采集</b>
             <strong>竞品分析</strong>
-            <small>对照本企业产品，跟踪价格、Listing、促销与上新节奏</small>
+            <small>采集商品页并跟踪价格、Listing、促销与上新节奏</small>
           </span>
           <em>{summary.watch_count || 0} 个监控</em>
           <ArrowRight />
         </button>
-        <button type="button" onClick={() => { location.hash = "competitor-tracking?tab=stream"; }}>
+        <button type="button" onClick={() => { location.hash = "market-decisions?capability=reviews&view=stream"; }}>
           <i><Pulse /></i>
           <span>
+            <b>评论页采集</b>
             <strong>评论舆情</strong>
-            <small>粘贴评论页网址采集，识别情感并沉淀可复用事件</small>
+            <small>采集评论页，识别情感、需求主题并沉淀可复用事件</small>
           </span>
           <em>{summary.sentiment_count || 0} 条事件</em>
           <ArrowRight />
@@ -266,16 +267,22 @@ export function TrackingEntry() {
   );
 }
 
-export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
-  const rawTab = new URLSearchParams(location.hash.split("?")[1] || "").get("tab") || "prices";
-  const initialTab = ["sources", "policy", "notifications", "alerts"].includes(rawTab) ? (rawTab === "sources" ? "stream" : "prices") : rawTab;
-  const [tab, setTab] = useState(["prices", "snapshots", "rhythm", "stream"].includes(initialTab) ? initialTab : "prices");
+export function CompetitorTrackingWorkspace({ initialView = "" }) {
+  const routeParams = new URLSearchParams(location.hash.split("?")[1] || "");
+  const rawTab = initialView || routeParams.get("view") || routeParams.get("tab") || "prices";
+  const initialTab = ["prices", "snapshots", "rhythm"].includes(rawTab) ? rawTab : "prices";
+  const [tab, setTab] = useState(initialTab);
+  const {
+    datasets,
+    refreshDatasets,
+    invalidateIntelligence,
+    selectedDatasetId,
+  } = useMarketInsights();
   const [overview, setOverview] = useState(null);
-  const [datasets, setDatasets] = useState([]);
   const [watchId, setWatchId] = useState(null);
   const [prices, setPrices] = useState([]);
   const [snapshots, setSnapshots] = useState([]);
-  const [form, setForm] = useState({ asin: "", market_country: "US", dataset_id: "", product_id: "", page_url: "" });
+  const [form, setForm] = useState({ asin: "", market_country: "US", dataset_id: String(selectedDatasetId || ""), product_id: "", page_url: "" });
   const [products, setProducts] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [libraryQuery, setLibraryQuery] = useState("");
@@ -283,7 +290,8 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = () => {
+  const load = (changed = false) => {
+    if (changed) invalidateIntelligence(selectedDatasetId || null);
     const params = new URLSearchParams();
     if (form.product_id) params.set("product_id", String(form.product_id));
     return api(`/api/v1/competitor-tracking/overview${params.toString() ? `?${params}` : ""}`)
@@ -299,9 +307,12 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
   };
 
   useEffect(() => {
-    api("/api/v1/market-datasets?page_size=100").then((page) => setDatasets(page.items || [])).catch(() => {});
+    refreshDatasets().catch(() => {});
     api("/api/v1/products?page_size=100").then((page) => setProducts(page.items || [])).catch(() => {});
-  }, []);
+  }, [refreshDatasets]);
+  useEffect(() => {
+    if (selectedDatasetId && !form.dataset_id) setForm((current) => ({ ...current, dataset_id: String(selectedDatasetId) }));
+  }, [selectedDatasetId, form.dataset_id]);
   useEffect(() => { load(); }, [form.product_id]);
 
   useEffect(() => {
@@ -354,7 +365,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
         body: JSON.stringify({ compare_selected: next }),
       });
       if (next) setWatchId(item.watch_id);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -377,7 +388,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
         }),
       });
       if (items[0]) setWatchId(items[0].watch_id);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -388,7 +399,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
   const isCompetitorMode = competitorTabs.includes(tab);
   const selectTab = (next) => {
     setTab(next);
-    location.hash = `competitor-tracking?tab=${next}`;
+    location.hash = `market-decisions?capability=competitors&view=${next}`;
   };
 
   const addWatch = async () => {
@@ -407,7 +418,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
       });
       setForm({ ...form, asin: "" });
       setWatchId(created.watch_id);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -428,7 +439,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
         }),
       });
       if (items[0]) setWatchId(items[0].watch_id);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -452,7 +463,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
       });
       setForm({ ...form, page_url: "" });
       if (items[0]) setWatchId(items[0].watch_id);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -465,7 +476,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
     setError("");
     try {
       await api("/api/v1/competitor-tracking/refresh", { method: "POST" });
-      await load();
+      await load(true);
       if (watchId) {
         setPrices(await api(`/api/v1/competitor-tracking/watches/${watchId}/prices`));
         setSnapshots(await api(`/api/v1/competitor-tracking/watches/${watchId}/snapshots`));
@@ -484,7 +495,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
     try {
       await api(`/api/v1/competitor-tracking/watches/${id}`, { method: "DELETE" });
       if (watchId === id) setWatchId(null);
-      await load();
+      await load(true);
     } catch (reason) {
       setError(messageOf(reason));
     } finally {
@@ -493,30 +504,9 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
   };
 
   return (
-    <main className="workspace tracking-page">
-      <Sidebar page="insights" />
-      <section className="workspace-main">
-        <Topbar />
-        <div className="tracking-shell">
-          <ParentPageTab label="市场洞察" current="竞品分析与评论舆情" to="insights" />
-          <header className="tracking-main-header">
-            <div>
-              <span>MARKET MONITORING</span>
-              <h1>竞品分析与评论舆情</h1>
-              <p>竞品对照价格与 Listing 变化；评论舆情读取已导入的有效评论，也可粘贴网址补采进数据集。</p>
-            </div>
-            <button type="button" onClick={() => { location.hash = "insights"; }}><Database />返回市场数据集</button>
-          </header>
+    <>
+        <div className="tracking-shell tracking-shell-embedded">
           {error && <div className="dataset-error"><WarningCircle />{error}<button type="button" onClick={() => setError("")}>×</button></div>}
-          <nav className="tracking-workspace-nav" aria-label="市场监测">
-            {[
-              ["prices", ChartLine, "竞品分析", "与本企业产品对比", overview?.watch_count],
-              ["stream", Pulse, "评论舆情", "市场评论与网页补采", null],
-            ].map(([id, Icon, label, hint, count]) => {
-              const active = id === "prices" ? isCompetitorMode : tab === id;
-              return <button key={id} className={active ? "active" : ""} type="button" onClick={() => selectTab(id)}><Icon /><span><strong>{label}</strong><small>{hint}</small></span>{count ? <b>{count}</b> : null}</button>;
-            })}
-          </nav>
           {isCompetitorMode && <>
             <section className="tracking-task-intro">
               <div><span>竞品分析</span><h2>用本企业产品对比市场上的相似商品</h2><p>匹配或挑选外部商品写入竞品库；勾选参与对比，不需要的条目可以直接从库中删除。</p></div>
@@ -549,7 +539,7 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
               <header>
                 <div><strong>竞品库</strong><small>已加入监控的外部商品，可勾选对比或删除</small></div>
                 <div className="signal-filter-row">
-                  <label>
+                  <label className="signal-search-field">
                     <MagnifyingGlass />
                     <input value={libraryQuery} onChange={(event) => setLibraryQuery(event.target.value)} placeholder="搜索库内商品" />
                   </label>
@@ -632,7 +622,6 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
               </article>
             </section>
           )}
-          {tab === "stream" && <SentimentStreamPanel datasets={datasets} />}
         </div>
         {pickerOpen && (
           <CatalogPicker
@@ -641,10 +630,9 @@ export function CompetitorTrackingBoard({ Sidebar, Topbar }) {
             marketCountry={form.market_country}
             productId={form.product_id}
             onClose={() => setPickerOpen(false)}
-            onAdded={load}
+            onAdded={() => load(true)}
           />
         )}
-      </section>
-    </main>
+    </>
   );
 }

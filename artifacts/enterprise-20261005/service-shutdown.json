@@ -1,0 +1,26 @@
+{
+  "stopped": [
+    {
+      "service": "api",
+      "pid": 9629,
+      "signal": "SIGTERM"
+    },
+    {
+      "service": "ui",
+      "pid": 49771,
+      "signal": "SIGTERM"
+    },
+    {
+      "service": "redis",
+      "pid": 37825,
+      "signal": "SIGTERM"
+    }
+  ],
+  "test_ports_closed": [
+    8016,
+    4186,
+    6396
+  ],
+  "existing_user_ui_4173_available": true,
+  "test_databases_and_artifacts_retained": true
+}

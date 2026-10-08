@@ -1,0 +1,2644 @@
+{
+  "schema_version": "market-decision-generated-data-v1",
+  "generated_at": "2026-10-07T11:58:50.138418+00:00",
+  "package": {
+    "package_id": "hefeng-market-decision-baseline",
+    "package_version": "1.0.0",
+    "package_sha256": "7f52a726235c2066d67ae3ced1b9a58387c39ce99e17874fe105bf6800beb7d7"
+  },
+  "scope": {
+    "tenant_id": 3,
+    "tenant_code": "HEFENG",
+    "dataset_id": 2,
+    "dataset_name": "HeFeng 美国市场加工数据",
+    "authorization_reference": "HeFeng-AUTH-AMZ-US-SOFA-2026Q3",
+    "product_id": 3,
+    "product_sku": "HF-A0393"
+  },
+  "governance_batch": {
+    "id": 1,
+    "batch_uuid": "f50feab9-3c84-4765-97a7-293cf12d716b",
+    "package_id": "hefeng-market-decision-baseline",
+    "package_version": "1.0.0",
+    "package_sha256": "7f52a726235c2066d67ae3ced1b9a58387c39ce99e17874fe105bf6800beb7d7",
+    "schema_version": "market-decision-baseline-v1",
+    "status": "active",
+    "source_summary": {
+      "dataset_id": 2,
+      "source_name": "HeFeng 授权加工市场数据",
+      "source_type": "enterprise_export",
+      "input_sha256": "2d3756f41ac2d870e497ecb489780f0bcb62c78e9ea73e92d2399a1e51b7fc70",
+      "source_class": "authorized_source_record",
+      "authorization_reference": "HeFeng-AUTH-AMZ-US-SOFA-2026Q3"
+    },
+    "scope_snapshot": {
+      "platform": "amazon",
+      "limitations": [
+        "商品和销量映射自企业授权资料",
+        "评论文本为规则加工内容，不代表平台实采评价"
+      ],
+      "category_code": "sofa",
+      "listing_count": 76,
+      "market_country": "US",
+      "quality_report": {
+        "source": "uploaded_market_file",
+        "overwrite": true,
+        "schema_valid": true,
+        "content_origin": "rule_processed_not_platform_collected",
+        "filter_reasons": {
+          "duplicate": 1512
+        },
+        "raw_review_count": 1520,
+        "evidence_boundary": "processed_reviews_are_not_platform_collected",
+        "raw_listing_count": 76,
+        "kept_listing_count": 76,
+        "valid_review_count": 8,
+        "filtered_review_count": 1512
+      },
+      "valid_review_count": 8
+    },
+    "imported_at": "2026-10-07T11:23:40.944000+00:00",
+    "activated_at": "2026-10-07T11:23:40.944000+00:00"
+  },
+  "source_summary": {
+    "listing_count": 76,
+    "valid_review_count": 8,
+    "quality_report": {
+      "source": "uploaded_market_file",
+      "overwrite": true,
+      "schema_valid": true,
+      "content_origin": "rule_processed_not_platform_collected",
+      "filter_reasons": {
+        "duplicate": 1512
+      },
+      "raw_review_count": 1520,
+      "evidence_boundary": "processed_reviews_are_not_platform_collected",
+      "raw_listing_count": 76,
+      "kept_listing_count": 76,
+      "valid_review_count": 8,
+      "filtered_review_count": 1512
+    },
+    "limitations": [
+      "商品和销量映射自企业授权资料",
+      "评论文本为规则加工内容，不代表平台实采评价"
+    ]
+  },
+  "generated_records": {
+    "smart_selection": {
+      "task": {
+        "id": 48,
+        "task_uuid": "d9f1da93-db9f-407d-bd38-85629820cd18",
+        "job_name": "sofa 市场决策基线",
+        "status": "succeeded",
+        "completed_at": "2026-10-07T11:23:40.944000+00:00"
+      },
+      "opportunities": [
+        {
+          "opportunity_id": 59,
+          "opportunity_code": "BASE-02",
+          "title": "改善包装防护",
+          "description": "1 条评论涉及包装防护，其中负向 1 条、正负并存 0 条。",
+          "primary_cluster_ids": [
+            35
+          ],
+          "demand_heat_score": 12.5,
+          "demand_growth_score": null,
+          "unmet_need_score": 100.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "market_score": 43.67,
+          "adjusted_score": 43.67,
+          "confidence": 0.4577,
+          "recommendation_level": "collect_more_data",
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "packaging"
+            }
+          ]
+        },
+        {
+          "opportunity_id": 58,
+          "opportunity_code": "BASE-01",
+          "title": "改善坐感与支撑",
+          "description": "4 条评论涉及坐感与支撑，其中负向 1 条、正负并存 1 条。",
+          "primary_cluster_ids": [
+            31
+          ],
+          "demand_heat_score": 50.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 37.5,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "market_score": 37.83,
+          "adjusted_score": 37.83,
+          "confidence": 0.5173,
+          "recommendation_level": "collect_more_data",
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "comfort"
+            }
+          ]
+        },
+        {
+          "opportunity_id": 60,
+          "opportunity_code": "BASE-03",
+          "title": "改善组装体验",
+          "description": "2 条评论涉及组装体验，其中负向 1 条、正负并存 0 条。",
+          "primary_cluster_ids": [
+            30
+          ],
+          "demand_heat_score": 25.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 50.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "market_score": 32.0,
+          "adjusted_score": 32.0,
+          "confidence": 0.484,
+          "recommendation_level": "collect_more_data",
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "assembly"
+            }
+          ]
+        },
+        {
+          "opportunity_id": 61,
+          "opportunity_code": "BASE-04",
+          "title": "改善尺寸适配",
+          "description": "2 条评论涉及尺寸适配，其中负向 0 条、正负并存 1 条。",
+          "primary_cluster_ids": [
+            32
+          ],
+          "demand_heat_score": 25.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 25.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "market_score": 23.67,
+          "adjusted_score": 23.67,
+          "confidence": 0.484,
+          "recommendation_level": "collect_more_data",
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "dimension"
+            }
+          ]
+        },
+        {
+          "opportunity_id": 62,
+          "opportunity_code": "BASE-05",
+          "title": "改善外观与颜色",
+          "description": "1 条评论涉及外观与颜色，其中负向 0 条、正负并存 0 条。",
+          "primary_cluster_ids": [
+            29
+          ],
+          "demand_heat_score": 12.5,
+          "demand_growth_score": null,
+          "unmet_need_score": 0.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "market_score": 10.33,
+          "adjusted_score": 10.33,
+          "confidence": 0.4577,
+          "recommendation_level": "collect_more_data",
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "appearance"
+            }
+          ]
+        }
+      ]
+    },
+    "competitor_tracking": [
+      {
+        "watch_id": 3,
+        "asin": "PROC-HF-001",
+        "title": "带脚凳休闲椅 HF-A0393",
+        "status": "active",
+        "snapshot_id": 85,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 116.8,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "bb66f0df7b4739167f8fa5c2d20f05388369a96dcc9f33eb2d900fbd1bbce88b",
+        "alert_id": 1,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0393 已纳入竞品观察基线"
+      },
+      {
+        "watch_id": 4,
+        "asin": "PROC-HF-002",
+        "title": "带脚凳休闲椅 HF-A0049-1",
+        "status": "active",
+        "snapshot_id": 86,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 116.91,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "c321b85848db7c32e971b5b1fe4ca4ab72bec3da7456e606562f65c83eb0471b",
+        "alert_id": 2,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0049-1 已纳入竞品观察基线"
+      },
+      {
+        "watch_id": 5,
+        "asin": "PROC-HF-003",
+        "title": "带脚凳休闲椅 HF-A0058",
+        "status": "active",
+        "snapshot_id": 87,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 122.62,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "54c7d055947306c4d1d04653c0c968253e7f86448788684f4f8df625a293d41e",
+        "alert_id": 3,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0058 已纳入竞品观察基线"
+      },
+      {
+        "watch_id": 6,
+        "asin": "PROC-HF-004",
+        "title": "带脚凳休闲椅 HF-A0460",
+        "status": "active",
+        "snapshot_id": 88,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 253.63,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "a2d300a0301bcfa7d48376f3c6a1e88db98fddca2dc48fd91109da060fa412b8",
+        "alert_id": 4,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0460 已纳入竞品观察基线"
+      },
+      {
+        "watch_id": 7,
+        "asin": "PROC-HF-005",
+        "title": "带脚凳休闲椅 HF-A0595",
+        "status": "active",
+        "snapshot_id": 89,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 118.61,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "55c4cdfbb5b442d11b370655b3265b59a0cd1c17f8ada208f13b47890be1df87",
+        "alert_id": 5,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0595 已纳入竞品观察基线"
+      },
+      {
+        "watch_id": 8,
+        "asin": "PROC-HF-006",
+        "title": "带脚凳休闲椅 HF-A0628",
+        "status": "active",
+        "snapshot_id": 90,
+        "captured_at": "2026-09-01T00:00:00+00:00",
+        "sale_price": 99.83,
+        "list_price": null,
+        "currency": "USD",
+        "rating": null,
+        "review_count": null,
+        "fingerprint": "44cba00058cefcb9ab4fc44d4df2b7c75f4a6cf0d61559a74be0d27a1751b1a4",
+        "alert_id": 6,
+        "change_type": "new_listing",
+        "summary": "带脚凳休闲椅 HF-A0628 已纳入竞品观察基线"
+      }
+    ],
+    "review_mining": {
+      "aspects": [
+        {
+          "aspect_id": 37,
+          "review_id": 1,
+          "aspect_index": 0,
+          "taxonomy_code": "material",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 57,
+          "evidence_quote": "The fabric color matches the photos and is easy to clean.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 38,
+          "review_id": 1,
+          "aspect_index": 1,
+          "taxonomy_code": "appearance",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 57,
+          "evidence_quote": "The fabric color matches the photos and is easy to clean.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 39,
+          "review_id": 3,
+          "aspect_index": 0,
+          "taxonomy_code": "comfort",
+          "sentiment": "negative",
+          "severity": "high",
+          "evidence_start": 0,
+          "evidence_end": 66,
+          "evidence_quote": "The seat cushion is firmer than expected and needs better padding.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 40,
+          "review_id": 4,
+          "aspect_index": 0,
+          "taxonomy_code": "durability",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 56,
+          "evidence_quote": "Assembly was straightforward and the frame feels stable.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 41,
+          "review_id": 4,
+          "aspect_index": 1,
+          "taxonomy_code": "assembly",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 56,
+          "evidence_quote": "Assembly was straightforward and the frame feels stable.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 42,
+          "review_id": 5,
+          "aspect_index": 0,
+          "taxonomy_code": "comfort",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 69,
+          "evidence_quote": "The ottoman height is comfortable and the swivel base moves smoothly.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 43,
+          "review_id": 5,
+          "aspect_index": 1,
+          "taxonomy_code": "dimension",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 69,
+          "evidence_quote": "The ottoman height is comfortable and the swivel base moves smoothly.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 44,
+          "review_id": 9,
+          "aspect_index": 0,
+          "taxonomy_code": "assembly",
+          "sentiment": "negative",
+          "severity": "high",
+          "evidence_start": 0,
+          "evidence_end": 79,
+          "evidence_quote": "Assembly instructions could be clearer and one fastener was difficult to align.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 45,
+          "review_id": 14,
+          "aspect_index": 0,
+          "taxonomy_code": "comfort",
+          "sentiment": "positive",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 71,
+          "evidence_quote": "The chair is comfortable and the back support works well for daily use.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 46,
+          "review_id": 15,
+          "aspect_index": 0,
+          "taxonomy_code": "comfort",
+          "sentiment": "mixed",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 78,
+          "evidence_quote": "The chair is comfortable but the armrest width is too narrow for larger users.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 47,
+          "review_id": 15,
+          "aspect_index": 1,
+          "taxonomy_code": "dimension",
+          "sentiment": "mixed",
+          "severity": null,
+          "evidence_start": 0,
+          "evidence_end": 78,
+          "evidence_quote": "The chair is comfortable but the armrest width is too narrow for larger users.",
+          "extraction_confidence": 0.72
+        },
+        {
+          "aspect_id": 48,
+          "review_id": 23,
+          "aspect_index": 0,
+          "taxonomy_code": "packaging",
+          "sentiment": "negative",
+          "severity": "high",
+          "evidence_start": 0,
+          "evidence_end": 79,
+          "evidence_quote": "The package arrived with a damaged corner, so the protection needs improvement.",
+          "extraction_confidence": 0.72
+        }
+      ],
+      "clusters": [
+        {
+          "cluster_id": 31,
+          "cluster_code": "need-comfort",
+          "taxonomy_code": "comfort",
+          "name": "坐感与支撑",
+          "summary": "4 条评论涉及坐感与支撑，其中负向 1 条、正负并存 1 条。",
+          "sentiment_distribution": {
+            "mixed": 1,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 2
+          },
+          "aspect_count": 4,
+          "review_count": 4,
+          "listing_count": 1,
+          "mention_rate": 0.5,
+          "importance_score": 46.25,
+          "cluster_confidence": 0.6898,
+          "representative_aspect_ids": [
+            39,
+            42,
+            45
+          ]
+        },
+        {
+          "cluster_id": 35,
+          "cluster_code": "need-packaging",
+          "taxonomy_code": "packaging",
+          "name": "包装防护",
+          "summary": "1 条评论涉及包装防护，其中负向 1 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 0
+          },
+          "aspect_count": 1,
+          "review_count": 1,
+          "listing_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 38.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            48
+          ]
+        },
+        {
+          "cluster_id": 30,
+          "cluster_code": "need-assembly",
+          "taxonomy_code": "assembly",
+          "name": "组装体验",
+          "summary": "2 条评论涉及组装体验，其中负向 1 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 1
+          },
+          "aspect_count": 2,
+          "review_count": 2,
+          "listing_count": 1,
+          "mention_rate": 0.25,
+          "importance_score": 32.5,
+          "cluster_confidence": 0.6454,
+          "representative_aspect_ids": [
+            41,
+            44
+          ]
+        },
+        {
+          "cluster_id": 32,
+          "cluster_code": "need-dimension",
+          "taxonomy_code": "dimension",
+          "name": "尺寸适配",
+          "summary": "2 条评论涉及尺寸适配，其中负向 0 条、正负并存 1 条。",
+          "sentiment_distribution": {
+            "mixed": 1,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "aspect_count": 2,
+          "review_count": 2,
+          "listing_count": 1,
+          "mention_rate": 0.25,
+          "importance_score": 25.0,
+          "cluster_confidence": 0.6454,
+          "representative_aspect_ids": [
+            43,
+            47
+          ]
+        },
+        {
+          "cluster_id": 29,
+          "cluster_code": "need-appearance",
+          "taxonomy_code": "appearance",
+          "name": "外观与颜色",
+          "summary": "1 条评论涉及外观与颜色，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "aspect_count": 1,
+          "review_count": 1,
+          "listing_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            38
+          ]
+        },
+        {
+          "cluster_id": 33,
+          "cluster_code": "need-durability",
+          "taxonomy_code": "durability",
+          "name": "结构与耐用性",
+          "summary": "1 条评论涉及结构与耐用性，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "aspect_count": 1,
+          "review_count": 1,
+          "listing_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            40
+          ]
+        },
+        {
+          "cluster_id": 34,
+          "cluster_code": "need-material",
+          "taxonomy_code": "material",
+          "name": "面料与材质",
+          "summary": "1 条评论涉及面料与材质，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "aspect_count": 1,
+          "review_count": 1,
+          "listing_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            37
+          ]
+        }
+      ]
+    },
+    "pricing": {
+      "status": "planning_anchor",
+      "currency": "USD",
+      "calculation_version": "market-pricing-v2",
+      "cost_basis": "planning_assumption",
+      "target_margin_basis": "planning_assumption",
+      "sample_size": 76,
+      "market_low": 122.35,
+      "market_median": 209.14,
+      "market_high": 383.76,
+      "unit_cost": 100.39,
+      "target_margin": 0.35,
+      "price_floor": 154.45,
+      "recommended_price": 209.14,
+      "promo_floor": 192.41,
+      "review_growth_price_sensitivity": null,
+      "sensitivity_status": "insufficient_history",
+      "sensitivity_method": "competitor-review-growth-price-proxy-v1",
+      "confidence": 0.9,
+      "message": "建议价基于当前市场价格与经营规划参数，执行前需确认实际单位成本。",
+      "history_coverage": {
+        "tracked_targets": 6,
+        "snapshot_count": 6,
+        "observation_times": 1,
+        "price_points": 6,
+        "review_count_points": 0,
+        "first_observed_at": "2026-09-01T00:00:00+00:00",
+        "last_observed_at": "2026-09-01T00:00:00+00:00"
+      }
+    },
+    "compliance": {
+      "sources": [
+        {
+          "source_id": 3,
+          "name": "美国 CPSC 产品召回",
+          "source_type": "official_rss",
+          "source_url": "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS",
+          "market_country": "US",
+          "category_code": "sofa",
+          "keywords": [
+            "furniture",
+            "sofa",
+            "chair",
+            "recliner",
+            "recall",
+            "safety",
+            "cpsc",
+            "tariff",
+            "duty",
+            "customs",
+            "certification",
+            "reach",
+            "prop 65",
+            "家具",
+            "沙发",
+            "召回",
+            "认证"
+          ],
+          "authorization_reference": "CPSC 官方公开 RSS",
+          "schedule_minutes": 1440,
+          "enabled": true
+        },
+        {
+          "source_id": 4,
+          "name": "美国联邦公报 CPSC 公告",
+          "source_type": "official_json",
+          "source_url": "https://www.federalregister.gov/api/v1/documents.json?per_page=100&order=newest&conditions%5Bagencies%5D%5B%5D=consumer-product-safety-commission",
+          "market_country": "US",
+          "category_code": "sofa",
+          "keywords": [
+            "furniture",
+            "sofa",
+            "chair",
+            "recliner",
+            "recall",
+            "safety",
+            "cpsc",
+            "tariff",
+            "duty",
+            "customs",
+            "certification",
+            "reach",
+            "prop 65",
+            "家具",
+            "沙发",
+            "召回",
+            "认证"
+          ],
+          "authorization_reference": "FederalRegister.gov 官方公开 API",
+          "schedule_minutes": 1440,
+          "enabled": true
+        }
+      ],
+      "overview": {
+        "status": "ready",
+        "source_count": 2,
+        "unread_count": 1,
+        "high_risk_count": 1,
+        "alerts": [
+          {
+            "alert_id": 1,
+            "title": "The Blue Cactus Company Reclining Chair Battery Packs Recalled Due to Fire and Burn Hazards; Sold on Amazon",
+            "summary": "<p><span lang=\"EN-US\">The lithium-ion battery in the recalled battery packs can overheat, posing fire and burn hazards to consumers.&nbsp;<strong>&nbsp;</strong></span></p>",
+            "url": "https://www.cpsc.gov/Recalls/2026/The-Blue-Cactus-Company-Reclining-Chair-Battery-Packs-Recalled-Due-to-Fire-and-Burn-Hazards-Sold-on-Amazon",
+            "published_at": null,
+            "severity": "high",
+            "matched_keywords": [
+              "chair",
+              "recall"
+            ],
+            "is_read": false,
+            "source_name": "美国 CPSC 产品召回",
+            "market_country": "US",
+            "category_code": "sofa"
+          }
+        ],
+        "method": "official-source-keyword-risk-v1",
+        "scope_type": "dataset_matched",
+        "matched_scope": {
+          "market_country": "US",
+          "category_code": "sofa"
+        }
+      }
+    }
+  },
+  "overview": {
+    "generated_at": "2026-10-07T11:58:50.138404+00:00",
+    "scope": {
+      "dataset_id": 2,
+      "dataset_name": "HeFeng 美国市场加工数据",
+      "market_country": "US",
+      "platform": "amazon",
+      "product_id": 3,
+      "task_uuid": "d9f1da93-db9f-407d-bd38-85629820cd18",
+      "data_class": "authorized_market_data"
+    },
+    "smart_selection": {
+      "status": "ready",
+      "items": [
+        {
+          "opportunity_id": 59,
+          "opportunity_code": "BASE-02",
+          "title": "改善包装防护",
+          "description": "1 条评论涉及包装防护，其中负向 1 条、正负并存 0 条。",
+          "base_score": 43.67,
+          "confidence": 0.4577,
+          "recommendation_level": "collect_more_data",
+          "demand_heat_score": 12.5,
+          "demand_growth_score": null,
+          "unmet_need_score": 100.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "enterprise_fit_score": null,
+          "enterprise_fit_confidence": 0.0,
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "packaging"
+            }
+          ],
+          "market_score": 43.67,
+          "adjusted_score": 43.67,
+          "policy_snapshot": {
+            "version": 0,
+            "weights": {
+              "unmet_need": 0.25,
+              "demand_heat": 0.3,
+              "profit_space": 0.1,
+              "demand_growth": 0.15,
+              "competition_space": 0.2
+            },
+            "calibration": "uncalibrated_heuristic",
+            "fit_strength": 0.3
+          },
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "feedback": null
+        },
+        {
+          "opportunity_id": 58,
+          "opportunity_code": "BASE-01",
+          "title": "改善坐感与支撑",
+          "description": "4 条评论涉及坐感与支撑，其中负向 1 条、正负并存 1 条。",
+          "base_score": 37.83,
+          "confidence": 0.5173,
+          "recommendation_level": "collect_more_data",
+          "demand_heat_score": 50.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 37.5,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "enterprise_fit_score": null,
+          "enterprise_fit_confidence": 0.0,
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "comfort"
+            }
+          ],
+          "market_score": 37.83,
+          "adjusted_score": 37.83,
+          "policy_snapshot": {
+            "version": 0,
+            "weights": {
+              "unmet_need": 0.25,
+              "demand_heat": 0.3,
+              "profit_space": 0.1,
+              "demand_growth": 0.15,
+              "competition_space": 0.2
+            },
+            "calibration": "uncalibrated_heuristic",
+            "fit_strength": 0.3
+          },
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "feedback": null
+        },
+        {
+          "opportunity_id": 60,
+          "opportunity_code": "BASE-03",
+          "title": "改善组装体验",
+          "description": "2 条评论涉及组装体验，其中负向 1 条、正负并存 0 条。",
+          "base_score": 32.0,
+          "confidence": 0.484,
+          "recommendation_level": "collect_more_data",
+          "demand_heat_score": 25.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 50.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "enterprise_fit_score": null,
+          "enterprise_fit_confidence": 0.0,
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "assembly"
+            }
+          ],
+          "market_score": 32.0,
+          "adjusted_score": 32.0,
+          "policy_snapshot": {
+            "version": 0,
+            "weights": {
+              "unmet_need": 0.25,
+              "demand_heat": 0.3,
+              "profit_space": 0.1,
+              "demand_growth": 0.15,
+              "competition_space": 0.2
+            },
+            "calibration": "uncalibrated_heuristic",
+            "fit_strength": 0.3
+          },
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "feedback": null
+        },
+        {
+          "opportunity_id": 61,
+          "opportunity_code": "BASE-04",
+          "title": "改善尺寸适配",
+          "description": "2 条评论涉及尺寸适配，其中负向 0 条、正负并存 1 条。",
+          "base_score": 23.67,
+          "confidence": 0.484,
+          "recommendation_level": "collect_more_data",
+          "demand_heat_score": 25.0,
+          "demand_growth_score": null,
+          "unmet_need_score": 25.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "enterprise_fit_score": null,
+          "enterprise_fit_confidence": 0.0,
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "dimension"
+            }
+          ],
+          "market_score": 23.67,
+          "adjusted_score": 23.67,
+          "policy_snapshot": {
+            "version": 0,
+            "weights": {
+              "unmet_need": 0.25,
+              "demand_heat": 0.3,
+              "profit_space": 0.1,
+              "demand_growth": 0.15,
+              "competition_space": 0.2
+            },
+            "calibration": "uncalibrated_heuristic",
+            "fit_strength": 0.3
+          },
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "feedback": null
+        },
+        {
+          "opportunity_id": 62,
+          "opportunity_code": "BASE-05",
+          "title": "改善外观与颜色",
+          "description": "1 条评论涉及外观与颜色，其中负向 0 条、正负并存 0 条。",
+          "base_score": 10.33,
+          "confidence": 0.4577,
+          "recommendation_level": "collect_more_data",
+          "demand_heat_score": 12.5,
+          "demand_growth_score": null,
+          "unmet_need_score": 0.0,
+          "competition_space_score": 20.0,
+          "profit_space_score": null,
+          "enterprise_fit_score": null,
+          "enterprise_fit_confidence": 0.0,
+          "manufacturing_fit": [
+            {
+              "reason": "尚未取得该需求对应的制造要求确认",
+              "status": "unknown",
+              "blocked": false,
+              "taxonomy_code": "appearance"
+            }
+          ],
+          "market_score": 10.33,
+          "adjusted_score": 10.33,
+          "policy_snapshot": {
+            "version": 0,
+            "weights": {
+              "unmet_need": 0.25,
+              "demand_heat": 0.3,
+              "profit_space": 0.1,
+              "demand_growth": 0.15,
+              "competition_space": 0.2
+            },
+            "calibration": "uncalibrated_heuristic",
+            "fit_strength": 0.3
+          },
+          "weight_config": {
+            "coverage": 0.75,
+            "unmet_need": 0.25,
+            "calibration": "uncalibrated_heuristic",
+            "demand_heat": 0.3,
+            "profit_space": 0.1,
+            "used_weights": {
+              "unmet_need": 0.333333,
+              "demand_heat": 0.4,
+              "competition_space": 0.266667
+            },
+            "demand_growth": 0.15,
+            "missing_factors": [
+              "demand_growth",
+              "profit_space"
+            ],
+            "competition_space": 0.2
+          },
+          "feedback": null
+        }
+      ],
+      "method": "opportunity-score-v3-enterprise-gated"
+    },
+    "competitor_tracking": {
+      "status": "ready",
+      "watch_count": 6,
+      "active_watch_count": 6,
+      "priced_watch_count": 6,
+      "dataset_listing_count": 76,
+      "recent_alerts": [
+        {
+          "alert_id": 6,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0628 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        },
+        {
+          "alert_id": 5,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0595 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        },
+        {
+          "alert_id": 4,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0460 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        },
+        {
+          "alert_id": 3,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0058 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        },
+        {
+          "alert_id": 2,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0049-1 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        },
+        {
+          "alert_id": 1,
+          "change_type": "new_listing",
+          "summary": "带脚凳休闲椅 HF-A0393 已纳入竞品观察基线",
+          "severity": "medium",
+          "is_read": false,
+          "detected_at": "2026-09-01T00:00:00+00:00"
+        }
+      ]
+    },
+    "review_mining": {
+      "status": "ready",
+      "total": 8,
+      "positive": 5,
+      "neutral": 0,
+      "negative": 3,
+      "clusters": [
+        {
+          "cluster_id": 31,
+          "taxonomy_code": "comfort",
+          "name": "坐感与支撑",
+          "summary": "4 条评论涉及坐感与支撑，其中负向 1 条、正负并存 1 条。",
+          "sentiment_distribution": {
+            "mixed": 1,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 2
+          },
+          "review_count": 4,
+          "mention_rate": 0.5,
+          "importance_score": 46.25,
+          "cluster_confidence": 0.6898,
+          "representative_aspect_ids": [
+            39,
+            42,
+            45
+          ]
+        },
+        {
+          "cluster_id": 35,
+          "taxonomy_code": "packaging",
+          "name": "包装防护",
+          "summary": "1 条评论涉及包装防护，其中负向 1 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 0
+          },
+          "review_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 38.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            48
+          ]
+        },
+        {
+          "cluster_id": 30,
+          "taxonomy_code": "assembly",
+          "name": "组装体验",
+          "summary": "2 条评论涉及组装体验，其中负向 1 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 1,
+            "positive": 1
+          },
+          "review_count": 2,
+          "mention_rate": 0.25,
+          "importance_score": 32.5,
+          "cluster_confidence": 0.6454,
+          "representative_aspect_ids": [
+            41,
+            44
+          ]
+        },
+        {
+          "cluster_id": 32,
+          "taxonomy_code": "dimension",
+          "name": "尺寸适配",
+          "summary": "2 条评论涉及尺寸适配，其中负向 0 条、正负并存 1 条。",
+          "sentiment_distribution": {
+            "mixed": 1,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "review_count": 2,
+          "mention_rate": 0.25,
+          "importance_score": 25.0,
+          "cluster_confidence": 0.6454,
+          "representative_aspect_ids": [
+            43,
+            47
+          ]
+        },
+        {
+          "cluster_id": 29,
+          "taxonomy_code": "appearance",
+          "name": "外观与颜色",
+          "summary": "1 条评论涉及外观与颜色，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "review_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            38
+          ]
+        },
+        {
+          "cluster_id": 33,
+          "taxonomy_code": "durability",
+          "name": "结构与耐用性",
+          "summary": "1 条评论涉及结构与耐用性，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "review_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            40
+          ]
+        },
+        {
+          "cluster_id": 34,
+          "taxonomy_code": "material",
+          "name": "面料与材质",
+          "summary": "1 条评论涉及面料与材质，其中负向 0 条、正负并存 0 条。",
+          "sentiment_distribution": {
+            "mixed": 0,
+            "neutral": 0,
+            "negative": 0,
+            "positive": 1
+          },
+          "review_count": 1,
+          "mention_rate": 0.125,
+          "importance_score": 8.75,
+          "cluster_confidence": 0.6102,
+          "representative_aspect_ids": [
+            37
+          ]
+        }
+      ],
+      "method": "evidence-span-aspect-clustering-v2"
+    },
+    "pricing": {
+      "status": "planning_anchor",
+      "currency": "USD",
+      "calculation_version": "market-pricing-v2",
+      "cost_basis": "planning_assumption",
+      "target_margin_basis": "planning_assumption",
+      "sample_size": 76,
+      "market_low": 122.35,
+      "market_median": 209.14,
+      "market_high": 383.76,
+      "unit_cost": 100.39,
+      "target_margin": 0.35,
+      "price_floor": 154.45,
+      "recommended_price": 209.14,
+      "promo_floor": 192.41,
+      "review_growth_price_sensitivity": null,
+      "sensitivity_status": "insufficient_history",
+      "sensitivity_method": "competitor-review-growth-price-proxy-v1",
+      "confidence": 0.9,
+      "message": "建议价基于当前市场价格与经营规划参数，执行前需确认实际单位成本。",
+      "history_coverage": {
+        "tracked_targets": 6,
+        "snapshot_count": 6,
+        "observation_times": 1,
+        "price_points": 6,
+        "review_count_points": 0,
+        "first_observed_at": "2026-09-01T00:00:00+00:00",
+        "last_observed_at": "2026-09-01T00:00:00+00:00"
+      }
+    },
+    "compliance": {
+      "status": "ready",
+      "source_count": 2,
+      "unread_count": 1,
+      "high_risk_count": 1,
+      "alerts": [
+        {
+          "alert_id": 1,
+          "title": "The Blue Cactus Company Reclining Chair Battery Packs Recalled Due to Fire and Burn Hazards; Sold on Amazon",
+          "summary": "<p><span lang=\"EN-US\">The lithium-ion battery in the recalled battery packs can overheat, posing fire and burn hazards to consumers.&nbsp;<strong>&nbsp;</strong></span></p>",
+          "url": "https://www.cpsc.gov/Recalls/2026/The-Blue-Cactus-Company-Reclining-Chair-Battery-Packs-Recalled-Due-to-Fire-and-Burn-Hazards-Sold-on-Amazon",
+          "published_at": null,
+          "severity": "high",
+          "matched_keywords": [
+            "chair",
+            "recall"
+          ],
+          "is_read": false,
+          "source_name": "美国 CPSC 产品召回",
+          "market_country": "US",
+          "category_code": "sofa"
+        }
+      ],
+      "method": "official-source-keyword-risk-v1",
+      "scope_type": "dataset_matched",
+      "matched_scope": {
+        "market_country": "US",
+        "category_code": "sofa"
+      }
+    },
+    "data_gaps": [
+      "利润空间与定价利润校验使用规划参数；实际单位成本 USD 100.39、目标毛利率 35% 待企业确认",
+      "选品评分覆盖 3/5 个市场因子；需求增长因缺少连续市场时序未参与评分",
+      "企业制造能力画像尚未确认，企业适配分未参与机会排序",
+      "竞品监控当前仅 1 个观测时点（6 条价格、0 条评论计数），暂不能计算评论增长代理敏感度"
+    ]
+  },
+  "lineage": [
+    {
+      "id": 31,
+      "record_uuid": "699954c8-3aa3-42a0-8b41-b78c06a05ed1",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 1,
+      "natural_key": "baseline-alert:PROC-HF-001",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 1,
+        "platform_listing_id": "PROC-HF-001"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "3af09cfd7e7ffe0f796cf59074b20cc1e3b9436aa87a058c231ac784d53d0db7",
+      "payload_sha256": "1a195b068a5f3a39406aaa4e65086de39103e4c94b470e67b6771447226d94d2",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 34,
+      "record_uuid": "4fe5a870-c125-4075-87d3-976c8c7760c2",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 2,
+      "natural_key": "baseline-alert:PROC-HF-002",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 2,
+        "platform_listing_id": "PROC-HF-002"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "a13bfb8ebc7becacb7274b931fb96d1886fe4c697abee6f5df8c32a89226d526",
+      "payload_sha256": "af867e1badf34e82af75bc6e3cc880ec72b1494fec0f2d0e6e1aa2806e3d8dec",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 37,
+      "record_uuid": "0859a666-9949-4a1f-a214-1b52969a86cf",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 3,
+      "natural_key": "baseline-alert:PROC-HF-003",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 3,
+        "platform_listing_id": "PROC-HF-003"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "d8e833df512120db6ea20b2a1d397c48068f20074444939246b432deaa0885eb",
+      "payload_sha256": "0f6633994c3b529a7b1395e0865f107ff939dbd3e278274376434aae9a993031",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 40,
+      "record_uuid": "bec6cc63-c1c2-420a-a998-770e7a40ff36",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 4,
+      "natural_key": "baseline-alert:PROC-HF-004",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 4,
+        "platform_listing_id": "PROC-HF-004"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "ef0ba2d7afe40a2ac11e06f5d4626834ff3d06aacba6d231bd019459f6098bd8",
+      "payload_sha256": "fa47327f6f42d1ad30e5d8df6746c1888544defaf8bf04bebbc8caf1c4279020",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 43,
+      "record_uuid": "0cdbc7c8-5136-406c-96ac-d3715ab082f0",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 5,
+      "natural_key": "baseline-alert:PROC-HF-005",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 5,
+        "platform_listing_id": "PROC-HF-005"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "0de98e63abc4dd530d4ce45c9e0712f41a9adb155a4953171ece25331b0c6f14",
+      "payload_sha256": "11184f4972a170063c11465a0282c81b8fe1d106fe565db1c9598a31b4710c95",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 46,
+      "record_uuid": "117e210d-1f0a-408d-a4d8-5c07eff3fbf7",
+      "capability_code": "competitor_tracking",
+      "record_kind": "baseline_registration",
+      "source_class": "derived_result",
+      "target_table": "competitor_change_alerts",
+      "target_record_id": 6,
+      "natural_key": "baseline-alert:PROC-HF-006",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 6,
+        "platform_listing_id": "PROC-HF-006"
+      },
+      "derivation_rule": "register the first governed watch baseline",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "f6a3c6d9f61895028b1be0f15b6110ef721b6b6a9e137d8a3fcd2daabfee54f5",
+      "payload_sha256": "7cd61f03674b301893e0096c74b81b4388a9eb76819754bf909c651dececa0b1",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 30,
+      "record_uuid": "4e061cd9-6044-4196-9079-d7bae4ca31a9",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 85,
+      "natural_key": "snapshot:PROC-HF-001:bb66f0df7b4739167f8fa5c2d20f05388369a96dcc9f33eb2d900fbd1bbce88b",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 1,
+        "platform_listing_id": "PROC-HF-001"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "3af09cfd7e7ffe0f796cf59074b20cc1e3b9436aa87a058c231ac784d53d0db7",
+      "payload_sha256": "a685dfa2894c7ee60e1693a0ea3560b779999b04cc58447b139a790229f7dea4",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 33,
+      "record_uuid": "ccd0ac79-0ead-4aee-bb5c-e9e62c7cb156",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 86,
+      "natural_key": "snapshot:PROC-HF-002:c321b85848db7c32e971b5b1fe4ca4ab72bec3da7456e606562f65c83eb0471b",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 2,
+        "platform_listing_id": "PROC-HF-002"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "a13bfb8ebc7becacb7274b931fb96d1886fe4c697abee6f5df8c32a89226d526",
+      "payload_sha256": "faaa06e61fc6222a7059f2bf051cfd3d17a2df0dc7725364b43fcfbc2aefc728",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 36,
+      "record_uuid": "e5228ba9-3004-4c39-b09e-255ef2b1e241",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 87,
+      "natural_key": "snapshot:PROC-HF-003:54c7d055947306c4d1d04653c0c968253e7f86448788684f4f8df625a293d41e",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 3,
+        "platform_listing_id": "PROC-HF-003"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "d8e833df512120db6ea20b2a1d397c48068f20074444939246b432deaa0885eb",
+      "payload_sha256": "e547d1de56dac51103b850122d3a08dbc4d6f563bfc90458b4b2ac1708a3fb1c",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 39,
+      "record_uuid": "35c6d897-bd0c-4770-aaf0-e5f6fe5d3cea",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 88,
+      "natural_key": "snapshot:PROC-HF-004:a2d300a0301bcfa7d48376f3c6a1e88db98fddca2dc48fd91109da060fa412b8",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 4,
+        "platform_listing_id": "PROC-HF-004"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "ef0ba2d7afe40a2ac11e06f5d4626834ff3d06aacba6d231bd019459f6098bd8",
+      "payload_sha256": "b3d0fd498736580891584b0856d15c8033ca8402bc4f6647a76d54a51338e82b",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 42,
+      "record_uuid": "d94bd4e5-d4df-4136-b2c2-a769dcc072b0",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 89,
+      "natural_key": "snapshot:PROC-HF-005:55c4cdfbb5b442d11b370655b3265b59a0cd1c17f8ada208f13b47890be1df87",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 5,
+        "platform_listing_id": "PROC-HF-005"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "0de98e63abc4dd530d4ce45c9e0712f41a9adb155a4953171ece25331b0c6f14",
+      "payload_sha256": "0062ae45a0b80a55a8ad1518da6d7189512aac5ac5a88b84e8ae579135b141af",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 45,
+      "record_uuid": "237e0a27-51ac-43d3-945a-d3322c9746d7",
+      "capability_code": "competitor_tracking",
+      "record_kind": "listing_snapshot",
+      "source_class": "authorized_source_record",
+      "target_table": "competitor_listing_snapshots",
+      "target_record_id": 90,
+      "natural_key": "snapshot:PROC-HF-006:44cba00058cefcb9ab4fc44d4df2b7c75f4a6cf0d61559a74be0d27a1751b1a4",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 6,
+        "platform_listing_id": "PROC-HF-006"
+      },
+      "derivation_rule": "copy current authorized listing fields without time expansion",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "f6a3c6d9f61895028b1be0f15b6110ef721b6b6a9e137d8a3fcd2daabfee54f5",
+      "payload_sha256": "d253da4683c860ca74bf18d64a3573f8e7284e133e61b6b10d66f46ea295f1f2",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 29,
+      "record_uuid": "47ffb9bc-bbc9-4705-a8c4-868a4608a30b",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 3,
+      "natural_key": "watch:PROC-HF-001",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 1,
+        "platform_listing_id": "PROC-HF-001"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "3af09cfd7e7ffe0f796cf59074b20cc1e3b9436aa87a058c231ac784d53d0db7",
+      "payload_sha256": "99da8900048981ce3219dfff3a87688d2c262d2f8ab057aa0eff46046e8268f3",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 32,
+      "record_uuid": "4fff7ec3-12a4-4c05-9c00-2df98584715f",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 4,
+      "natural_key": "watch:PROC-HF-002",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 2,
+        "platform_listing_id": "PROC-HF-002"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "a13bfb8ebc7becacb7274b931fb96d1886fe4c697abee6f5df8c32a89226d526",
+      "payload_sha256": "be7352e45956eb9eeca326bae121e8457ad2d2ec2f5b48a0e60d4afe7b3911ef",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 35,
+      "record_uuid": "2cf1ba4d-5d9d-4819-9e16-98ba177e853d",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 5,
+      "natural_key": "watch:PROC-HF-003",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 3,
+        "platform_listing_id": "PROC-HF-003"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "d8e833df512120db6ea20b2a1d397c48068f20074444939246b432deaa0885eb",
+      "payload_sha256": "23163b96bbe8222b323cdbe24dcb7f347438f306394b9c7495d3ab885a08c82a",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 38,
+      "record_uuid": "dde7d1c4-e2a7-4c78-b324-8e2aa575acb0",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 6,
+      "natural_key": "watch:PROC-HF-004",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 4,
+        "platform_listing_id": "PROC-HF-004"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "ef0ba2d7afe40a2ac11e06f5d4626834ff3d06aacba6d231bd019459f6098bd8",
+      "payload_sha256": "152ca6efdb543dc175c8407ca3ff6412032906e6dd18c4b38326005ddd635177",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 41,
+      "record_uuid": "efb7ed3d-6e4b-4897-a193-a082ada62bc8",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 7,
+      "natural_key": "watch:PROC-HF-005",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 5,
+        "platform_listing_id": "PROC-HF-005"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "0de98e63abc4dd530d4ce45c9e0712f41a9adb155a4953171ece25331b0c6f14",
+      "payload_sha256": "ea3f6748a1e4aed51cc1240a2aeaa6641efe19f69130d0795d0e8de9f92cb0dd",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 44,
+      "record_uuid": "0090ed66-3673-4b40-b78b-8765d0051a24",
+      "capability_code": "competitor_tracking",
+      "record_kind": "watch_target",
+      "source_class": "derived_result",
+      "target_table": "competitor_watch_targets",
+      "target_record_id": 8,
+      "natural_key": "watch:PROC-HF-006",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_id": 6,
+        "platform_listing_id": "PROC-HF-006"
+      },
+      "derivation_rule": "rank authorized listings and register selected targets",
+      "rule_version": "authorized-listing-baseline-v1",
+      "input_sha256": "f6a3c6d9f61895028b1be0f15b6110ef721b6b6a9e137d8a3fcd2daabfee54f5",
+      "payload_sha256": "fe5cf78ebdc493a4056bee0314ea65df060c97935224a980f0bc866d89ee6e1e",
+      "confidence": 0.85,
+      "observed_at": "2026-09-01T00:00:00+00:00",
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 47,
+      "record_uuid": "a4a4bc7f-5bdc-447a-a318-c474d80f1b27",
+      "capability_code": "compliance",
+      "record_kind": "policy_source",
+      "source_class": "official_source_registry",
+      "target_table": "policy_sources",
+      "target_record_id": 3,
+      "natural_key": "policy-source:6ff94c218012d62e9071",
+      "source_locator": {
+        "source_url": "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS",
+        "authorization_reference": "CPSC 官方公开 RSS"
+      },
+      "derivation_rule": "register an official public policy endpoint",
+      "rule_version": "official-source-registry-v1",
+      "input_sha256": "8afa79d59343662a9dc417542b5278aa2c4bf5e588adb37b9f912aa6731155fa",
+      "payload_sha256": "ef6011d9c9d82b1dc8415254f859701e4a6a1b36608088b435ad7b4e945f13e4",
+      "confidence": 1.0,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 48,
+      "record_uuid": "77899111-5ef0-47de-833d-149ccfc66ac7",
+      "capability_code": "compliance",
+      "record_kind": "policy_source",
+      "source_class": "official_source_registry",
+      "target_table": "policy_sources",
+      "target_record_id": 4,
+      "natural_key": "policy-source:9514f796e026cb702b5d",
+      "source_locator": {
+        "source_url": "https://www.federalregister.gov/api/v1/documents.json?per_page=100&order=newest&conditions%5Bagencies%5D%5B%5D=consumer-product-safety-commission",
+        "authorization_reference": "FederalRegister.gov 官方公开 API"
+      },
+      "derivation_rule": "register an official public policy endpoint",
+      "rule_version": "official-source-registry-v1",
+      "input_sha256": "b5583b10138d73fa5c4a1f465eec0e023912dc83744dfb419cabd0d56949f8c3",
+      "payload_sha256": "f5893644ef1c1a18f79e26b0e8c76bf6a2beb35c203e6673f7c714723bbda1c1",
+      "confidence": 1.0,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 2,
+      "record_uuid": "10a4c730-71b1-41d5-b64e-311e9315035f",
+      "capability_code": "pricing",
+      "record_kind": "enterprise_constraint",
+      "source_class": "planning_assumption",
+      "target_table": "enterprise_profiles",
+      "target_record_id": 9,
+      "natural_key": "constraint:target_margin",
+      "source_locator": {
+        "currency": "USD",
+        "dataset_id": 2,
+        "market_price_sample_size": 76
+      },
+      "derivation_rule": "target margin is the package planning parameter",
+      "rule_version": "market-planning-anchor-v1",
+      "input_sha256": "da081cd19fc09f933350582a77d9de74f9e6f4b93741e86340a37be0362af234",
+      "payload_sha256": "9aadd7752e7805b6c9f5b0cb9c58b780ea0ded5821ede0f728753b43327f0a49",
+      "confidence": 0.5,
+      "observed_at": null,
+      "valid_from": "2026-10-07T00:00:00+00:00",
+      "valid_until": "2027-10-06T23:59:59+00:00",
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 1,
+      "record_uuid": "1ef025cd-6cbe-4a5e-8220-9c213efd76a3",
+      "capability_code": "pricing",
+      "record_kind": "enterprise_constraint",
+      "source_class": "planning_assumption",
+      "target_table": "enterprise_profiles",
+      "target_record_id": 9,
+      "natural_key": "constraint:unit_cost",
+      "source_locator": {
+        "currency": "USD",
+        "dataset_id": 2,
+        "market_price_sample_size": 76
+      },
+      "derivation_rule": "unit cost equals the current market median multiplied by the configured planning ratio",
+      "rule_version": "market-planning-anchor-v1",
+      "input_sha256": "da081cd19fc09f933350582a77d9de74f9e6f4b93741e86340a37be0362af234",
+      "payload_sha256": "66f17e2b49e59a42d825421e3798c96a438f0419775bb090d00346263de4dc98",
+      "confidence": 0.5,
+      "observed_at": null,
+      "valid_from": "2026-10-07T00:00:00+00:00",
+      "valid_until": "2027-10-06T23:59:59+00:00",
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 23,
+      "record_uuid": "7a4d3a65-cc6f-426d-bb5c-9166657933f7",
+      "capability_code": "pricing",
+      "record_kind": "market_price_metric",
+      "source_class": "derived_result",
+      "target_table": "market_metrics",
+      "target_record_id": 17,
+      "natural_key": "metric:median-sale-price",
+      "source_locator": {
+        "dataset_id": 2,
+        "listing_count": 76
+      },
+      "derivation_rule": "median of positive same-currency listing prices",
+      "rule_version": "descriptive-v1",
+      "input_sha256": "5126ada7df7ef5e816d6bd111da386c16c06c6c570c7df193dfdd179756a1bf3",
+      "payload_sha256": "3caf35d003b7e6c160dbbf73838545bd1249454d3916003519c6b64d6cb405cd",
+      "confidence": 0.95,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 16,
+      "record_uuid": "62419eec-eb27-4109-8c6e-20c6c22d24e1",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 29,
+      "natural_key": "cluster:appearance",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          1
+        ],
+        "representative_aspect_ids": [
+          38
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "063b9443d59bde7d107944c4b8c2d18ea44448aa2de3db1a11dc1289a4e7fa5d",
+      "payload_sha256": "ed4e895a9682ea258b4a3916fa1a1ac4ce72f73f540e74b90c9a718b8bd4c9d8",
+      "confidence": 0.6102,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 17,
+      "record_uuid": "1564ef44-44ef-4cfa-aabb-8c23aac58814",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 30,
+      "natural_key": "cluster:assembly",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          4,
+          9
+        ],
+        "representative_aspect_ids": [
+          41,
+          44
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "a5730af5272b74f0bd62a98fb898d1d23d9436b489b453b5d971898d1db08846",
+      "payload_sha256": "8ca8459410a062757440bf6af9c4bd1706fead08f9a6e5e95c600d8d6898931d",
+      "confidence": 0.6454,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 18,
+      "record_uuid": "67501356-5d07-4354-918b-ec99368fde37",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 31,
+      "natural_key": "cluster:comfort",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          3,
+          5,
+          14,
+          15
+        ],
+        "representative_aspect_ids": [
+          39,
+          42,
+          45
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "3eb939e521ba6ad32d1e0c95abffd9aa089745a204dc65d81eaf94209649e970",
+      "payload_sha256": "055b98d194bddd505c62fbc5c35a1659cd7c6beeac174a15f62ef24a55b0dee1",
+      "confidence": 0.6898,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 19,
+      "record_uuid": "a013a18a-0644-48e5-8919-c8484ee0a1f1",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 32,
+      "natural_key": "cluster:dimension",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          5,
+          15
+        ],
+        "representative_aspect_ids": [
+          43,
+          47
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "e8801712b2d767923108ec5cf3191e528884d335ca86df94b7fc362105846469",
+      "payload_sha256": "6a26d51096b9975059e09b532d0ca27bdda6aa49c9f917aa101558940691ae35",
+      "confidence": 0.6454,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 20,
+      "record_uuid": "6c24f948-b3be-4cb8-98a0-1d063f6a054b",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 33,
+      "natural_key": "cluster:durability",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          4
+        ],
+        "representative_aspect_ids": [
+          40
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "a434c142c331cca5998e9a0869303e0c375f8d6381edc4d6993f7aded7b0b326",
+      "payload_sha256": "cc871ce2432602be741012b5cf5b1a33c7d700234a77a276dce5c3fe2a1d2f7f",
+      "confidence": 0.6102,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 21,
+      "record_uuid": "ee5dee4b-53b7-4151-8d45-d030609cb58b",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 34,
+      "natural_key": "cluster:material",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          1
+        ],
+        "representative_aspect_ids": [
+          37
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "c9a2cb839efecdc098f9218f6d8a19177357b3915f2737978e77e2306cb8f9c1",
+      "payload_sha256": "1c7c8de0c35f2fe642450ca721b3e0eb99bd439e81f4a22ab62b86aad03496bb",
+      "confidence": 0.6102,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 22,
+      "record_uuid": "9d47276a-82d4-46e9-9592-a1c91e00c7fe",
+      "capability_code": "review_mining",
+      "record_kind": "insight_cluster",
+      "source_class": "derived_result",
+      "target_table": "insight_clusters",
+      "target_record_id": 35,
+      "natural_key": "cluster:packaging",
+      "source_locator": {
+        "dataset_id": 2,
+        "review_ids": [
+          23
+        ],
+        "representative_aspect_ids": [
+          48
+        ]
+      },
+      "derivation_rule": "group evidence aspects by stable furniture taxonomy",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "44f7516e6518996259b3d2460b9c8bcbcfb7d0bbdc2a813f58927c6b6122e24d",
+      "payload_sha256": "dbf9e2ad46661726ec3eac31544d3711392ecf11729009175bb1de426a3850f8",
+      "confidence": 0.6102,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 4,
+      "record_uuid": "3c3649f5-9ec9-4733-a38c-92984a136a69",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 37,
+      "natural_key": "review:1:aspect:0",
+      "source_locator": {
+        "review_id": 1,
+        "dataset_id": 2,
+        "content_hash": "06fbf6a309123ca1142de7077eb986e81ded59916ff80527a4e9d70549cbc910",
+        "evidence_end": 57,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "b833759a87b16d06c7df5577454f8087f2f198f56e81fe13a4749eccabae1e42",
+      "payload_sha256": "3e7acd8dc43d5222e7646b8101a6dfcd34ed7fdb32ec9df1dd310f431e851c65",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 5,
+      "record_uuid": "71cbd515-0f2e-41c6-a4bb-6e9f4f9058d5",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 38,
+      "natural_key": "review:1:aspect:1",
+      "source_locator": {
+        "review_id": 1,
+        "dataset_id": 2,
+        "content_hash": "06fbf6a309123ca1142de7077eb986e81ded59916ff80527a4e9d70549cbc910",
+        "evidence_end": 57,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "b833759a87b16d06c7df5577454f8087f2f198f56e81fe13a4749eccabae1e42",
+      "payload_sha256": "5e14bbba31dd2c000c8bd60780e3950b8c3e4f1f774146e2fde2a839f6d571f4",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 12,
+      "record_uuid": "b65890d3-68a8-4128-8c81-a7a800400bea",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 45,
+      "natural_key": "review:14:aspect:0",
+      "source_locator": {
+        "review_id": 14,
+        "dataset_id": 2,
+        "content_hash": "183cff48c6b1678e83316b48952636fee555c9c4ac86769c376fc5dd22362bb9",
+        "evidence_end": 71,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "06b69e379c4ed66ca67ea24a8c230b2a2fdca55383372f1a6c471dccb3303512",
+      "payload_sha256": "774e6cc6d977eceaf41d4de099d9bafa9eece8afb1a82395aa29196cc4bb8784",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 13,
+      "record_uuid": "783d67e5-603e-4ca5-9921-4f168ba4fa53",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 46,
+      "natural_key": "review:15:aspect:0",
+      "source_locator": {
+        "review_id": 15,
+        "dataset_id": 2,
+        "content_hash": "4594583742192573033d29cc63ac789441ca8ace16e7872359c7c1b8231cc0a6",
+        "evidence_end": 78,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "f176c2256ad57f7581074561a5fd2f59db70c117f9ae29879123a72265b4c2d6",
+      "payload_sha256": "9fa7eac9935a533c170949a6e1327028bacd78a380d4b4b7fe310707e9889a21",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 14,
+      "record_uuid": "25305e44-1b69-44a4-a644-3deda9cd8c58",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 47,
+      "natural_key": "review:15:aspect:1",
+      "source_locator": {
+        "review_id": 15,
+        "dataset_id": 2,
+        "content_hash": "4594583742192573033d29cc63ac789441ca8ace16e7872359c7c1b8231cc0a6",
+        "evidence_end": 78,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "f176c2256ad57f7581074561a5fd2f59db70c117f9ae29879123a72265b4c2d6",
+      "payload_sha256": "0ad2dc44607b03a003a08a6ea18ce092cd90fa2eedc2ba28462599626c3d7875",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 15,
+      "record_uuid": "69052891-62fb-46b4-89b1-cdbc9d7a2d8d",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 48,
+      "natural_key": "review:23:aspect:0",
+      "source_locator": {
+        "review_id": 23,
+        "dataset_id": 2,
+        "content_hash": "932b0c7fbe273255f50e2fa49be0151ed217e20f3f61f3cfe56613d673d18629",
+        "evidence_end": 79,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "302a919b8bdcf812f0adbc1bb402dae4182efd42a3a21cec6a1bb1ef9335ddb3",
+      "payload_sha256": "db9d466c0430b02d593b219c0345194b4a8325c1e773976c29a1c577bbd42d89",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 6,
+      "record_uuid": "e7a14db1-236f-4212-8524-b087476b0d19",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 39,
+      "natural_key": "review:3:aspect:0",
+      "source_locator": {
+        "review_id": 3,
+        "dataset_id": 2,
+        "content_hash": "ceabbfa33e70898fe0b603f8ea8ca89e641efb0476f3adab51c20f7574518a0c",
+        "evidence_end": 66,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "d6d6978b28355f9232cfed98bd5f007c248c97b6dbd5a31aee5884ab128d7984",
+      "payload_sha256": "7fedacda148c71027663811f243667f3a52ae9ddf301c0c0037ec1e7deefa28e",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 7,
+      "record_uuid": "f1b6b4e0-67e6-4dde-82ca-5f5589d89f8e",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 40,
+      "natural_key": "review:4:aspect:0",
+      "source_locator": {
+        "review_id": 4,
+        "dataset_id": 2,
+        "content_hash": "d8a46089a8ad655fc86e18e42b3c3e679f45c376500306f5c5efe941f50dce35",
+        "evidence_end": 56,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "fb656eac9b67c8f67e2a64713a265467f67060435dcd8a2c7cd78aac73a9eb9a",
+      "payload_sha256": "363eb0739913effd20fa1595a01fa274d73179241f504b81a328cdc772b13592",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 8,
+      "record_uuid": "681eac07-a3c6-466e-83d5-757c5c6ff619",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 41,
+      "natural_key": "review:4:aspect:1",
+      "source_locator": {
+        "review_id": 4,
+        "dataset_id": 2,
+        "content_hash": "d8a46089a8ad655fc86e18e42b3c3e679f45c376500306f5c5efe941f50dce35",
+        "evidence_end": 56,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "fb656eac9b67c8f67e2a64713a265467f67060435dcd8a2c7cd78aac73a9eb9a",
+      "payload_sha256": "22913c660bbfe57085965b4b8b4109b111701415b0b3c4cedcadab9fd5f3600e",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 9,
+      "record_uuid": "c5c3b0a0-ca8b-4025-83ee-06d3fd6b8e33",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 42,
+      "natural_key": "review:5:aspect:0",
+      "source_locator": {
+        "review_id": 5,
+        "dataset_id": 2,
+        "content_hash": "1607516c4af95f1b41641061752c53943b4b9decd2d213836e7b653885c7e9a7",
+        "evidence_end": 69,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "51b24cf98d36def0ca9a3c000e353486450a0434515a6c012f30873985269824",
+      "payload_sha256": "1c44084cf998070d311b5d57cd55b20503d4d734f9d908e1ea0eb32dbc688010",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 10,
+      "record_uuid": "f329422a-3f8a-42e0-bc17-2b2b62327caf",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 43,
+      "natural_key": "review:5:aspect:1",
+      "source_locator": {
+        "review_id": 5,
+        "dataset_id": 2,
+        "content_hash": "1607516c4af95f1b41641061752c53943b4b9decd2d213836e7b653885c7e9a7",
+        "evidence_end": 69,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "51b24cf98d36def0ca9a3c000e353486450a0434515a6c012f30873985269824",
+      "payload_sha256": "f1e9c1c26f7f44ff762270dc24c0b0361e24ec37a2d83b9a9aa746ba3e8f9715",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 11,
+      "record_uuid": "1822ace2-6497-4f65-a13f-b8b23d9e6621",
+      "capability_code": "review_mining",
+      "record_kind": "review_aspect",
+      "source_class": "derived_result",
+      "target_table": "review_aspects",
+      "target_record_id": 44,
+      "natural_key": "review:9:aspect:0",
+      "source_locator": {
+        "review_id": 9,
+        "dataset_id": 2,
+        "content_hash": "5a0bbd5ffd6fe6fe1ab0aac12eb7a72090f9db42664e83afb687f12d191d8a5b",
+        "evidence_end": 79,
+        "evidence_start": 0
+      },
+      "derivation_rule": "keyword taxonomy and rating-aware sentiment rule",
+      "rule_version": "evidence-taxonomy-v1",
+      "input_sha256": "04020cf89552e21386ba6d68f838f6e6c26752187ef3a463be8efb549054eb83",
+      "payload_sha256": "760f18b3325e4fb3b0aa0b56b46cd91e5377382ce2d846c81b49504f54a3540c",
+      "confidence": 0.72,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 3,
+      "record_uuid": "e25e8bcd-4918-4560-a7b1-e4d7cea47ff5",
+      "capability_code": "smart_selection",
+      "record_kind": "analysis_task",
+      "source_class": "derived_result",
+      "target_table": "analysis_tasks",
+      "target_record_id": 48,
+      "natural_key": "analysis-task",
+      "source_locator": {
+        "dataset_id": 2,
+        "product_id": 3
+      },
+      "derivation_rule": "complete deterministic decision baseline from authorized rows",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "2d3756f41ac2d870e497ecb489780f0bcb62c78e9ea73e92d2399a1e51b7fc70",
+      "payload_sha256": "a4af5b4eeeb66e87339b3f361b3b176eff9755a9c2cbf69acee4f99a982f05c8",
+      "confidence": 0.65,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 24,
+      "record_uuid": "81cda3f2-3993-453d-bbe9-dc5bc393a0c9",
+      "capability_code": "smart_selection",
+      "record_kind": "market_opportunity",
+      "source_class": "derived_result",
+      "target_table": "market_opportunities",
+      "target_record_id": 58,
+      "natural_key": "opportunity:BASE-01",
+      "source_locator": {
+        "dataset_id": 2,
+        "cluster_ids": [
+          31
+        ]
+      },
+      "derivation_rule": "renormalized weighted score over available demand, unmet-need and competition factors",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "d360ceefd9b02b42cbc32e3e7369aeb84a73f42a400020929dbf8b4794c22cca",
+      "payload_sha256": "ac4b02fa052e09e83b30f66c8602ebd0a776fc274ffed68c7d3ad659a72d47b0",
+      "confidence": 0.5173,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 25,
+      "record_uuid": "a02eb96f-c49c-4d5a-a24b-8e618a3b8391",
+      "capability_code": "smart_selection",
+      "record_kind": "market_opportunity",
+      "source_class": "derived_result",
+      "target_table": "market_opportunities",
+      "target_record_id": 59,
+      "natural_key": "opportunity:BASE-02",
+      "source_locator": {
+        "dataset_id": 2,
+        "cluster_ids": [
+          35
+        ]
+      },
+      "derivation_rule": "renormalized weighted score over available demand, unmet-need and competition factors",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "470d73deeb339aa054c412ec166c5e546882739431b37815681234617f7fb449",
+      "payload_sha256": "89de59f21bfa42bfbb5277f31577a7defd8f38504f4989ea626c065a212254b4",
+      "confidence": 0.4577,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 26,
+      "record_uuid": "c22f51a0-e8fb-4acf-b30b-a7ed9ca3d6f3",
+      "capability_code": "smart_selection",
+      "record_kind": "market_opportunity",
+      "source_class": "derived_result",
+      "target_table": "market_opportunities",
+      "target_record_id": 60,
+      "natural_key": "opportunity:BASE-03",
+      "source_locator": {
+        "dataset_id": 2,
+        "cluster_ids": [
+          30
+        ]
+      },
+      "derivation_rule": "renormalized weighted score over available demand, unmet-need and competition factors",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "8b66679147613f4d56db05ebf960cad5824fb190408426e786978fd16c851afb",
+      "payload_sha256": "58050ea2b2921945bdf32c804ca093b0268200135cfba27fbbb034bdb40dff63",
+      "confidence": 0.484,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 27,
+      "record_uuid": "0f7626c0-6686-4197-899d-ee84576259a4",
+      "capability_code": "smart_selection",
+      "record_kind": "market_opportunity",
+      "source_class": "derived_result",
+      "target_table": "market_opportunities",
+      "target_record_id": 61,
+      "natural_key": "opportunity:BASE-04",
+      "source_locator": {
+        "dataset_id": 2,
+        "cluster_ids": [
+          32
+        ]
+      },
+      "derivation_rule": "renormalized weighted score over available demand, unmet-need and competition factors",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "e2a6fcd54efdd3c8fdf93bc8eee685e3ab746cc74d8ea5cc631f5e6e9587726f",
+      "payload_sha256": "ffda0a5e5abbb66f0d5a1e7cbfe5cd68c544f79ed6438dbf28e80b192ec0e156",
+      "confidence": 0.484,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    },
+    {
+      "id": 28,
+      "record_uuid": "5e4da2f8-e160-4d77-81ef-72f9ee5096a1",
+      "capability_code": "smart_selection",
+      "record_kind": "market_opportunity",
+      "source_class": "derived_result",
+      "target_table": "market_opportunities",
+      "target_record_id": 62,
+      "natural_key": "opportunity:BASE-05",
+      "source_locator": {
+        "dataset_id": 2,
+        "cluster_ids": [
+          29
+        ]
+      },
+      "derivation_rule": "renormalized weighted score over available demand, unmet-need and competition factors",
+      "rule_version": "opportunity-score-baseline-v1",
+      "input_sha256": "d9932702592276bed97f377638eb45fa254f10cdf76c8cb74985fb4676dfe4f5",
+      "payload_sha256": "661b404aed0f0d34964bc7fe9ca21d02186b286b3ffd5ae2875d5a0ec7b7fdaa",
+      "confidence": 0.4577,
+      "observed_at": null,
+      "valid_from": null,
+      "valid_until": null,
+      "created_at": "2026-10-07T11:23:40.944000+00:00"
+    }
+  ]
+}

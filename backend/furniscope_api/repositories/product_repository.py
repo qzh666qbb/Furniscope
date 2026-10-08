@@ -10,14 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class ProductRepository:
     async def create(self, session: AsyncSession, *, tenant_id: int, user_id: int,
-                     sku: str, name: str, category_code: str, description: str | None) -> dict[str, Any] | None:
+                     sku: str, name: str, category_code: str, description: str | None,
+                     lifecycle_status: str = "active") -> dict[str, Any] | None:
         result = await session.execute(text("""
-            INSERT INTO products (tenant_id,sku,name,category_code,description,created_by)
-            VALUES (:tenant_id,:sku,:name,:category_code,:description,:user_id)
-            ON CONFLICT (tenant_id,sku) DO NOTHING
-            RETURNING id AS product_id,sku,name,category_code,analysis_status,current_profile_version_id
+            INSERT INTO products
+              (tenant_id,sku,name,category_code,description,lifecycle_status,created_by)
+            VALUES
+              (:tenant_id,:sku,:name,:category_code,:description,:lifecycle_status,:user_id)
+            ON CONFLICT DO NOTHING
+            RETURNING id AS product_id,sku,name,category_code,lifecycle_status,
+                      analysis_status,current_profile_version_id
         """), {"tenant_id": tenant_id, "user_id": user_id, "sku": sku, "name": name,
-               "category_code": category_code, "description": description})
+               "category_code": category_code, "description": description,
+               "lifecycle_status": lifecycle_status})
         row = result.mappings().one_or_none()
         return dict(row) if row else None
 
@@ -38,7 +43,8 @@ class ProductRepository:
         where = " AND ".join(filters)
         count = await session.scalar(text(f"SELECT count(*) FROM products WHERE {where}"), params)
         result = await session.execute(text(f"""
-            SELECT id AS product_id,sku,name,category_code,analysis_status,current_profile_version_id,
+            SELECT id AS product_id,sku,name,category_code,lifecycle_status,analysis_status,
+                   current_profile_version_id,
                    created_at,updated_at,
                    EXISTS(
                      SELECT 1 FROM product_attributes pa
@@ -56,12 +62,13 @@ class ProductRepository:
         """), params)
         return [dict(row) for row in result.mappings().all()], int(count or 0)
 
-    async def get_product(self, session: AsyncSession, *, tenant_id: int, product_id: int) -> dict[str, Any] | None:
+    async def get_product(self, session: AsyncSession, *, tenant_id: int, product_id: int,
+                          for_update: bool = False) -> dict[str, Any] | None:
         result = await session.execute(text("""
-            SELECT id AS product_id,sku,name,category_code,description,analysis_status,
+            SELECT id AS product_id,sku,name,category_code,lifecycle_status,description,analysis_status,
                    current_profile_version_id,updated_at
               FROM products WHERE id=:product_id AND tenant_id=:tenant_id AND deleted_at IS NULL
-        """), {"product_id": product_id, "tenant_id": tenant_id})
+        """ + (" FOR UPDATE" if for_update else "")), {"product_id": product_id, "tenant_id": tenant_id})
         row = result.mappings().one_or_none()
         return dict(row) if row else None
 
@@ -88,8 +95,10 @@ class ProductRepository:
 
     async def ensure_draft_profile(self, session: AsyncSession, *, tenant_id: int, product_id: int) -> int:
         existing = await session.scalar(text("""
-            SELECT id FROM product_profile_versions WHERE tenant_id=:tenant_id AND product_id=:product_id
-              AND status='draft' ORDER BY version_no DESC LIMIT 1
+            SELECT pv.id FROM product_profile_versions pv JOIN products p
+              ON p.current_profile_version_id=pv.id AND p.tenant_id=pv.tenant_id
+             WHERE pv.tenant_id=:tenant_id AND pv.product_id=:product_id AND p.id=:product_id
+               AND pv.status='draft'
         """), {"tenant_id": tenant_id, "product_id": product_id})
         if existing:
             return int(existing)
@@ -114,14 +123,22 @@ class ProductRepository:
         return profile_id
 
     async def update(self, session: AsyncSession, *, tenant_id: int, product_id: int,
-                     name: str | None, description: str | None, analysis_status: str | None,
+                     sku: str | None, name: str | None, category_code: str | None,
+                     lifecycle_status: str | None, description: str | None,
+                     description_is_set: bool, analysis_status: str | None,
                      profile_version_id: int | None, attributes: list[dict[str, Any]] | None) -> dict[str, Any]:
         await session.execute(text("""
-            UPDATE products SET name=COALESCE(:name,name),description=COALESCE(:description,description),
+            UPDATE products SET sku=COALESCE(:sku,sku),name=COALESCE(:name,name),
+                   category_code=COALESCE(:category_code,category_code),
+                   lifecycle_status=COALESCE(:lifecycle_status,lifecycle_status),
+                   description=CASE WHEN :description_is_set THEN :description ELSE description END,
                    analysis_status=COALESCE(:analysis_status,analysis_status),
                    current_profile_version_id=COALESCE(:profile_version_id,current_profile_version_id)
              WHERE id=:product_id AND tenant_id=:tenant_id
-        """), {"name": name, "description": description, "analysis_status": analysis_status,
+        """), {"sku": sku, "name": name, "category_code": category_code,
+                 "lifecycle_status": lifecycle_status, "description": description,
+                 "description_is_set": description_is_set,
+                 "analysis_status": analysis_status,
                  "profile_version_id": profile_version_id, "product_id": product_id, "tenant_id": tenant_id})
         if attributes is not None and profile_version_id is not None:
             for item in attributes:
@@ -136,20 +153,154 @@ class ProductRepository:
                       confirmation_status=excluded.confirmation_status
                 """), item | {"tenant_id": tenant_id, "profile_version_id": profile_version_id})
         result = await session.execute(text("""
-            SELECT id AS product_id,sku,name,category_code,description,analysis_status,
+            SELECT id AS product_id,sku,name,category_code,lifecycle_status,description,analysis_status,
                    current_profile_version_id AS profile_version_id,updated_at
               FROM products WHERE id=:product_id AND tenant_id=:tenant_id
         """), {"product_id": product_id, "tenant_id": tenant_id})
         return dict(result.mappings().one())
 
+    async def update_sku_references(
+        self, session: AsyncSession, *, tenant_id: int, old_sku: str, new_sku: str
+    ) -> None:
+        await session.execute(text("""
+            UPDATE tenant_forecast_sku_aliases SET product_sku=:new_sku
+             WHERE tenant_id=:tenant_id AND upper(btrim(product_sku))=upper(btrim(:old_sku))
+        """), {"tenant_id": tenant_id, "old_sku": old_sku, "new_sku": new_sku})
+        await session.execute(text("""
+            UPDATE tenant_sku_catalog SET sku=:new_sku
+             WHERE tenant_id=:tenant_id AND upper(btrim(sku))=upper(btrim(:old_sku))
+        """), {"tenant_id": tenant_id, "old_sku": old_sku, "new_sku": new_sku})
+        await session.execute(text("""
+            SELECT rename_tenant_sku_facts(:tenant_id,:old_sku,:new_sku)
+        """), {"tenant_id": tenant_id, "old_sku": old_sku, "new_sku": new_sku})
+
+    async def archive(
+        self, session: AsyncSession, *, tenant_id: int, product_id: int
+    ) -> dict[str, Any] | None:
+        row = (await session.execute(text("""
+            UPDATE products
+               SET lifecycle_status='discontinued',analysis_status='archived',
+                   deleted_at=CURRENT_TIMESTAMP
+             WHERE id=:product_id AND tenant_id=:tenant_id AND deleted_at IS NULL
+            RETURNING id AS product_id,sku,lifecycle_status,analysis_status,
+                      deleted_at AS archived_at
+        """), {"tenant_id": tenant_id, "product_id": product_id})).mappings().one_or_none()
+        if row:
+            await session.execute(text("""
+                DELETE FROM tenant_forecast_sku_aliases
+                 WHERE tenant_id=:tenant_id
+                   AND upper(btrim(product_sku))=upper(btrim(:sku))
+            """), {"tenant_id": tenant_id, "sku": row["sku"]})
+        return dict(row) if row else None
+
+    async def relations(
+        self, session: AsyncSession, *, tenant_id: int, product_id: int
+    ) -> list[dict[str, Any]]:
+        rows = (await session.execute(text("""
+            SELECT g.id AS group_id,g.group_type,g.code AS group_code,
+                   g.name AS group_name,m.member_role,m.quantity
+              FROM product_group_members m
+              JOIN product_groups g
+                ON g.id=m.group_id AND g.tenant_id=m.tenant_id
+             WHERE m.tenant_id=:tenant_id AND m.product_id=:product_id
+             ORDER BY g.group_type,g.code,m.member_role
+        """), {"tenant_id": tenant_id, "product_id": product_id})).mappings().all()
+        return [dict(row) for row in rows]
+
+    async def replace_relations(
+        self, session: AsyncSession, *, tenant_id: int, user_id: int,
+        product_id: int, items: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        await session.execute(text("""
+            DELETE FROM product_group_members
+             WHERE tenant_id=:tenant_id AND product_id=:product_id
+        """), {"tenant_id": tenant_id, "product_id": product_id})
+        for item in items:
+            group_id = await session.scalar(text("""
+                INSERT INTO product_groups
+                  (tenant_id,group_type,code,name,created_by)
+                VALUES
+                  (:tenant_id,:group_type,:group_code,:group_name,:user_id)
+                ON CONFLICT(tenant_id,group_type,code) DO UPDATE
+                  SET name=EXCLUDED.name
+                RETURNING id
+            """), {"tenant_id": tenant_id, "user_id": user_id, **item})
+            await session.execute(text("""
+                INSERT INTO product_group_members
+                  (tenant_id,group_id,product_id,member_role,quantity,created_by)
+                VALUES
+                  (:tenant_id,:group_id,:product_id,:member_role,:quantity,:user_id)
+            """), {"tenant_id": tenant_id, "group_id": group_id,
+                     "product_id": product_id, "user_id": user_id, **item})
+        await session.execute(text("""
+            DELETE FROM product_groups g
+             WHERE g.tenant_id=:tenant_id
+               AND NOT EXISTS(
+                 SELECT 1 FROM product_group_members m
+                  WHERE m.tenant_id=g.tenant_id AND m.group_id=g.id
+               )
+        """), {"tenant_id": tenant_id})
+        return await self.relations(session, tenant_id=tenant_id, product_id=product_id)
+
+    async def inventory_summary(
+        self, session: AsyncSession, *, tenant_id: int, product_id: int, sku: str
+    ) -> dict[str, Any]:
+        rows = (await session.execute(text("""
+            WITH ranked AS (
+              SELECT f.site,f.inventory_units,f.fact_date,
+                     v.version_uuid::text AS source_version_uuid,
+                     row_number() OVER(
+                       PARTITION BY f.site
+                       ORDER BY f.fact_date DESC,v.confirmed_at DESC NULLS LAST,v.id DESC
+                     ) AS row_rank
+                FROM inventory_facts_daily f
+                JOIN forecast_data_versions v
+                  ON v.id=f.data_version_id AND v.tenant_id=f.tenant_id
+                 AND v.status='confirmed'
+               WHERE f.tenant_id=:tenant_id
+                 AND upper(btrim(f.sku))=upper(btrim(:sku))
+            )
+            SELECT site,inventory_units,fact_date AS as_of_date,source_version_uuid
+              FROM ranked WHERE row_rank=1 ORDER BY site
+        """), {"tenant_id": tenant_id, "sku": sku})).mappings().all()
+        latest = (await session.execute(text("""
+            SELECT status,filename,version_uuid::text AS version_uuid,
+                   COALESCE(confirmed_at,created_at) AS updated_at
+              FROM forecast_data_versions
+             WHERE tenant_id=:tenant_id AND rules->>'kind'='inventory'
+             ORDER BY created_at DESC,id DESC LIMIT 1
+        """), {"tenant_id": tenant_id})).mappings().one_or_none()
+        sites = [dict(row) for row in rows]
+        return {
+            "product_id": product_id,
+            "sku": sku,
+            "is_realtime": False,
+            "source": "inventory_facts_daily",
+            "as_of_date": max((row["as_of_date"] for row in rows), default=None),
+            "total_inventory_units": sum(
+                (row["inventory_units"] for row in rows), start=0
+            ),
+            "sites": sites,
+            "import_status": dict(latest) if latest else {"status": "none"},
+        }
+
     async def confirm_profile(self, session: AsyncSession, *, tenant_id: int, user_id: int,
                               product_id: int, profile_version_id: int,
                               codes: list[str]) -> dict[str, Any] | None:
+        status = await session.scalar(text("""
+            SELECT status FROM product_profile_versions
+             WHERE id=:profile_version_id AND tenant_id=:tenant_id AND product_id=:product_id
+             FOR UPDATE
+        """), {"profile_version_id": profile_version_id, "tenant_id": tenant_id, "product_id": product_id})
+        if status not in {"draft", "parsed"}:
+            return None
         await session.execute(text("""
-            UPDATE product_attributes SET confirmation_status='confirmed'
+            UPDATE product_attributes SET confirmation_status='confirmed',
+              source_locator=COALESCE(source_locator,'{}'::jsonb) ||
+                jsonb_build_object('confirmed_by',CAST(:user_id AS bigint),'confirmed_at',CURRENT_TIMESTAMP)
              WHERE tenant_id=:tenant_id AND profile_version_id=:profile_version_id
                AND attribute_code=ANY(:codes)
-        """), {"tenant_id": tenant_id, "profile_version_id": profile_version_id, "codes": codes})
+        """), {"tenant_id": tenant_id, "profile_version_id": profile_version_id, "codes": codes, "user_id": user_id})
         stats = (await session.execute(text("""
             SELECT count(*) total,count(*) FILTER(WHERE confirmation_status='confirmed') confirmed,
                    count(*) FILTER(WHERE confirmation_status='conflicted') conflicted

@@ -1694,7 +1694,7 @@ class ForecastService:
         results = []
 
         for t in range(test_weeks, 0, -1):
-            # 测试周: 从末尾往回数第 t 周
+            # 验证周: 从末尾往回数第 t 周
             week_end_idx = len(daily_df) - (t - 1) * 7
             week_start_idx = week_end_idx - 7
             if week_start_idx < 28:

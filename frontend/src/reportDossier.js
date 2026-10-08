@@ -40,10 +40,9 @@ export const productImage = (sku) => (sku ? `/assets/hf-products/${encodeURIComp
 
 export function dimScore(row, key) {
   const raw = row?.[key];
-  if (raw != null && raw !== "") return Number(raw);
-  if (key === "demand_growth_score") return Number(row?.demand_heat_score || 0) * 0.7;
-  if (key === "profit_space_score") return Number(row?.competition_space_score || 0) * 0.65 + 15;
-  return 0;
+  if (raw == null || raw === "") return null;
+  const score = Number(raw);
+  return Number.isFinite(score) ? score : null;
 }
 
 export function clusterTitle(cluster) {
@@ -65,12 +64,19 @@ export async function loadReportDossier(id) {
     api(`/api/v1/reports/${id}/evidence`),
   ]);
   const task = report.task_uuid;
+  const required = async (path, label) => {
+    try {
+      return await api(path);
+    } catch (error) {
+      throw new Error(`${label}加载失败：${error.message}`);
+    }
+  };
   const [opp, rec, cmp, cls, asp, catalog] = await Promise.all([
-    api(`/api/v1/analysis-tasks/${task}/opportunities`).catch(() => ({ items: [] })),
-    api(`/api/v1/analysis-tasks/${task}/recommendations`).catch(() => ({ items: [] })),
-    api(`/api/v1/analysis-tasks/${task}/competitors`).catch(() => ({ items: [] })),
-    api(`/api/v1/analysis-tasks/${task}/insight-clusters`).catch(() => ({ items: [] })),
-    api(`/api/v1/analysis-tasks/${task}/review-aspects`).catch(() => ({ items: [] })),
+    required(`/api/v1/analysis-tasks/${task}/opportunities`, "机会项"),
+    required(`/api/v1/analysis-tasks/${task}/recommendations`, "建议项"),
+    required(`/api/v1/analysis-tasks/${task}/competitors`, "竞品证据"),
+    required(`/api/v1/analysis-tasks/${task}/insight-clusters`, "评论聚类"),
+    required(`/api/v1/analysis-tasks/${task}/review-aspects`, "评论证据"),
     api(`/api/v1/products/${report.product_id}`).catch(() => null),
   ]);
   return {
@@ -127,37 +133,39 @@ export function deriveScenes(dossier) {
   }
   const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 4);
   if (ranked.length) return ranked.map(([code, count]) => ({ label: SCENE[code] || code, count }));
-  return [{ label: "客厅 / 居家休闲", count: null }];
-}
-
-function numberAttr(product, code) {
-  const attr = (product?.attributes || []).find((item) => item.attribute_code === code);
-  const raw = attr?.attribute_value;
-  const value = Number(typeof raw === "object" ? raw?.value ?? raw?.amount : raw);
-  return Number.isFinite(value) && value > 0 ? value : null;
+  return [{ label: "待识别使用场景", count: null }];
 }
 
 export function derivePrice(dossier) {
-  const { competitors, report, product } = dossier;
-  const prices = competitors.map((row) => Number(row.sale_price)).filter((value) => value > 0).sort((a, b) => a - b);
-  const currency = competitors[0]?.currency || report?.price_summary?.currency || "USD";
-  const factory = numberAttr(product, "factory_price");
-  const costMid = factory;
-  if (!prices.length) {
-    const suggest = costMid ? { low: Math.round(costMid * 2.2), high: Math.round(costMid * 2.8) } : null;
-    return { min: report?.price_summary?.min, max: report?.price_summary?.max, sample: 0, currency, costMid, suggest };
+  const summary = dossier.report?.price_summary;
+  const frozen = Boolean(
+    summary?.calculation_version
+    && summary?.input_snapshot
+    && summary?.evidence_source,
+  );
+  if (!frozen) {
+    return {
+      status: "unverified",
+      min: null,
+      max: null,
+      sample: 0,
+      currency: null,
+      suggest: null,
+      calculationVersion: null,
+    };
   }
-  const min = prices[0];
-  const max = prices[prices.length - 1];
-  const mid = prices[Math.floor(prices.length / 2)];
-  const floor = costMid ? costMid * 2.1 : mid * 0.9;
-  const ceil = costMid ? costMid * 2.9 : mid * 1.15;
+  const hasRecommendation = summary.recommended_low != null && summary.recommended_high != null;
   return {
-    min, max, mid, sample: prices.length, currency, costMid, factory,
-    suggest: {
-      low: Math.round(Math.max(floor, mid * 0.92)),
-      high: Math.round(Math.min(ceil, Math.max(mid * 1.08, floor * 1.05))),
-    },
+    status: summary.status || "frozen",
+    min: summary.market_low ?? null,
+    max: summary.market_high ?? null,
+    mid: summary.market_median ?? null,
+    sample: Number(summary.sample_size || 0),
+    currency: summary.currency || null,
+    suggest: hasRecommendation
+      ? { low: summary.recommended_low, high: summary.recommended_high }
+      : null,
+    calculationVersion: summary.calculation_version,
   };
 }
 
@@ -184,17 +192,15 @@ export function recSampleSize(row, clusters) {
   return sum || matched.length || ids.length || 0;
 }
 
-export function recCost(row, dossier) {
-  if (row.cost_impact_min != null) {
+export function recCost(row) {
+  if (row.cost_impact_min != null && row.cost_calculation_version && row.cost_input_snapshot) {
     return `${row.cost_currency || "USD"} ${row.cost_impact_min}–${row.cost_impact_max ?? row.cost_impact_min}`;
   }
-  const price = derivePrice(dossier);
-  const base = price.costMid || price.factory || (price.mid ? price.mid / 2.4 : null);
-  if (!base) return "待核算";
-  const factor = row.priority === "high" ? [0.08, 0.15] : row.priority === "low" ? [0.01, 0.03] : [0.03, 0.08];
-  return `${price.currency} ${Math.round(base * factor[0])}–${Math.round(base * factor[1])}`;
+  return "待核算";
 }
 
 export function topOpportunity(dossier) {
-  return dossier.opportunities.reduce((best, row) => (!best || Number(row.base_score) > Number(best.base_score) ? row : best), null);
+  const primaryId = dossier.report?.version_bundle?.report_contract?.primary_opportunity_id;
+  if (primaryId == null) return null;
+  return dossier.opportunities.find((row) => Number(row.opportunity_id) === Number(primaryId)) || null;
 }

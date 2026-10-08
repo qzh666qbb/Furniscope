@@ -1,0 +1,68 @@
+{
+  "protocol": "ranking-audit-v1",
+  "label": "decision",
+  "k": 5,
+  "as_of": "2025-05-01T00:00:00Z",
+  "validation_start": "2025-02-01T00:00:00+00:00",
+  "partitions": {
+    "train": {
+      "groups": 1,
+      "candidates": 2,
+      "eligible_candidates": 2,
+      "evaluated_groups": 1,
+      "evaluated_group_coverage": 1.0,
+      "exclusions": {},
+      "tasks": [
+        {
+          "task_id": 1,
+          "task_uuid": "task-1",
+          "group_time": "2025-01-01T00:00:00Z",
+          "candidate_count": 2,
+          "market_ndcg": 0.6309297535714575,
+          "adjusted_ndcg": 1.0
+        }
+      ],
+      "market_mean_ndcg": 0.6309297535714575,
+      "adjusted_mean_ndcg": 1.0,
+      "mean_paired_delta": 0.36907024642854247
+    },
+    "validation": {
+      "groups": 1,
+      "candidates": 2,
+      "eligible_candidates": 2,
+      "evaluated_groups": 1,
+      "evaluated_group_coverage": 1.0,
+      "exclusions": {},
+      "tasks": [
+        {
+          "task_id": 2,
+          "task_uuid": "task-2",
+          "group_time": "2025-03-01T00:00:00Z",
+          "candidate_count": 2,
+          "market_ndcg": 0.6309297535714575,
+          "adjusted_ndcg": 1.0
+        }
+      ],
+      "market_mean_ndcg": 0.6309297535714575,
+      "adjusted_mean_ndcg": 1.0,
+      "mean_paired_delta": 0.36907024642854247
+    }
+  },
+  "readiness": "NO_GO_INSUFFICIENT_GROUPS",
+  "minimum_groups": {
+    "train": 30,
+    "validation": 20
+  },
+  "limits": [
+    "任务按创建时间整组划分；训练特征和标签须在验证开始前已存在。",
+    "只评估完整标注且同时有正负标签的任务，缺失标签不视为失败；覆盖筛选会产生选择偏差。",
+    "采纳标签是偏好，经营结果是企业报告的目标达成，均不证明因果收益。",
+    "当前导出只包含截点时最新修订；晚到修订会保守排除旧训练任务，不推测旧标签。",
+    "最小任务数是可配置工程门槛，达标仅支持开展模型实验，不构成统计显著性或上线批准。",
+    "未训练模型；NDCG比较不替代硬约束门控、真实试点及独立留出验证。"
+  ],
+  "provenance": {
+    "input_sha256": "9bac77216df79b33b6b3b6e0b0cf48eab87508b2cfa7725c07b117b389dcf197",
+    "code_sha256": "15995ba05f16523cd27656f5404e8b177ca50ceb0a4c52bb194822636f7d26ab"
+  }
+}

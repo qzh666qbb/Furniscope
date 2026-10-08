@@ -1,10 +1,42 @@
 # FurniScope 测试用例 V2.0
 
+## 企业闭环增量验收（2026-10-05复核）
+
+上位依据：[15总体设计与验收清单](./15_FurniScope_企业决策与数据闭环总体设计V1.md)。使用独立PostgreSQL、Python3.12锁定依赖及明确标注的合成工程样本，不能以合成指标证明商业精度。
+
+| 测试 | 关键断言 | 自动化位置 |
+|---|---|---|
+| 字段与质量 | CSV/XLSX/JSON、重复表头、非有限数量、歧义日期、负净销量、原始行追溯、补零确认 | `tests/test_enterprise_training.py` |
+| 首次/追加/重建 | 同名SKU两企业预测不同；不读取共享历史；历史改写确认；合并缺口阻止训练 | 同上 |
+| 独立评测与发布 | 时间留出不进入拟合；未达标/文件篡改/磁盘失败/CAS变化保留现用模型 | 同上 |
+| 数据库租户边界 | 漏tenant过滤仍受RLS保护；跨租户读写/关联/私有部署被拒；事务提交及连接重用重新绑定 | `tests/test_tenant_boundaries.py` |
+| 企业策略和反馈 | 任务冻结策略与事实；精确能力冲突导致暂缓；未知不加能力分；版本冲突和跨租户反馈拒绝 | `tests/test_enterprise_policy.py` |
+| 完整HTTP链路 | 真实登录→上传→预检→确认→训练→预测；幂等、标准审计、跨租户和反馈历史 | `tests/test_enterprise_http.py` |
+| 页面与接口 | 规则改变失效旧预检；训练发布刷新模型/SKU；未达标保留旧部署；策略/事实/反馈刷新持久化 | `frontend/tests/e2e/enterprise-live.spec.js` |
+| 训练恢复 | 实际子进程取消、数据库/Redis续租、过期令牌拦截、尝试耗尽、孤儿文件锁与发布制品保留 | `tests/test_training_recovery.py`、`test_job_queue.py`；`scripts/drill_training_sigkill.py`真实进程演练 |
+| 目录和回滚 | 一一映射、歧义阻断、入队冻结、SHA篡改拒绝回滚、原子恢复目录 | `tests/test_forecast_catalog.py` |
+| 产品事实 | 原文候选不自动确认、多文件冲突、人工优先、ETag、历史画像保留 | `tests/test_product_facts.py` |
+| 订单与对账 | 完全重复去重、取消/实际退货扣减、跨版本冲突、仓库、币种、独立销量/库存来源、模板修订 | `tests/test_import_contract_v2.py` |
+| 分层与滚动 | 每SKU独立时间范围、三窗口无泄漏、小SKU失败、新品/全零未验证、空区间 | `tests/test_forecast_strata.py` |
+| 实施与排序数据 | 同租户完整销量血缘、原始SHA、不可变事件、采纳更新、回溯排除、固定截点完整分页 | `tests/test_opportunity_outcomes.py` |
+| 离线验收 | 手算NDCG、完整任务、缺标签不记0、晚到特征/标签排除、重复/跨租户/非法时间拒绝、未知日期No-Go | `tests/test_offline_acceptance.py` |
+| 迁移 | 新建空库、旧基线存量升级、重复迁移、启动RLS；已有数据库绝不重置 | `scripts/verify_enterprise_migrations.py` |
+
+执行：
+
+```bash
+PYTHONPATH=.:backend FURNISCOPE_TEST_DATABASE_URL=postgresql://<account>@localhost/<isolated_db> python -m pytest tests -q --tb=short
+```
+
+页面实测必须显式设置`FURNISCOPE_ENTERPRISE_FIXTURE`（合成账户文件）和可选`FURNISCOPE_ENTERPRISE_URL`；不设置时自动跳过，禁止指向真实企业服务器。`scripts/serve_enterprise_e2e.py`启动合成夹具API，仅接受本地`furniscope_enterprise_test_*`数据库；种子函数为`test_enterprise_http.seed_enterprise`。用Vite代理完成真实浏览器测试；构建运行`npm run build`，托管兼容检查运行`npm run test:sites`。完整命令、日志、截图和SHA见[本轮验收证据](../../artifacts/enterprise-20261005/README.md)，最终计数和边界由15总体设计集中记录。10月4日证据作为历史里程碑保留。
+
+包含冻结机会的认证测试夹具以关闭租户、禁用用户和撤销会话退出，不绕过触发器删除历史；管理员列表测试按夹具唯一标识搜索，不假定第一页包含所有租户。SIGKILL演练暂停实际训练子进程后杀死worker，等待真实租约过期并启动新worker；验证成功恢复、令牌更换、旧子进程不发布、孤儿清理及队列无待确认消息。
+
 ## 1. 文档目标
 
-本文用于验证 FurniScope“跨境家具超级 AI 员工”V3 产品闭环。测试对象包括 React 19 + Vite 6+1页面、FastAPI V3、LangGraph Agent V2、Model Router封装和PostgreSQL V3。
+本文用于验证 FurniScope“跨境家具超级 AI 员工”V3 产品闭环。测试对象包括 React 19 + Vite 七个企业一级入口及子页、独立Admin、FastAPI V3、LangGraph Agent V2、Model Router封装和PostgreSQL V3。
 
-系统角色仅为 `user/admin`：user独立完成全部业务操作；admin管理user、模型、Prompt、运行配置和诊断，但不得代替user回答业务确认。内部Agent不作为角色或权限主体。
+登录身份仅为`user/admin`：user进入企业工作台，admin管理企业、模型、Prompt、运行配置和诊断，但不得代替user回答业务确认。v3.27租户内角色只映射业务权限，不进入`users.role_code`或JWT身份枚举；内部Agent不作为角色或权限主体。
 
 ## 2. 测试范围与基线
 
@@ -14,7 +46,7 @@
 | 数据 | 产品数据字典V3、PostgreSQL数据库设计V3、V3 DDL |
 | 工作流 | Agent工作流设计V2，I00—I19、五阶段、统一确认、Checkpoint |
 | API | RESTful API接口设计V3 |
-| 页面 | 页面交互原型说明V3，S01—S06/A01 |
+| 页面 | 页面交互原型说明V3，E01—E07/A01及关联子页 |
 
 ### 2.1 测试优先级
 
@@ -24,14 +56,14 @@
 
 ### 2.2 明确不在P0范围
 
-以下能力不得出现在P0测试通过率分母、Demo主链路或P0页面断言中：Listing生成、报告文件导出、validation_task、多人报告评审、发布审批、product_event、动态RBAC、岗位分配和跨部门审批。旧写接口若部署兼容层，只验证410/禁止双写，不验证旧业务功能。
+以下能力不得出现在P0测试通过率分母、Demo主链路或P0页面断言中：Listing生成、Excel业务执行包、validation_task、多人报告评审、发布审批、product_event、旧岗位Token/审批RBAC、岗位分配和跨部门审批。决策报告只读PDF属于当前交付，但必须与在线冻结值一致。旧写接口若部署兼容层，只验证410/禁止双写，不验证旧业务功能。
 
 ## 3. 环境与通用前置条件
 
-1. PostgreSQL 16执行 `furniscope_postgresql_v3.sql`，核心表数为35；LangGraph官方Checkpointer使用独立Schema。
+1. PostgreSQL 16执行 `furniscope_postgresql_v3.sql`及其引用增量；35仅为历史核心表数，现行按迁移、约束及RLS校验；LangGraph官方Checkpointer使用独立Schema。
 2. Redis仅用于锁、缓存、短状态和限流；对象存储使用私有桶与短效访问。
 3. Model Router测试桩可按请求返回成功、超时、非法Schema、限流和固定Embedding/Rerank结果。
-4. 所有写请求生成唯一 `Idempotency-Key`；更新请求携带有效 `If-Match`。
+4. 按接口契约设置幂等和版本字段；企业策略/反馈/标准确认显式使用`expected_version/expected_revision/preview_sha256`，训练创建使用`Idempotency-Key`；其余沿用通用约定。
 5. 数据库断言以测试tenant为范围；除专门隔离测试外，不得无tenant条件查询业务表。
 6. 日志和失败响应均记录request_id，不记录密码、API Key、完整Prompt、未脱敏企业敏感正文。
 
@@ -90,7 +122,7 @@
 | TC-STG-004 | P0 | FR-05 | API-CMP-01 `GET /api/v1/analysis-tasks/{task_uuid}/competitors` | I06完成 | TASK-A | 按competitor_type筛选 | 返回direct/benchmark/substitute/excluded、六维分、overall与rerank分、理由和set_version | competitor_matches同task+listing+version唯一；rerank不覆盖业务overall_score |
 | TC-STG-005 | P0 | FR-06 | API-REV-01/02 | I10/I11完成 | DS-US评论 | 查询观点和聚类 | 观点含原文Span与置信度；聚类含明确分母、跨商品率和代表证据 | review_aspects关联reviews/model_run；cluster_members引用存在；聚类task一致 |
 | TC-STG-006 | P0 | FR-07 | API-INS-04、API-RPT-01 | 报告完成 | 有/无时序两组数据 | 查看S05价格Tab | 有数据返回price_summary及币种/时间口径；无时序显示截面限制，不伪造趋势 | market_metrics/price_bands算法版本、样本量合法；报告limitations记录跳过原因 |
-| TC-STG-007 | P0 | FR-09 | API-OPP-01 `GET /api/v1/analysis-tasks/{task_uuid}/opportunities` | I14完成 | 完整六维与缺增长/利润两组 | 查询机会 | 完整组按固定权重；缺项组记录归一权重；base_score、confidence、建议等级分别展示 | 各分0—100或按规则为空；weight_config记录实际权重；scoring_version与任务一致 |
+| TC-STG-007 | P0 | FR-09 | API-OPP-01 `GET /api/v1/analysis-tasks/{task_uuid}/opportunities` | I14完成 | 五市场因子完整/缺增长利润、企业条件满足/不满足/未知 | 查询机会 | 按冻结企业权重及适配强度计算；缺项归一；硬冲突不得强推荐 | market_score、adjusted_score、confidence独立；policy_snapshot与任务一致；旧任务不受策略更新影响 |
 | TC-STG-008 | P0 | FR-02、FR-08、FR-09 | API-OPP-01、API-REC-01 | I15完成 | matched/gap/unknown能力 | 查看制造适配与建议 | manufacturing_fit区分匹配、缺口和未知；建议含问题—根因假设—动作—影响—风险—验证方法 | market_opportunities.manufacturing_fit为array；建议至少1个evidence_cluster_id；未知fit_score为空 |
 | TC-STG-009 | P0 | FR-11 | API-RPT-01 `GET /api/v1/reports/{report_uuid}` | I19成功 | TASK-A report_uuid | 打开S06 | 在线报告包含结论、机会分、置信度、快照、建议、风险、待验证、sections、model_trace与limitations；无发布/导出按钮 | analysis_reports report_uuid唯一；sections为有序array；version_bundle和partial_failures_snapshot冻结 |
 | TC-STG-010 | P0 | FR-10、FR-11 | API-INS-03、API-RPT-01 | I19前 | report_uuid=null | 尝试进S06 | 页面停留S04；REPORT_NOT_READY或禁用入口；不出现空报告 | 不存在孤立analysis_reports；analysis_tasks未标completed |
@@ -174,7 +206,7 @@
 | TC-UI-007 | P0 | FR-11 | API-RPT-01、API-REC-01、API-OPP-01、API-EVD-01 | 报告完成 | TASK-A | 查看S06并下钻 | 首屏同时展示结论、分数和置信度；建议、制造适配、风险、待验证、证据完整；无发布/导出/Listing | 报告快照不被页面操作修改；证据读取有审计 |
 | TC-UI-008 | P0 | FR-01、FR-11 | API-RPT-01 | report_uuid=null/跨租户/不存在 | 三种路由 | 直接访问S06 | 未就绪回S04；无权或不存在回S02；不泄露报告正文 | 无报告写入；拒绝审计正确 |
 | TC-UI-009 | P0 | FR-10 | API-INS-03 | partial_failures存在 | 两批评论失败 | 查看S04/S05/S06 | 三页均披露影响和限制；不把partial_succeeded渲染为完整成功 | 报告partial_failures_snapshot与任务失败记录一致 |
-| TC-UI-010 | P1 | FR-12 | API-ADM-01—08 | ADM | user、路由、Prompt、失败任务 | 使用A01各Tab | admin可管理配置和诊断；不能代答；写操作二次确认和审计 | user/config/control事件按API写入；无动态RBAC表或权限JSON |
+| TC-UI-010 | P1 | FR-12 | API-ADM-01—08 | ADM | user、路由、Prompt、失败任务 | 使用A01各Tab | admin可管理配置和诊断；不能代答；写操作二次确认和审计 | user/config/control事件按API写入；不出现旧岗位Token或Agent角色 |
 
 ## 12. Admin与Model Router P1契约测试
 
@@ -224,7 +256,7 @@
 5. 核心结论100%可下钻至少一条主证据；评论Span非法率为0；无证据数值结论为0。
 6. 部分失败必须在任务、综合洞察和报告中一致披露；不得把partial结果标为完整成功。
 7. API Key、明文密码、完整Prompt在数据库、日志和前端响应中的检测命中数均为0。
-8. PostgreSQL核心表数为35；关键FK、UNIQUE、CHECK、JSON结构、事务原子性测试全部通过。
+8. PostgreSQL基线及必需增量齐全；关键FK、UNIQUE、CHECK、JSON结构、RLS、连接重用和事务原子性测试全部通过。
 9. 普通API和状态API达到NFR目标；异步受理≤2秒；无P0级安全或数据一致性缺陷。
 10. S01—S06主路径可在3—5分钟答辩中完整演示；A01不作为user业务闭环依赖。
 
@@ -254,14 +286,199 @@ A0失败禁止合并；A1核心恢复用例失败禁止部署Demo；A2发现租�
 |---|---|---|
 | V1.0 | 2026-08-08 | 五岗位、多人工复核、Listing/导出扩展形态测试集 |
 | V2.0 | 2026-08-09 | 按超级AI员工V3基线重构为user/admin、单user闭环、统一确认、五阶段及PostgreSQL V3测试集 |
+| V2.1 | 2026-09-29 | 增加决赛五项市场智能、成本约束定价与官方政策源契约测试 |
+| V2.2 | 2026-10-04 | 增加标准数据、企业独立训练与发布、RLS、策略快照/反馈、真实HTTP及页面闭环验收；补可复现启动脚本和证据目录 |
+
+### 18.1 决赛增量 P0 用例
+
+| 用例 | 核心断言 |
+|---|---|
+| TC-MKT-001 五能力总览 | 只返回当前租户的数据集、任务、竞品、评论和政策事实；无数据时返回明确状态而非样例 |
+| TC-MKT-002 机会 V3 | 五个市场因子来自独立证据；缺失因子按可用权重重归一；企业显式能力冲突降低推荐级别 |
+| TC-MKT-003 评论观点 V2 | 模型输出可拆多观点；每个 `evidence_quote` 与 Unicode Span 必须逐字匹配原评论；模型失败走规则降级 |
+| TC-MKT-004 成本约束定价 | 建议售价不低于目标毛利价格底线；成本高于市场上四分位时返回 `cost_above_market` |
+| TC-MKT-005 弹性拒绝 | 少于 3 个有效价格/需求变化样本时不输出弹性数值 |
+| TC-MKT-006 官方政策源 | 默认源安装幂等；只解析 CPSC/Federal Register 返回；重复内容不重复告警 |
+| TC-MKT-007 评论语义聚类 | 同一 Taxonomy 内相近观点合并、远离观点拆簇；代表证据按抽取置信度和中心余弦相似度排序；Embedding 或聚类依赖失败时回退并留下失败模型记录 |
+| TC-UI-008 五能力工作台 | 1440×1000与390×844无整页横向溢出；五个分段入口、数据范围、缺口与操作均可见；宽表有移动摘要 |
 
 ## 19. 本次变更摘要
 
 - 删除五岗位权限组合、跨部门审批、固定竞品复核和专家复核用例。
-- 增加user/admin静态权限、单user端到端和6+1页面测试。
+- 增加user/admin静态权限、单user端到端和七个企业一级入口测试。
 - 完整覆盖user_confirmation生成、查询、回答、幂等、过期、Checkpoint冲突与Command恢复。
 - 增加自动重试、降级、部分失败、Worker重启、Outbox消费和最终事务一致性测试。
 - 增加租户隔离、文件安全、模型Schema、证据Span、API Key不落库和脱敏审计测试。
 - 增加PostgreSQL V3的35表、FK、UNIQUE、CHECK、JSONB结构、迁移与事务断言。
-- Listing、导出、验证任务和多人评审明确退出P0范围。
+- Listing、业务执行表格、验证任务和多人评审明确退出P0范围；冻结报告PDF纳入一致性测试。
 - 给出P0硬性验收门槛和A0/A1/A2自动化优先级。
+
+## 20. 对话、记忆与知识库生命周期验收
+
+| 用例 | 核心断言 | 自动化位置 |
+|---|---|---|
+| TC-CTX-001 原子Turn | 完成后恰有用户/助手消息对、上下文快照和响应UUID；答案只在提交后通过SSE释放 | `tests/test_context_lifecycle.py` |
+| TC-CTX-002 幂等重放 | 相同`Idempotency-Key`不重复生成或写消息；不同请求复用键返回冲突 | 同上 |
+| TC-CTX-003 记忆版本 | 新候选不覆盖confirmed；确认后旧值为superseded；画像依赖变化进入invalidated；资源操作使用`memory_uuid` | 同上 |
+| TC-CTX-004 安全遗忘 | 自然语言只返回带目标UUID的确认动作；DELETE确认后才归档 | `tests/test_customer_memory.py`、Playwright |
+| TC-CTX-005 Context快照 | 显式绑定画像、数据集、知识库、记忆和任务；预览返回Token、裁剪来源、服务端语义状态、冲突和解析日志 | `tests/test_context_lifecycle.py` |
+| TC-CTX-006 Citation | 来源类型、ID、版本、定位器、摘录和分数真实落库并可按UUID解析 | 同上 |
+| TC-CTX-007 知识索引 | XLSX解析、分页切片、Embedding、Rerank、ready状态和检索Citation完整 | 同上 |
+| TC-CTX-008 SSE协议 | 仅允许标准九类事件（含`tool_result`）；稳定事件ID、自动重连去重和幂等重放；无`reasoning/thinking/token`私有协议 | `frontend/tests/e2e/plane-scoped-run.spec.js`、`frontend/src/api.js` |
+| TC-CTX-009 前端确认 | 对话页只保留知识库选择器和管理入口；绑定写入Context；不存在三档记忆写入控件；Citation与已有记忆管理保持可用 | 同上 |
+| TC-CTX-010 响应式 | 1440×1000与390×844逐一级入口检查页面宽度；记忆抽屉避开顶栏/底栏，消息工具不遮挡正文 | 同上及验收截图 |
+| TC-CTX-011 迁移/RLS | v3.23—v3.31 fresh、upgrade、repeat、存量哨兵、启动隔离、RBAC、审计链、cell placement、16分区侧索引和受控问数表探针全部通过 | `scripts/verify_enterprise_migrations.py` |
+| TC-CTX-012 优先级/冲突 | 当前表达>确认事实>确认记忆>工作台历史>任务报告>知识文档>模型推断；冲突值和选择原因入快照 | `tests/test_context_lifecycle.py` |
+| TC-CTX-013 隐私边界 | restricted记忆不进Prompt；user私有知识库不被同租户其他用户绑定或检索；跨租户始终拒绝 | `tests/test_context_lifecycle.py`、`tests/test_tenant_boundaries.py` |
+| TC-CTX-014 固定效果集 | 指代、SKU纠错、市场切换、多市场比较、暂停/恢复、临时条件不误写、知识指令不越权 | `scripts/evaluate_memory_agent.py`、`tests/fixtures/memory_agent_eval.json` |
+| TC-CTX-015 权限与审计 | 企业成员默认角色、权限拒绝、最后一个owner保护、审计哈希链和业务身份不可篡改 | `tests/test_auth_postgres_api.py` |
+| TC-CTX-016 备份恢复 | 全库Manifest/SHA/审计链头复核；单租户父表导出、对象SHA、空库恢复、IDENTITY推进和分区不重复导出 | `scripts/backup_postgres.sh`、`scripts/restore_postgres.sh`、`scripts/tenant_backup.py` |
+| TC-CTX-017 Cell迁移 | 冻结写栅栏、在途写入排空、源目标行数/内容摘要一致、路由代际切换、失败回滚 | `scripts/migrate_tenant_cell.py`、`tests/test_tenant_boundaries.py` |
+| TC-CTX-018 查询优化 | 16个Hash分区、FORCE RLS、侧索引触发同步、租户包恢复重算搜索向量、无pgvector降级 | `migrations/v3_30_tenant_query_optimization.sql`、`tests/test_context_lifecycle.py` |
+| TC-CTX-019 知识库独立管理 | 创建/编辑/归档、tenant/user权限、上传/删除、索引刷新、版本预览、同类型版本上传、历史回溯和工作台绑定均可独立完成 | `frontend/tests/e2e/knowledge-base-center.spec.js`、`tests/test_context_lifecycle.py` |
+| TC-CTX-020 自动记忆关闭 | 配置与默认策略均为false；统一Turn和旧兼容聊天入口均不创建候选记忆；已有记忆读取与管理不受影响 | `tests/test_context_lifecycle.py`、`backend/furniscope_api/routes/workspaces.py` |
+
+### 20.1 智能问数、RAG与工具编排增量
+
+| 用例 | 核心断言 | 自动化位置 |
+|---|---|---|
+| TC-AQT-001 问数意图 | 历史销量/库存进入`data_query`；未来销量进入`forecast`；知识问题进入`rag` | `tests/test_data_query.py`、`scripts/evaluate_agent_tools.py` |
+| TC-AQT-002 QueryPlan白名单 | 只接受登记指标、粒度、维度和过滤器；销量/库存不能混查；`raw_sql`等未知字段拒绝 | `tests/test_data_query.py` |
+| TC-AQT-003 事实投影 | 已确认canonical版本SHA复核后幂等投影；重复执行不重复事实；投影SHA稳定 | 同上（真实PostgreSQL） |
+| TC-AQT-004 确定性结果 | 数值来自固定SQL表达式；相对时间基于数据最大日期；版本、过滤器、限制和结果SHA完整 | 同上 |
+| TC-AQT-005 审计与Citation | 查询写入`data_query_executions`，原子Turn保存`tool_results`和可解析Citation | 同上 |
+| TC-AQT-006 租户/RBAC | 无`dataset.read`拒绝；其他租户不能读取事实、投影或查询审计 | `tests/test_data_query.py`、`tests/test_tenant_boundaries.py` |
+| TC-AQT-007 RAG拒答 | 自动选库只选择可访问ready资源；无匹配或低于阈值时拒答；页码和文档版本可追溯 | `tests/test_context_lifecycle.py`、`scripts/evaluate_agent_tools.py` |
+| TC-AQT-008 服务端动作 | 前端先提交Turn；问数不创建任务；只有服务端`run_workflow`动作可启动工作流 | `frontend/tests/e2e/data-query-rag-orchestration.spec.js`、`plane-scoped-run.spec.js` |
+| TC-AQT-009 页面恢复 | 问数表格/图表刷新后由消息`metadata.tool_results`恢复；知识库管理位于独立路由并支持版本与索引操作 | 同上、`frontend/src/planeSession.js`、`knowledge-base-center.spec.js` |
+| TC-AQT-010 NL2SQL边界 | 当前接口不接受SQL；不安全SQL生成率为0；未来能力需只读AST、白名单、RLS、timeout、LIMIT和审计门禁 | `tests/test_data_query.py`、`scripts/evaluate_agent_tools.py` |
+
+2026-10-06历史实测结果：
+
+| 范围 | 结果 |
+|---|---|
+| Python全量，真实PostgreSQL与Redis | 198项收集，`196 passed, 2 skipped`；跳过仅为旧V4预测制品缺失 |
+| 生命周期与客户记忆专项 | 8项纳入全量并通过 |
+| 固定记忆Agent评测 | 10/10场景通过；产品/市场识别、指代、意图、记忆写入及注入防护均为1.0，记忆误写率0 |
+| 固定Agent工具评测 | 意图路由、QueryPlan精确匹配和RAG阈值决策均为1.0；不安全SQL生成率0 |
+| Playwright合同 | `17 passed, 8 skipped`；跳过为需显式独立后端的7条企业实测和1条旧全栈入口 |
+| 工作台关键场景 | 4项纳入全量并通过 |
+| 前端build / Sites | 通过 / `5 passed`；保留既有bundle大于500kB提示 |
+| 页面视觉 | 当日问数/知识库验收页面通过；2026-10-07全入口复盘发现首页、工作日记和市场宽表问题，不能外推为全系统通过 |
+| v3.15—v3.31迁移 | fresh、upgrade、repeat、存量哨兵、RBAC、审计链、cell placement、16分区侧索引、4张问数租户表FORCE RLS及10项指标通过 |
+
+执行命令：
+
+```bash
+PYTHONPATH=.:backend \
+FURNISCOPE_TEST_DATABASE_URL=postgresql://<account>@localhost/<isolated_db> \
+FURNISCOPE_CONTEXT_TEST_DATABASE_URL=postgresql://<account>@localhost/<isolated_db> \
+FURNISCOPE_TEST_REDIS_URL=redis://127.0.0.1:<isolated_port>/<isolated_db_no> \
+python -m pytest -q --tb=short
+
+PYTHONPATH=.:backend \
+python scripts/evaluate_memory_agent.py \
+  --fixture tests/fixtures/memory_agent_eval.json \
+  --output artifacts/context-lifecycle-20261006/memory-agent-eval.json
+
+PYTHONPATH=.:backend \
+python scripts/evaluate_agent_tools.py \
+  --fixture tests/fixtures/agent_tool_eval.json \
+  --output artifacts/agent-tools-20261006/evaluation-final.json
+
+cd frontend
+npm run build
+npm run test:sites
+npm run test:e2e:contract
+```
+
+现行迁移摘要及Python/Playwright JUnit保存在
+[多租户隔离验收目录](../../artifacts/tenant-isolation-20261006/)；固定记忆评测及
+桌面/390px截图保存在
+[生命周期验收目录](../../artifacts/context-lifecycle-20261006/)；受控问数、RAG和
+工具编排结构化结果保存在
+[Agent工具验收目录](../../artifacts/agent-tools-20261006/)。
+
+## 21. 产品主档与批量导入验收（2026-10-07）
+
+| 用例 | 核心断言 | 自动化位置 |
+|---|---|---|
+| TC-PRD-IMP-001 动态模板 | 五个工作表；正式区无示例；版本、文件SHA、Schema SHA一致；5组下拉字典 | `tests/test_product_imports.py` |
+| TC-PRD-IMP-002 严格标准化 | 必填、文本SKU、非负数、枚举、尺寸/重量/币种联动；未知值不猜测；非sofa警告 | 同上 |
+| TC-PRD-IMP-003 SKU碰撞 | 文件内大小写/空格碰撞全部阻断；库内重复在仅新增模式阻断 | 同上 |
+| TC-PRD-IMP-004 错误Excel | 原行号、原值、错误码、字段、详情、修复建议、警告和标准化预览完整 | 同上 |
+| TC-PRD-IMP-005 幂等与SHA | 相同文件+配置+键重放同任务；不同请求冲突；陈旧预览SHA拒绝 | 同上，真实PostgreSQL |
+| TC-PRD-IMP-006 事务写入 | 主档、画像草稿、SPU关系、SKU别名同时成功；阻断任务不能留下产品 | 同上，真实PostgreSQL |
+| TC-PRD-IMP-007 批量更新 | 只有`upsert`可更新；名称/品类生效；品类变化令画像回到draft | 同上，真实PostgreSQL |
+| TC-PRD-IMP-008 行修正/恢复 | 修正一行后重算跨行冲突和SHA；任务从blocked变ready；取消后recent可恢复状态 | 同上，真实PostgreSQL |
+| TC-PRD-IMP-009 租户与审计 | 其他租户按404拒绝；预检、提交、编辑关系和归档进入审计链 | 同上，真实PostgreSQL |
+| TC-PRD-010 编辑与归档 | ETag修改SKU/品类/说明；说明可显式清空；归档后列表/详情不可见 | 同上及`test_auth_postgres_api.py` |
+| TC-PRD-011 组合关系 | SPU、variant、bundle、BOM多关系保存；角色和正数数量受控 | `tests/test_product_imports.py` |
+| TC-PRD-012 库存摘要 | 两站点已确认库存聚合正确；返回来源版本、日期、导入状态和`is_realtime=false` | 同上，真实PostgreSQL |
+| TC-PRD-IMP-013 迁移 | v3.32在PostgreSQL 16首跑与重复执行通过；四表、RLS、复合外键和唯一比较键有效 | 隔离数据库迁移命令 |
+| TC-PRD-IMP-014 性能 | 1万行解析核心小于12秒；真实服务预检小于20秒；批量每1000行落库 | `tests/test_product_imports.py` |
+
+本轮实测：
+
+```text
+tests/test_product_imports.py
+6 passed in 9.86s
+10,000行解析核心 1.56s
+含10,000行真实预检的完整HTTP生命周期 2.85s
+
+tests/test_auth_postgres_api.py::
+  test_product_create_idempotent_replay_list_and_admin_inheritance
+1 passed
+```
+
+测试使用独立`furniscope_product_test_20261007`数据库和锁定依赖的Python 3.12临时环境。
+已知警告为Starlette TestClient对`httpx`兼容层的弃用提示及第三方SWIG类型提示，不影响
+业务断言；升级测试客户端依赖时应单独消除。
+
+## 22. 系统复盘整改回归（2026-10-07）
+
+上位关闭台账：[16_FurniScope_系统功能与业务流程复盘V1.md](./16_FurniScope_系统功能与业务流程复盘V1.md)。
+
+| 用例 | 严重度 | 必须证明的跨层契约 |
+|---|---:|---|
+| TC-REV-001 报告冻结值 | P0 | 服务端未提供价格/成本时前端显示“待核算”；刷新、构建版本或PDF不能改变报告金额 |
+| TC-REV-002 成本口径 | P0 | `factory_price`、`unit_cost`、`landed_cost`独立；只有显式成本口径进入毛利计算 |
+| TC-REV-003 多币种 | P0 | 同一价格分布只能有一个币种；多币种返回阻断状态，不生成价格带 |
+| TC-REV-004 快速追加覆盖 | P1 | 页面确认、请求参数、合并预览和后端覆盖行为一致 |
+| TC-REV-005 SKU改名 | P1 | 修改SKU后产品、别名、销量目录和库存摘要仍指向同一产品身份 |
+| TC-REV-006 报告归档 | P1 | UI承诺归档任务时，报告、任务、首页和工作日记在同一事务后都不可见 |
+| TC-REV-007 企业机会排序 | P1 | 报告主机会来自冻结推荐级别、企业门控和adjusted_score，不按base_score重新选择 |
+| TC-REV-008 管理员多账号 | P1 | 同租户多个账号逐一展示；关闭租户后全部停用；恢复时按关闭前状态恢复 |
+| TC-REV-009 首页互斥指标 | P1 | pending、failed和conflicted集合互斥，同一任务不重复计数 |
+| TC-REV-010 全入口响应式 | P1 | E01—E07、工作日记及A01在390×844下`documentElement.scrollWidth===innerWidth`，关键字段不被裁切 |
+| TC-REV-011 弹性代理披露 | P1 | 累计评论数不得标成销量需求弹性；没有同周期销量时不输出“价格弹性” |
+| TC-REV-012 合规范围 | P1 | 切换数据集时明确区分租户级政策监控和当前国家/品类匹配结果 |
+| TC-REV-013 报告分页 | P2 | 超过100份报告仍可分页访问，产品和国家筛选基于全量维度 |
+| TC-REV-014 通知渠道UI | P2 | API交付状态与可达页面一致；创建、启停、测试和投递记录可由企业用户完成 |
+
+本次运行页面扫描：
+
+| 范围 | 结果 |
+|---|---|
+| 1440×1000 | 企业8入口、工作日记、普通用户Admin 403及管理员页均无整页横向溢出 |
+| 390×844 | 同一组页面均满足`documentWidth===innerWidth`；首页单列、工作日记/市场摘要卡片、Admin 2×2 KPI和账号卡片可见 |
+| 运行错误 | 20个状态均未发现console error、page error或failed request |
+| 证据 | `artifacts/system-review-20261007-fixes/browser-scan.json`及同目录20张截图 |
+
+扫描使用全新隔离数据库和当前根SQL/API。宽度断言证明本轮覆盖页面不存在整页横向
+溢出，但不替代真实设备、辅助技术和长文本/大数据量专项测试。
+
+本次基线验证：
+
+| 命令范围 | 结果 |
+|---|---|
+| 全量Python，真实PostgreSQL + 独立Redis | 207项：`205 passed, 2 skipped`，0 failure/error |
+| Python跳过边界 | 缺少旧V4 `daily.pkl`和`forecast_assets/state`；不影响tenant-xgb-v2及本轮37项整改 |
+| Playwright合同 | `20 passed, 8 skipped`；7项需显式企业夹具，1项需旧全栈入口 |
+| 前端生产构建 / Sites | 4663模块构建通过 / `5 passed`；主JS 279.84 kB，gzip 84.71 kB，无500 kB警告 |
+| 数据库迁移 | v3.33/v3.34 fresh、upgrade、repeat、启动隔离及SKU事实身份检查通过 |
+| API健康 | live、ready、OpenAPI均HTTP 200 |
+
+日志、JUnit、迁移摘要、截图、结构化扫描和SHA256清单位于
+`artifacts/system-review-20261007-fixes/`。TC-REV-001—014与37项关闭台账均已转绿；
+工程准入通过不代表真实企业精度、经营收益或生产容量已经得到实证。

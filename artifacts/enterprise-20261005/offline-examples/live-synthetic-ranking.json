@@ -1,0 +1,184 @@
+{
+  "format_version": "opportunity-ranking-v2",
+  "as_of": "2026-10-05T11:06:42.754554Z",
+  "label_semantics": {
+    "decision": "user_preference",
+    "outcome": "reported_goal_attainment_not_causal_return"
+  },
+  "split_contract": "group_by_task_order_by_group_time; train_labels_available_before_validation_start",
+  "groups": [
+    {
+      "task_id": 72,
+      "task_uuid": "6f0daec5-691f-4b85-9349-066f2c83080c",
+      "group_time": "2026-10-05T11:02:46.157000Z",
+      "candidates": [
+        {
+          "opportunity_id": 93,
+          "features": {
+            "task": {
+              "task_uuid": "6f0daec5-691f-4b85-9349-066f2c83080c",
+              "created_at": "2026-10-05T19:02:46.157+08:00",
+              "dataset_id": 94,
+              "product_id": 282,
+              "product_profile_version_id": 138,
+              "enterprise_profile_snapshot": {
+                "profile": null,
+                "captured_at": "2026-10-05T19:02:46.156607+08:00",
+                "capabilities": [],
+                "product_facts": {},
+                "product_context": {
+                  "category_code": "sofa"
+                },
+                "profile_version": 0,
+                "opportunity_policy": {
+                  "name": "均衡判断",
+                  "version": 0,
+                  "weights": {
+                    "unmet_need": 0.25,
+                    "demand_heat": 0.3,
+                    "profit_space": 0.1,
+                    "demand_growth": 0.15,
+                    "competition_space": 0.2
+                  },
+                  "objective": "balanced",
+                  "calibration": "uncalibrated_heuristic",
+                  "fit_strength": 0.3,
+                  "required_capabilities": []
+                }
+              }
+            },
+            "captured_at": "2026-10-05T19:02:46.291043+08:00",
+            "opportunity": {
+              "id": 93,
+              "title": "包装条件待验证",
+              "status": "generated",
+              "tenant_id": 275,
+              "base_score": 60.0,
+              "confidence": 0.5,
+              "description": "合成工程样本，不代表真实市场结论",
+              "market_score": 75.0,
+              "calculated_at": "2026-10-05T19:02:46.157+08:00",
+              "price_band_id": null,
+              "weight_config": {
+                "unmet_need": 0.25,
+                "demand_heat": 0.3,
+                "profit_space": 0.1,
+                "demand_growth": 0.15,
+                "competition_space": 0.2
+              },
+              "adjusted_score": 60.0,
+              "target_country": "US",
+              "analysis_job_id": 72,
+              "policy_snapshot": {
+                "name": "均衡判断",
+                "version": 0,
+                "weights": {
+                  "unmet_need": 0.25,
+                  "demand_heat": 0.3,
+                  "profit_space": 0.1,
+                  "demand_growth": 0.15,
+                  "competition_space": 0.2
+                },
+                "objective": "balanced",
+                "calibration": "uncalibrated_heuristic",
+                "fit_strength": 0.3,
+                "required_capabilities": []
+              },
+              "scoring_version": "synthetic-http",
+              "target_platform": "amazon",
+              "opportunity_code": "HTTP-O1",
+              "unmet_need_score": 70.0,
+              "demand_heat_score": 80.0,
+              "manufacturing_fit": [
+                {
+                  "status": "blocked",
+                  "signals": [
+                    {
+                      "factor": "capability",
+                      "reason": "合成样本：企业确认不具备",
+                      "status": "blocked",
+                      "required": "packaging/ista_3a"
+                    }
+                  ]
+                }
+              ],
+              "target_user_codes": [],
+              "profit_space_score": null,
+              "demand_growth_score": null,
+              "primary_cluster_ids": [
+                1
+              ],
+              "enterprise_fit_score": 50.0,
+              "recommendation_level": "capability_gap",
+              "usage_scenario_codes": [],
+              "competition_space_score": 60.0,
+              "enterprise_fit_confidence": 0.4
+            },
+            "format_version": "opportunity-features-v2"
+          },
+          "issues": [],
+          "decision": {
+            "id": 62,
+            "revision": 2,
+            "status": "accepted",
+            "reason": "合成试点：以三件观察销量为目标",
+            "created_at": "2026-10-05T19:04:50.575511+08:00"
+          },
+          "outcome": {
+            "id": 20,
+            "revision": 2,
+            "accepted_feedback_id": 62,
+            "status": "completed",
+            "implementation_start": "2026-10-05",
+            "implementation_end": "2026-10-05",
+            "observation_start": "2026-10-05",
+            "observation_end": "2026-10-05",
+            "result_label": "achieved",
+            "evidence": "合成报表核验：目标三件，观察期实际三件",
+            "financials": {
+              "cost": 240.0,
+              "basis": "合成核验单：收入扣退货，费用含制造及物流",
+              "revenue": 300.0,
+              "currency": "USD"
+            },
+            "sales_snapshot": {
+              "days": 1,
+              "site": "US",
+              "units": 3.0,
+              "mapping": {
+                "sku": "SAME-SKU",
+                "site": "US",
+                "product_id": 282,
+                "source_sku": "SAME-SKU",
+                "category_code": "sofa",
+                "history_weeks": 0
+              },
+              "semantics": "observed_units_not_incremental_sales",
+              "raw_sha256": "a4b46014114d2888754294e4d2ef5fc7132ba197e63c1e77763a73c732133b3d",
+              "source_sku": "SAME-SKU",
+              "filled_days": 0,
+              "sales_basis": "gross_units",
+              "confirmed_at": "2026-10-05T11:04:50.306095+00:00",
+              "version_uuid": "3d52cb8a-fcc0-4f90-9cee-9eb0979e54af",
+              "mapping_sha256": "90ff866c4a22a7747d63b8cb3cbe6f6e904d52fd735875acd1205f19d71e43e8",
+              "non_active_days": 0,
+              "observation_end": "2026-10-05",
+              "canonical_sha256": "278958eb552c5d22dd77ba4f2b5f79b8be8d0847a4a0b5610eb4bb761404a7a3",
+              "observation_start": "2026-10-05"
+            },
+            "created_at": "2026-10-05T19:04:50.996922+08:00"
+          },
+          "labels": {
+            "decision": 1,
+            "decision_eligible": true,
+            "decision_available_at": "2026-10-05T19:04:50.575511+08:00",
+            "outcome": 1,
+            "outcome_eligible": true,
+            "outcome_available_at": "2026-10-05T19:04:50.996922+08:00"
+          }
+        }
+      ]
+    }
+  ],
+  "next_after_task_id": null
+}

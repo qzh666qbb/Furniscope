@@ -86,6 +86,7 @@ jobs:
           export FURNISCOPE_E2E_EMAIL="browser-e2e-${GITHUB_RUN_ID}@example.invalid"
           export FURNISCOPE_E2E_PASSWORD="$(openssl rand -hex 20)"
           export JOB_QUEUE_MODE=in_process
+          export AGENT_RUNTIME_ENABLED=true
           export ANALYSIS_WORKER_MODE=external
           export ANALYSIS_TOOL_MODE=external
           export PRODUCT_PARSE_MODE=demo

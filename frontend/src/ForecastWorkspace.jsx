@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
-import { Check, Database, DownloadSimple, MagnifyingGlass, TrendUp, UploadSimple, WarningCircle, X } from "@phosphor-icons/react";
+import { Check, Database, DownloadSimple, MagnifyingGlass, TrendUp, WarningCircle, X } from "@phosphor-icons/react";
 import { api, idempotencyKey } from "./api.js";
 import { ParentPageTab } from "./ParentPageTab.jsx";
+import { EnterpriseTraining } from "./EnterpriseTraining.jsx";
 
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const split = value => value.split(/[,，;；\s]+/).filter(Boolean);
 const FORECAST_SITES = ["US", "CA", "DE", "FR", "IT", "ES", "NL"];
 const optionalNumber = value => value === "" || value === null ? null : Number(value);
+const units = value => value == null ? "待验证" : `${value} 件`;
+const methodLabels = { xgboost: "独立模型", intermittent_mean: "间歇销量均值", recent_mean: "近期均值", explicit_baseline: "手动基线", reference_sku: "参考 SKU" };
+
+function ForecastBasis({ summaries = [] }) {
+  return summaries.filter(item => item.method).map(item => <p key={`${item.sku}-${item.site}`} className="forecast-site-hint">
+    {item.sku} / {item.site} · {methodLabels[item.method] || item.method} · {item.validation_status === "validated" ? (item.validation_scope === "window_total" ? "仅整个窗口总量已验证" : "已通过时间窗口评测") : "此范围尚未验证精度，不生成误差区间或安全库存建议"}
+    {item.data_through ? ` · 该 SKU 数据至 ${item.data_through}` : ""}
+  </p>);
+}
 
 function download(points, type, filename = "furniscope-forecast") {
   const fields = [
@@ -33,62 +43,6 @@ function download(points, type, filename = "furniscope-forecast") {
   const safeName = filename.replace(/[\\/:*?"<>|]/g, "-");
   const link = document.createElement("a"); link.href = url; link.download = `${safeName}.${type}`; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 800);
-}
-
-function AppendTrainingTab({ model, onPublished }) {
-  const [orders, setOrders] = useState(null), [inventory, setInventory] = useState(null);
-  const [runs, setRuns] = useState([]), [submitting, setSubmitting] = useState(false), [message, setMessage] = useState("");
-  const loadRuns = () => api("/api/v1/forecast/training-runs?limit=20")
-    .then(data => setRuns(data.items || []));
-  useEffect(() => {
-    loadRuns().catch(err => setMessage(err.message));
-  }, []);
-
-    const submit = async () => {
-    if (!orders) return setMessage("请先选择订单 Excel 文件（不是库存文件）");
-    if (/库存|inventory/i.test(orders.name)) {
-      return setMessage("当前选中的是库存文件。请把 append_orders_*.xlsx 放到「订单数据」，库存文件放到第二个框");
-    }
-    if (!window.confirm("相同日期、SKU、站点的数据将以本次上传为准。追加完成后会自动重新训练并发布新模型，是否继续？")) return;
-    const form = new FormData();
-    form.append("orders_file", orders);
-    if (inventory) form.append("inventory_file", inventory);
-    try {
-      setSubmitting(true); setMessage("");
-      const accepted = await api("/api/v1/forecast/append", { method: "POST",
-        headers: { "Idempotency-Key": idempotencyKey("forecast-append") }, body: form });
-      setRuns(previous => [accepted, ...previous.filter(item => item.training_uuid !== accepted.training_uuid)]);
-      for (let attempt = 0; attempt < 180; attempt += 1) {
-        await wait(2000);
-        const run = await api(`/api/v1/forecast/training-runs/${accepted.training_uuid}`);
-        setRuns(previous => [run, ...previous.filter(item => item.training_uuid !== run.training_uuid)]);
-        if (run.status === "failed") throw new Error(run.error_message || "数据追加与训练失败");
-        if (run.status === "succeeded") {
-          setMessage(`追加成功：新增 ${run.metrics.inserted_rows ?? 0} 行，覆盖 ${run.metrics.overwritten_rows ?? 0} 行，数据更新至 ${run.metrics.after_last_date || "最新日期"}`);
-          setOrders(null); setInventory(null); await onPublished?.(); return;
-        }
-      }
-      setMessage("任务仍在训练中，可稍后在本页查看状态");
-    } catch (err) { setMessage(err.message); }
-    finally { setSubmitting(false); }
-  };
-
-  return <div className="forecast-training-layout">
-    <section className="forecast-training-card">
-      <header><div><span className="forecast-model-label">每周数据维护</span><h2>追加订单与库存数据</h2><p>当前模型：{model?.ready ? "已就绪" : "正在读取"} · 数据更新至 {model?.data_through || "—"}</p></div></header>
-      <div className="forecast-training-flow"><span><b>1</b>校验文件</span><i>→</i><span><b>2</b>覆盖去重</span><i>→</i><span><b>3</b>重算特征</span><i>→</i><span><b>4</b>自动训练并发布</span></div>
-      <div className="forecast-training-files">
-        <label className={orders ? "has-file" : ""}><UploadSimple/><span><strong>订单数据（必选）</strong><small>{orders ? `${orders.name} · ${(orders.size / 1024).toFixed(1)} KB` : "选择 .xlsx；支持结算报告或 date / sku / site / sales 简化格式"}</small></span><input type="file" accept=".xlsx" onChange={event => setOrders(event.target.files?.[0] || null)}/></label>
-        <label className={inventory ? "has-file" : ""}><UploadSimple/><span><strong>库存数据（可选）</strong><small>{inventory ? `${inventory.name} · ${(inventory.size / 1024).toFixed(1)} KB` : "选择 .xlsx；字段为 date / sku / inventory / site，EU 会展开到欧洲五站"}</small></span><input type="file" accept=".xlsx" onChange={event => setInventory(event.target.files?.[0] || null)}/></label>
-      </div>
-      <div className="forecast-training-warning"><WarningCircle/><span><strong>覆盖规则</strong> 相同日期 + SKU + 站点保留本次上传的数据；只有训练和校验全部成功后才会切换当前模型。</span></div>
-      {message && <div className="forecast-training-message">{message}</div>}
-      <button className="forecast-training-submit" onClick={submit} disabled={!orders || submitting}>{submitting ? "正在追加并训练…" : "追加数据并重新训练"}</button>
-    </section>
-    <section className="forecast-training-history"><header><div><h2>追加与训练记录</h2><p>任务失败不会影响当前已发布模型。</p></div><span>{runs.length} 条</span></header>
-      {runs.length ? <div>{runs.map(run => <article key={run.training_uuid}><span><strong>{run.orders_filename || "订单数据"}</strong><small>{new Date(run.created_at).toLocaleString()} {run.inventory_filename ? `· 库存 ${run.inventory_filename}` : "· 未上传库存"}</small></span><span className={`forecast-training-status ${run.status}`}>{run.status === "succeeded" ? "已发布" : run.status === "failed" ? "失败" : run.status === "running" ? "训练中" : "排队中"}</span>{run.status === "succeeded" && <p>新增 {run.metrics.inserted_rows ?? 0} 行 · 覆盖 {run.metrics.overwritten_rows ?? 0} 行 · 截止 {run.metrics.after_last_date || "—"}</p>}{run.status === "failed" && <p className="failed">{run.error_message}</p>}</article>)}</div> : <p className="forecast-history-empty">还没有追加记录。</p>}
-    </section>
-  </div>;
 }
 
 const forecastStatusLabels = {
@@ -169,7 +123,8 @@ function ForecastHistoryTab() {
     {detail && <div className="forecast-result-modal-backdrop" onClick={() => setDetail(null)}><section className="forecast-result-modal" onClick={event => event.stopPropagation()}>
       <header><div><h2>预测结果</h2><p>{detail.job.job_name} · {detail.job.granularity === "day" ? "天预测" : "周预测"}</p></div><button onClick={() => setDetail(null)} aria-label="关闭预测结果"><X/></button></header>
       <div className="forecast-result-modal-actions"><button onClick={() => download(detail.points, "csv", detail.job.job_name)}><DownloadSimple/>导出 CSV</button><button onClick={() => download(detail.points, "json", detail.job.job_name)}><DownloadSimple/>导出 JSON</button></div>
-      <div className="forecast-output-kpis">{[["预测组合", detailMetrics.pair_count], ["预测总销量", `${detailMetrics.total_forecast} 件`], ["安全库存", `${detailMetrics.safety_stock} 件`], ["建议生产量", `${detailMetrics.recommended_production} 件`]].map(([label, value]) => <span key={label}><small>{label}</small><strong>{value}</strong></span>)}</div>
+      <div className="forecast-output-kpis">{[["预测组合", detailMetrics.pair_count], ["预测总销量", units(detailMetrics.total_forecast)], ["安全库存", units(detailMetrics.safety_stock)], ["建议生产量", units(detailMetrics.recommended_production)]].map(([label, value]) => <span key={label}><small>{label}</small><strong>{value}</strong></span>)}</div>
+      <ForecastBasis summaries={detail.summaries}/>
       <div className="forecast-result-table"><table><thead><tr>{["日期", "站点", "SKU", "预测销量", "下界", "上界", "销量预测区间", "可靠度值"].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>{detail.points.map((row, index) => <tr key={`${row.sku}-${row.site}-${row.bucket_start}-${index}`}><td>{row.bucket_start}</td><td>{row.site}</td><td>{row.sku}</td><td>{row.predicted_sales}</td><td>{row.lower ?? "—"}</td><td>{row.upper ?? "—"}</td><td>{row.lower != null && row.upper != null ? `${row.lower} ~ ${row.upper}` : "—"}</td><td>{row.reliability ?? "—"}</td></tr>)}</tbody></table></div>
     </section></div>}
   </section>;
@@ -216,6 +171,7 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
   const uniqueSites = matchingSites.length ? matchingSites : FORECAST_SITES;
   const effectiveGranularity = mode === "business" ? businessGranularity : mode;
   const period = effectiveGranularity === "day" ? days : weeks;
+  const historicalOnly = model?.engine?.startsWith("tenant-xgb-");
 
   const toggleSite = site => {
     if (selectedSites.includes(site)) {
@@ -234,8 +190,8 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
     if (unknownSkus.length) return setError(`只能预测产品中心现有 SKU：${unknownSkus.join("、")}`);
     if (!Number.isInteger(horizon) || horizon < 1 || horizon > (effectiveGranularity === "day" ? 365 : 52)) return setError("预测周期超出允许范围");
     const scenario = mode === "business" ? {
-      price: optionalNumber(price), discount: optionalNumber(discount), inventory: optionalNumber(inventory),
-      is_promotion: promotionImpact !== "", promotion_impact: optionalNumber(promotionImpact),
+      price: historicalOnly ? null : optionalNumber(price), discount: historicalOnly ? null : optionalNumber(discount), inventory: historicalOnly ? null : optionalNumber(inventory),
+      is_promotion: !historicalOnly && promotionImpact !== "", promotion_impact: historicalOnly ? null : optionalNumber(promotionImpact),
       baseline: optionalNumber(baseline), reference_sku: referenceSku.trim() || null,
     } : {};
     try {
@@ -278,7 +234,7 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
       <div className="forecast-mode-grid">
         <button className={mode === "day" ? "active" : ""} onClick={() => setMode("day")}><strong>天预测</strong><span>查看未来每天的销量和波动区间</span></button>
         <button className={mode === "week" ? "active" : ""} onClick={() => setMode("week")}><strong>周预测</strong><span>查看未来每周汇总销量</span></button>
-        <button className={mode === "business" ? "active" : ""} onClick={() => setMode("business")}><strong>复杂业务预测</strong><span>指定价格、库存、促销或新品参数</span></button>
+        <button className={mode === "business" ? "active" : ""} onClick={() => setMode("business")}><strong>复杂业务预测</strong><span>{historicalOnly ? "设置新品基准销量或参考 SKU" : "指定价格、库存、促销或新品参数"}</span></button>
       </div>
       <div className="forecast-primary-fields">
         <label>产品中心 SKU<input list="forecast-sku-options" value={sku} onChange={event => setSku(event.target.value)} readOnly={fromProducts} placeholder="多个 SKU 可用空格或逗号分隔"/><datalist id="forecast-sku-options">{uniqueSkus.map(value => <option value={value} key={value}/>)}</datalist></label>
@@ -288,12 +244,12 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
       </div>
       {matchingSites.length > 0 && <p className="forecast-site-hint">该 SKU 已接入站点：{matchingSites.join("、")}</p>}
       {mode === "business" && <section className="forecast-business-panel">
-        <header><div><h3>复杂业务参数</h3><p>留空的字段仍使用历史默认值</p></div><span className="forecast-business-granularity"><button className={businessGranularity === "day" ? "active" : ""} onClick={() => setBusinessGranularity("day")}>按天预测</button><button className={businessGranularity === "week" ? "active" : ""} onClick={() => setBusinessGranularity("week")}>按周预测</button></span></header>
+        <header><div><h3>复杂业务参数</h3><p>{historicalOnly ? "当前模型仅学习销量历史，暂不支持价格、库存或促销情景。" : "留空的字段仍使用历史默认值"}</p></div><span className="forecast-business-granularity"><button className={businessGranularity === "day" ? "active" : ""} onClick={() => setBusinessGranularity("day")}>按天预测</button><button className={businessGranularity === "week" ? "active" : ""} onClick={() => setBusinessGranularity("week")}>按周预测</button></span></header>
         <div>
-          <label>计划售价<input type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)} placeholder="历史最后售价"/></label>
-          <label>折扣力度<input type="number" min="0" max="1" step="0.01" value={discount} onChange={event => setDiscount(event.target.value)} placeholder="0 ~ 1"/></label>
-          <label>当前库存<input type="number" min="0" step="1" value={inventory} onChange={event => setInventory(event.target.value)} placeholder="历史最后库存"/></label>
-          <label>促销流量倍数（留空表示无促销）<input type="number" min="0.1" step="0.1" value={promotionImpact} onChange={event => setPromotionImpact(event.target.value)} placeholder="例如 1.5"/></label>
+          <label>计划售价<input disabled={historicalOnly} type="number" min="0" step="0.01" value={price} onChange={event => setPrice(event.target.value)} placeholder="历史最后售价"/></label>
+          <label>折扣力度<input disabled={historicalOnly} type="number" min="0" max="1" step="0.01" value={discount} onChange={event => setDiscount(event.target.value)} placeholder="0 ~ 1"/></label>
+          <label>当前库存<input disabled={historicalOnly} type="number" min="0" step="1" value={inventory} onChange={event => setInventory(event.target.value)} placeholder="历史最后库存"/></label>
+          <label>促销流量倍数（留空表示无促销）<input disabled={historicalOnly} type="number" min="0.1" step="0.1" value={promotionImpact} onChange={event => setPromotionImpact(event.target.value)} placeholder="例如 1.5"/></label>
           <label>新品基准日销量<input type="number" min="0" step="0.1" value={baseline} onChange={event => setBaseline(event.target.value)} placeholder="无历史 SKU 使用"/></label>
           <label>参考 SKU<input value={referenceSku} onChange={event => setReferenceSku(event.target.value)} placeholder="借用已有 SKU 模式"/></label>
         </div>
@@ -309,7 +265,8 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
           <button onClick={() => download(result.points, "json")}><DownloadSimple/>导出 JSON</button>
         </div>
       </header>
-      <div className="forecast-output-kpis">{[["预测组合", metrics.pair_count], ["预测总销量", `${metrics.total_forecast} 件`], ["安全库存", `${metrics.safety_stock} 件`], ["建议生产量", `${metrics.recommended_production} 件`]].map(([label, value]) => <span key={label}><small>{label}</small><strong>{value}</strong></span>)}</div>
+      <div className="forecast-output-kpis">{[["预测组合", metrics.pair_count], ["预测总销量", units(metrics.total_forecast)], ["安全库存", units(metrics.safety_stock)], ["建议生产量", units(metrics.recommended_production)]].map(([label, value]) => <span key={label}><small>{label}</small><strong>{value}</strong></span>)}</div>
+      <ForecastBasis summaries={result.summaries}/>
       {result.summaries?.length > 0 && (
         <div className="forecast-pair-summaries">
           {result.summaries.map(item => (
@@ -318,7 +275,7 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
               <div>
                 <span>预测总量<strong>{item.total}</strong></span>
                 <span>日均销量<strong>{item.daily_average}</strong></span>
-                <span>置信区间<strong>{item.lower} – {item.upper}</strong></span>
+                  <span>误差参考区间<strong>{item.lower == null || item.upper == null ? "尚未验证" : `${item.lower} – ${item.upper}`}</strong></span>
               </div>
             </article>
           ))}
@@ -333,6 +290,6 @@ export function ForecastWorkspace({ Sidebar, Topbar }) {
         </div>
       </div>
     </section>}
-    </> : activeTab === "history" ? <ForecastHistoryTab/> : <AppendTrainingTab model={model} onPublished={() => Promise.all([reloadModel(), reloadCatalog()])}/>} 
+    </> : activeTab === "history" ? <ForecastHistoryTab/> : <EnterpriseTraining model={model} onPublished={() => Promise.all([reloadModel(), reloadCatalog()])}/>}
   </div></section></main>;
 }

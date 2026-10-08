@@ -31,6 +31,8 @@ async def readiness(request: Request) -> SuccessEnvelope[dict[str, str]]:
         "model_router": "configured" if settings.has_model_router_key() else "missing",
         "chat_fallback": "deepseek" if settings.has_deepseek_key() else "none",
         "product_parse_mode": settings.product_parse_mode,
+        "deployment_cell": settings.deployment_cell_code,
+        "deployment_region": settings.deployment_region,
     }
     if request.app.state.job_queue is not None:
         data["job_queue"] = "ok"

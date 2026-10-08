@@ -1,0 +1,14 @@
+{
+  "desktop": {
+    "overflow": false,
+    "decision_boundary_footer": false,
+    "errors": [],
+    "failed_responses": []
+  },
+  "mobile": {
+    "overflow": false,
+    "decision_boundary_footer": false,
+    "errors": [],
+    "failed_responses": []
+  }
+}

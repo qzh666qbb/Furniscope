@@ -18,6 +18,15 @@ async def database_session(request: Request) -> AsyncIterator[AsyncSession]:
 DatabaseSession = Annotated[AsyncSession, Depends(database_session)]
 
 
+async def admin_database_session(request: Request) -> AsyncIterator[AsyncSession]:
+    database = getattr(request.app.state, "admin_database", request.app.state.database)
+    async for session in database.session():
+        yield session
+
+
+AdminDatabaseSession = Annotated[AsyncSession, Depends(admin_database_session)]
+
+
 def pagination_params(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,

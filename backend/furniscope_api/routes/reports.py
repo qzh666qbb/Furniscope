@@ -45,6 +45,18 @@ async def list_reports(request: Request, session: DatabaseSession, pagination: P
     return SuccessEnvelope(data=data, request_id=request.state.request_id)
 
 
+@router.get("/reports/filter-options", response_model=SuccessEnvelope[dict],
+            summary="查询决策报告全量筛选维度")
+async def report_filter_options(
+    request: Request, session: DatabaseSession,
+    principal: Annotated[AuthenticatedPrincipal, Depends(require_user)],
+):
+    data = await ReportRepository().filter_options(
+        session, tenant_id=principal.tenant_id,
+    )
+    return SuccessEnvelope(data=data, request_id=request.state.request_id)
+
+
 @router.post("/reports:archive", response_model=SuccessEnvelope[ReportArchiveResponse],
              operation_id="API-RPT-04", summary="归档（删除）决策报告")
 async def archive_reports(body: ReportArchiveRequest, request: Request, session: DatabaseSession,

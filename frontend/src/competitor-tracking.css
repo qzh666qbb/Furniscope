@@ -1,6 +1,8 @@
 .tracking-page{height:100vh;overflow:hidden}
 .tracking-page .workspace-main{height:100vh;overflow:hidden}
 .tracking-shell{height:calc(100vh - 69px);padding:28px 30px 40px;overflow:auto;background:#f3f6f8;max-width:1320px;margin:0 auto}
+.tracking-shell.tracking-shell-embedded{width:100%;height:auto;max-width:none;padding:12px 14px 16px;overflow:visible;background:transparent}
+.tracking-shell-embedded .tracking-task-intro{padding:12px 0;border:0;border-bottom:1px solid #e4eaed;border-radius:0;background:transparent}
 .tracking-shell>header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:16px}
 .tracking-shell>header span{display:block;margin-bottom:7px;color:#087f7b;font-size:9px;font-weight:700;letter-spacing:.16em}
 .tracking-shell>header h1{margin:0;color:#172a42;font-size:29px;letter-spacing:-.04em}
@@ -163,6 +165,10 @@
 .signal-filter-row input,.signal-filter-row select,.signal-filter-row>select{height:35px;border:1px solid #cbd7df;border-radius:6px;background:#fff;font-size:10px}
 .signal-filter-row>select{min-width:110px;flex:0 0 auto}
 .signal-filter-row label input{height:auto;border:0;outline:0;min-width:140px}.signal-filter-row label select{border:0}
+.signal-filter-row .signal-search-field{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:center;min-width:200px;overflow:hidden}
+.signal-filter-row .signal-search-field input{width:100%;min-width:0;padding:0}
+.market-module-page .signal-filter-row .signal-search-field:focus-within{border-color:var(--market-accent);box-shadow:0 0 0 3px rgba(8,127,123,.12)}
+.market-module-page .signal-filter-row .signal-search-field input,.market-module-page .signal-filter-row .signal-search-field input:focus-visible{height:auto;border:0;border-radius:0;background:transparent;box-shadow:none;outline:0}
 .signal-filter-row svg{width:14px;color:#7f8d9b}
 .signal-filter-row>button{height:35px;padding:0 11px;color:#087f7b;border:1px solid #add2cf;border-radius:6px;background:#f7fbfb;font-size:10px;white-space:nowrap;flex:0 0 auto}
 .signal-filter-row>span,.signal-check{display:flex;align-items:center;gap:5px;color:#68788a;font-size:10px;white-space:nowrap}
@@ -170,4 +176,126 @@
 .tracking-alerts article footer{display:flex;align-items:center;gap:9px;color:#71808f;font-size:10px}.tracking-alerts article footer a{color:#087f7b}.tracking-alerts article footer button{margin-left:auto;color:#087f7b;border:1px solid #add2cf;border-radius:5px;background:#fff}
 .delivery-results .delivery-delivered{border-left:3px solid #078f8a}.delivery-results .delivery-failed{border-left:3px solid #b44b3b}
 @media(max-width:1000px){.tracking-workspace-nav{grid-template-columns:1fr 1fr}.tracking-task-intro,.signal-workspace-intro{align-items:flex-start;flex-direction:column}.signal-results>header{align-items:center}.signal-filter-row{flex-wrap:nowrap}}
-@media(max-width:680px){.tracking-shell{padding:18px 14px 32px}.tracking-workspace-nav,.signal-metrics,.signal-how-it-works{grid-template-columns:1fr}.signal-step-arrow{display:none}.tracking-task-actions{width:100%;flex-wrap:wrap}.dataset-form-grid,.signal-advanced>div{grid-template-columns:1fr}.signal-span-2{grid-column:1}.tracking-policy-subnav{width:100%;overflow:auto}}
+@media(max-width:680px){
+  .tracking-shell{padding:18px 14px 32px}
+  .tracking-shell.tracking-shell-embedded{padding:10px}
+  .tracking-shell>.tracking-main-header,.tracking-target-section>header,.signal-results>header{align-items:stretch;flex-direction:column}
+  .tracking-shell>.tracking-main-header>button{justify-content:center}
+  .tracking-workspace-nav,.signal-metrics,.signal-how-it-works{grid-template-columns:1fr}
+  .signal-quick-collect{align-items:stretch;flex-direction:column}
+  .signal-quick-collect select,.signal-quick-collect input,.signal-quick-collect button,.signal-quick-collect .catalog-primary{width:100%;max-width:none}
+  .signal-quick-collect input{flex:0 0 auto}
+  .tracking-catalog-modal{width:calc(100vw - 24px)}
+  .tracking-catalog-toolbar{display:grid;grid-template-columns:minmax(0,1fr)}
+  .tracking-catalog-toolbar label,.tracking-catalog-toolbar select,.tracking-catalog-toolbar>button{width:100%;min-width:0}
+  .signal-step-arrow{display:none}
+  .tracking-task-actions{width:100%;flex-wrap:wrap}
+  .dataset-form-grid,.signal-advanced>div{grid-template-columns:1fr}
+  .signal-span-2{grid-column:1}
+  .tracking-policy-subnav{width:100%;overflow:auto}
+  .signal-filter-row{width:100%;display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch}
+  .signal-filter-row label:not(.signal-check),.signal-filter-row>select,.signal-filter-row>button{width:100%;min-width:0}
+  .signal-filter-row label input{min-width:0;width:100%}
+}
+
+/* Embedded decision-center workspaces share the market module scale. */
+.market-module-page .tracking-shell.tracking-shell-embedded {
+  padding: 16px;
+  color: var(--market-text, #43576b);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.market-module-page .tracking-task-intro,
+.market-module-page .signal-workspace-intro { padding: 16px 18px; }
+.market-module-page .tracking-task-intro span,
+.market-module-page .signal-workspace-intro span {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.market-module-page .tracking-task-intro h2,
+.market-module-page .signal-workspace-intro h2 {
+  font-size: 17px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.market-module-page .tracking-task-intro p,
+.market-module-page .signal-workspace-intro p { font-size: 12px; }
+.market-module-page .tracking-task-actions button,
+.market-module-page .signal-workspace-intro > button {
+  height: 38px;
+  font-size: 11px;
+}
+.market-module-page .tracking-add input,
+.market-module-page .tracking-add select,
+.market-module-page .tracking-add button,
+.market-module-page .signal-quick-collect input,
+.market-module-page .signal-quick-collect select,
+.market-module-page .signal-quick-collect button,
+.market-module-page .signal-quick-collect .catalog-primary {
+  height: var(--market-control-height, 40px);
+  font-size: 12px;
+}
+.market-module-page .tracking-add select,
+.market-module-page .signal-quick-collect select,
+.market-module-page .tracking-catalog-toolbar select,
+.market-module-page .signal-filter-row select,
+.market-module-page .signal-filter-row > select {
+  appearance: none;
+  padding-right: 34px !important;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='m4 6 4 4 4-4' stroke='%235f7281' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+.market-module-page .tracking-setup-card header b,
+.market-module-page .signal-setup-card header strong,
+.market-module-page .signal-list-section header strong,
+.market-module-page .signal-results header strong,
+.market-module-page .tracking-target-section header strong { font-size: 13px; }
+.market-module-page .tracking-setup-card header small,
+.market-module-page .signal-setup-card header small,
+.market-module-page .signal-list-section header small,
+.market-module-page .signal-results header small,
+.market-module-page .tracking-target-section header small { font-size: 10px; }
+.market-module-page .tracking-setup-card header i,
+.market-module-page .tracking-target-section > header > span,
+.market-module-page .signal-list-section > header > span { font-size: 10px; }
+.market-module-page .tracking-watch-table table,
+.market-module-page .tracking-mini-table,
+.market-module-page .tracking-compare table { font-size: 12px; }
+.market-module-page .tracking-watch-table th { font-size: 11px; }
+.market-module-page .tracking-in-library { font-size: 11px; }
+.market-module-page .tracking-guided-empty > strong { font-size: 14px; }
+.market-module-page .tracking-guided-empty > p { font-size: 12px; }
+.market-module-page .tracking-guided-empty button { height: 36px; font-size: 11px; }
+.market-module-page .tracking-subnav button { height: 38px; font-size: 12px; }
+.market-module-page .signal-how-it-works b { font-size: 12px; }
+.market-module-page .signal-how-it-works small { font-size: 10px; }
+.market-module-page .signal-advanced summary { font-size: 11px; }
+.market-module-page .dataset-form-grid label > small { font-size: 10px; }
+.market-module-page .signal-setup-card > footer button { height: 38px; font-size: 11px; }
+.market-module-page .signal-json-label { font-size: 12px; }
+.market-module-page .signal-json-input { font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.market-module-page .signal-metrics small,
+.market-module-page .signal-metrics span { font-size: 10px; }
+.market-module-page .signal-metrics strong { font-size: 20px; }
+.market-module-page .signal-filter-row input,
+.market-module-page .signal-filter-row select,
+.market-module-page .signal-filter-row > select,
+.market-module-page .signal-filter-row label:not(.signal-check),
+.market-module-page .signal-filter-row > button {
+  height: 38px;
+  font-size: 11px;
+}
+.market-module-page .signal-filter-row > span,
+.market-module-page .signal-check { font-size: 11px; }
+.market-module-page .tracking-alerts header,
+.market-module-page .tracking-alerts article:has(.alert-read-btn) > p { font-size: 12px; }
+.market-module-page .tracking-alerts article footer { font-size: 10px; }
+
+@media(max-width:680px){
+  .market-module-page .tracking-shell.tracking-shell-embedded { padding: 10px; }
+  .market-module-page .tracking-task-intro,
+  .market-module-page .signal-workspace-intro { padding: 14px; }
+}

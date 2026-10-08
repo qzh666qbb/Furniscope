@@ -1,5 +1,24 @@
 # FurniScope 产品数据字典 V3.0
 
+> 2026-10-05企业闭环复核增量已纳入。总体权威依据为[15总体设计](./15_FurniScope_企业决策与数据闭环总体设计V1.md)，新增实体和API详细契约见[实现说明](../开发文档/FurniScope_企业决策与标准数据API实现说明V1.md)；历史表字段未涉及者继续适用。
+
+### 企业闭环新增实体
+
+| 实体/字段 | 类型与含义 | 强制约束 |
+|---|---|---|
+| `enterprise_opportunity_policies` | tenant_id、version、config、created_by、created_at | 租户+版本唯一；config含名称、五权重、适配强度和必要能力；不可变 |
+| `opportunity_feedback_events` | opportunity_id、analysis_job_id、revision、status、reason、score_snapshot、创建人/时间 | 同租户关联；事件不可变；状态accepted/rejected/pending_validation；原因必填 |
+| `market_opportunities.decision_snapshot` | opportunity-features-v2、captured_at、完整opportunity和task事实 | 首次评分由数据库捕获；不可修改或删除；历史缺失不回填 |
+| `opportunity_outcome_events` | accepted_feedback_id、revision、实施状态与日期、观察区间、result_label、evidence、financials、sales_snapshot | 同租户复合关联；不可变修订；新写关联最新采纳；业务标签排除回溯、未完成及过期关联 |
+| `forecast_data_versions` | version_uuid、原始/标准文件引用与SHA256、rules、quality、columns_info、parent_version_id、auxiliary_sources、template_snapshot | 同租户父子关联；状态uploaded/previewed/confirmed；已确认记录不可原地修改；辅助版本UUID/SHA及模板修订冻结 |
+| `forecast_import_templates` | template_uuid、tenant_id、name、revision、rules、columns_info、source_version_id、created_by | 来自本企业已确认数据；名称+修订唯一，修订不可变；来源及创建人复合租户外键 |
+| `forecast_training_runs`新增字段 | data_version_id、parent_data_version_id、baseline_deployment_id、code_sha256、execution_token、execution_attempts、heartbeat_at、lease_expires_at | 同租户血缘与部署CAS；initial/append/rebuild；rejected；失效执行不得发布 |
+| `tenant_forecast_sku_aliases` | tenant_id、source_context、product_sku、source_sku | 企业一一映射；旧forecast_sku_aliases不用于新企业训练 |
+| `forecast_model_deployments.route_policy` | catalog_snapshot、血缘与路由策略 | 部署冻结目录，回滚原子恢复 |
+| `forecast_jobs.routing_snapshot` | 产品SKU/参考SKU到来源SKU的路由 | 随模型在入队时冻结，后续目录变化不影响已排队预测 |
+| `forecast_models`归属 | owner_tenant_id、model_scope | owner不可变；私有模型部署租户必须等于owner |
+| `analysis_tasks.enterprise_profile_snapshot`增量 | opportunity_policy、product_facts、企业画像和能力、captured_at | 新任务创建时冻结，重试不重新读取当前策略 |
+
 ## 1. 文档说明
 
 | 项目 | 内容 |
@@ -668,21 +687,24 @@ V3将`opportunity_scores`、`manufacturing_requirements`和`enterprise_fit_detai
 | `primary_cluster_ids` | 核心需求聚类 | ARRAY<BIGINT> | 是 | 系统 | 证据链 | 非空且同任务 |
 | `price_band_id` | 建议价格带 | BIGINT | 否 | 价格分析 | 定价参考 | 同任务外键 |
 | `status` | 机会状态 | ENUM | 是 | 系统 | 展示 | 核心仅`generated/data_needed`；不承载多人评审流转 |
-| `demand_heat_score` | 需求热度分 | DECIMAL(5,2) | 是 | 评分程序 | 六维评分 | 0—100且有指标依据 |
-| `demand_growth_score` | 需求增长分 | DECIMAL(5,2) | 条件 | 评分程序 | 六维评分 | 至少两个可比时间点，否则空 |
-| `unmet_need_score` | 未满足程度 | DECIMAL(5,2) | 是 | 评分程序 | 六维评分 | 0—100 |
-| `competition_space_score` | 竞争空间 | DECIMAL(5,2) | 是 | 评分程序 | 六维评分 | 0—100，高分空间大 |
-| `profit_space_score` | 利润空间 | DECIMAL(5,2) | 条件 | 评分程序 | 六维评分 | 有成本和价格口径时填写 |
-| `enterprise_fit_score` | 企业适配分 | DECIMAL(5,2) | 是 | 评分程序 | 六维评分 | 0—100；未知不按0 |
-| `base_score` | 机会基础分 | DECIMAL(5,2) | 是 | 评分程序 | 排序 | 按版本化权重和缺项归一计算 |
+| `demand_heat_score` | 需求热度分 | DECIMAL(5,2) | 条件 | 评分程序 | 五维市场评分 | 0—100且有指标依据 |
+| `demand_growth_score` | 需求增长分 | DECIMAL(5,2) | 条件 | 评分程序 | 五维市场评分 | 可比时间点不足时为空 |
+| `unmet_need_score` | 未满足程度 | DECIMAL(5,2) | 条件 | 评分程序 | 五维市场评分 | 0—100；优先使用负观点比例 |
+| `competition_space_score` | 竞争空间 | DECIMAL(5,2) | 条件 | 评分程序 | 五维市场评分 | 0—100，高分空间大 |
+| `profit_space_score` | 利润空间代理 | DECIMAL(5,2) | 条件 | 评分程序 | 五维市场评分 | 同币种价格和成本才比较，不表示真实利润 |
+| `enterprise_fit_score` | 企业适配分F | DECIMAL(5,2) | 条件 | 确定性规则 | 企业修正与条件检查 | 已知检查中满足比例；完全未知为空 |
+| `market_score` | 市场原分 | DECIMAL(5,2) | 条件 | 评分程序 | 可解释排序 | 可用权重归一；无可用因子为空 |
+| `adjusted_score` | 企业修正分 | DECIMAL(5,2) | 条件 | 评分程序 | 可解释排序 | market_score×((1−α)+αF/100)；F未知不应用乘数 |
+| `policy_snapshot` | 本机会策略快照 | JSON | 是 | 任务快照 | 可复算 | 版本、五权重、修正强度、必要能力；旧结果不重写 |
+| `base_score` | 兼容排序分 | DECIMAL(5,2) | 条件 | 评分程序 | 旧接口排序 | 新记录与adjusted_score一致；原分使用market_score |
 | `confidence` | 机会评分置信度 | DECIMAL(5,4) | 是 | 规则计算 | 风险提示 | 0—1；与base_score分离 |
 | `recommendation_level` | 建议结论 | ENUM | 是 | 规则 | 报告 | `prioritize_validate/collect_more_data/capability_gap/limited_opportunity` |
 | `weight_config` | 实际权重 | JSON | 是 | 评分程序 | 可复算 | 记录原权重和缺项归一权重 |
-| `scoring_version` | 评分版本 | STRING(64) | 是 | 系统 | 可复算 | 与任务冻结版本一致 |
-| `manufacturing_fit` | 制造要求与企业适配 | JSON | 是 | 规则/RAG | 工厂适配下钻 | 默认`[]`；每项合并V2要求与适配字段：requirement_type/code/description/target_value/unit/priority/evidence_cluster_ids/validation_required/capability_id/fit_status/fit_score/hard_constraint_breached/explanation/confidence；未知fit_score为空 |
+| `scoring_version` | 评分实现版本 | STRING(64) | 是 | 系统 | 可复算 | 新记录enterprise-policy-v1；结合policy_snapshot还原权重 |
+| `manufacturing_fit` | 制造条件检查 | JSON数组 | 是 | 确定性规则 | 工厂适配下钻 | 新记录首项status/blocked/signals/fit_score/policy_version；signals逐项pass/blocked/unknown与证据原因；兼容旧数组 |
 | `calculated_at` | 计算时间 | DATETIME | 是 | 系统 | 新鲜度 | UTC |
 
-机会基础分固定口径：`20%需求热度 + 15%需求增长 + 20%未满足程度 + 15%竞争空间 + 10%利润空间 + 20%企业适配度`；缺项时必须记录归一化权重。
+现行默认市场权重为30%需求热度、15%增长、25%未满足、20%竞争空间、10%利润代理，允许企业版本化配置；缺失因子按可用权重归一。市场原分再经企业适配强度α修正（默认0.3），硬条件独立决定建议是否暂缓。该规则尚未用真实企业标签校准；置信度独立展示。
 
 ### 7.2 产品建议 `product_recommendations`
 
@@ -1208,3 +1230,67 @@ model_route_configs ── version snapshot in analysis_tasks
 - 保留评论原文保护、证据Span、评分置信度、模型运行、数据范围快照、证据链、幂等、部分失败和Checkpoint；
 - 重建实体关系、主外键、索引需求和P0实现清单；
 - 增加实体级保留/合并/删除/新增变更表和后续跨文档依赖。
+
+## 19. 产品主档与批量导入增量（V3.3，2026-10-07）
+
+### 19.1 `products` 增量字段与规则
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| `sku_compare_key` | TEXT GENERATED | `upper(btrim(sku))`；与`tenant_id`组成唯一索引 |
+| `category_code` | ENUM语义 | `sofa/chair/table/bed/storage/other` |
+| `lifecycle_status` | ENUM语义 | `concept/sample/active/discontinued` |
+| `deleted_at` | TIMESTAMPTZ | 非空表示已归档，不进入正常列表和详情 |
+
+SKU 原文用于展示、导出和外部契约，唯一性判断只使用比较键。品类变化令
+`analysis_status=draft`；属性修改进入草稿画像，不覆盖已确认版本。
+
+### 19.2 产品组合关系
+
+| 表 | 关键字段 | 完整性 |
+|---|---|---|
+| `product_groups` | `tenant_id/group_type/code/name/description` | `group_type=spu/variant/bundle/bom`；租户+类型+编码唯一 |
+| `product_group_members` | `tenant_id/group_id/product_id/member_role/quantity` | 同租户复合外键；角色受控；`quantity>0` |
+
+`spu/variant`允许`parent/variant`，`bundle`允许`parent/item`，`bom`允许
+`parent/component`。一个产品可属于多个组。
+
+### 19.3 产品导入任务
+
+| 表 | 关键字段 | 规则 |
+|---|---|---|
+| `product_import_jobs` | `job_uuid/idempotency_key/source_sha256/template_version/sheet_name/header_row/field_mapping/unit_mapping/dictionary_mapping/import_mode/status/preview_sha256/*_rows/schema_snapshot` | 租户内幂等键唯一；文件不超过20 MiB；`create_only/upsert`；状态为`preflighting/ready/blocked/importing/completed/failed/cancelled` |
+| `product_import_rows` | `job_id/source_row_number/source_values/normalized_values/validation_errors/validation_warnings/planned_action/is_user_edited/imported_product_id` | 每任务原行号唯一；动作`create/update/skip/invalid`；JSON结构受CHECK约束 |
+
+任务与行均启用并强制 RLS。`imported_product_id`删除时只清空该列并保留
+`tenant_id`，使导入证据不因产品归档或清理而跨租户失真。
+
+### 19.4 模板与校验字典
+
+模板版本为`product-master-2026.10.1`，工作表固定为
+`填写说明/Product_Master/SKU_Alias/Dictionaries/Examples`。受控词表包括：
+
+- `category_code`：`sofa/chair/table/bed/storage/other`
+- `lifecycle_status`：`concept/sample/active/discontinued`
+- `dimension_unit`：`mm/cm/m/in`
+- `weight_unit`：`g/kg/lb`
+- `currency`：`CNY/USD/EUR/GBP`
+
+阻断校验至少包括必填、文本 SKU、长度、非负数、未知枚举、条件单位、文件内大小写
+碰撞、库内重复、公式单元格、别名非一一对应和别名目标缺失。非 sofa 画像能力属于警告，
+不阻断主档维护。
+
+## 20. 五项市场决策治理增量（V3.4，2026-10-07）
+
+| 实体 | 关键字段 | 完整性规则 |
+|---|---|---|
+| `market_intelligence_batches` | `batch_uuid/tenant_id/dataset_id/product_id/package_id/package_version/package_sha256/schema_version/status/source_summary/scope_snapshot/imported_by/*_at` | 企业+包ID+版本唯一；同包最多一个active；身份字段不可修改；状态单向迁移 |
+| `market_intelligence_lineage` | `record_uuid/tenant_id/batch_id/capability_code/record_kind/source_class/target_table/target_record_id/natural_key/source_locator/derivation_rule/rule_version/input_sha256/payload_sha256/confidence/observed_at/valid_from/valid_until` | 批次+目标表+自然键唯一；双SHA格式校验；置信度0—1；写入后不可修改或删除 |
+
+`capability_code`仅允许`smart_selection/competitor_tracking/review_mining/pricing/
+compliance`。`source_class`仅允许`authorized_source_record/derived_result/
+planning_assumption/official_source_registry`。两表均启用并强制RLS，普通企业只能访问
+当前`tenant_id`，同时受租户迁移写栅栏约束。
+
+业务结果仍写入`market_opportunities`、竞品三表、评论观点与聚类、企业约束及政策源；
+治理实体不保存完整评论正文、附件字节或凭据。

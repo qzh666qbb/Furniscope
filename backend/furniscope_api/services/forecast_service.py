@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import ApiSettings
@@ -114,6 +115,8 @@ class ForecastService:
 
     async def start(self, session: AsyncSession, *, tenant_id: int, user_id: int,
                     job_uuid: str, idempotency_key: str, response_envelope):
+        await session.execute(text("SELECT pg_advisory_xact_lock(:key)"),
+                              {"key": 7_040_000 + tenant_id})
         decision = await self.idempotency.begin(
             session, tenant_id=tenant_id, actor_user_id=user_id, route_code="API-FRC-03",
             http_method="POST", idempotency_key=idempotency_key,
@@ -130,19 +133,34 @@ class ForecastService:
                                 details=[{"reason": metadata.get("error", "not initialized")}])
         live_checksum = metadata.get("state_checksum")
         if live_checksum and live_checksum != deployment["state_checksum"]:
-            await self.repository.update_model_checksum(
-                session, model_id=int(deployment["model_id"]), checksum=str(live_checksum))
-            deployment["state_checksum"] = live_checksum
-            self.runtime.remember_verified(
-                tenant_id=tenant_id, deployment=deployment, runtime=runtime)
+            raise BusinessError("FORECAST_CHECKSUM_MISMATCH",
+                                "模型制品校验失败，请重新训练或由管理员核验旧制品", status_code=409)
         job = await self.repository.get(session, tenant_id=tenant_id, job_uuid=job_uuid, for_update=True)
         if job is None:
             raise BusinessError("FORECAST_JOB_NOT_FOUND", "预测任务不存在或不可访问", status_code=404)
         if job["status"] != "draft":
             raise BusinessError("FORECAST_JOB_ALREADY_STARTED", "预测任务已经启动", status_code=409)
+        scope = await self.repository.validate_sku_scope(
+            session, tenant_id=tenant_id, skus=job["skus"], sites=job["sites"])
+        scenario = job["scenario_config"] or {}
+        if any(row["lifecycle_status"] != "active" for row in scope):
+            raise BusinessError("FORECAST_SKU_SCOPE_INVALID", "产品已变化，请重新选择预测范围", status_code=422)
+        if any(not row["model_eligible"] for row in scope) and (
+                scenario.get("baseline") is None and not scenario.get("reference_sku")):
+            raise BusinessError("FORECAST_COLD_START_INPUT_REQUIRED",
+                                "模型覆盖范围已变化，请提供新品基线或参考产品", status_code=422)
+        reference = None
+        if scenario.get("reference_sku"):
+            references = await self.repository.validate_sku_scope(
+                session, tenant_id=tenant_id, skus=[scenario["reference_sku"]], sites=job["sites"])
+            if any(not row["model_eligible"] or row["lifecycle_status"] != "active" for row in references):
+                raise BusinessError("FORECAST_REFERENCE_INVALID", "参考SKU必须是本企业有模型历史的产品",
+                                    status_code=422)
+            reference = references[0].get("source_sku") or references[0]["sku"]
+        routing = {"items": scope, "reference_source_sku": reference}
         await self.repository.queue(session, tenant_id=tenant_id, job_id=job["id"],
                                     model_id=deployment["model_id"],
-                                    deployment_id=deployment["deployment_id"])
+                                    deployment_id=deployment["deployment_id"], routing_snapshot=routing)
         job.update(status="queued", progress_percent=5)
         job["model_version"] = deployment["version"]
         envelope = response_envelope(self.projection(job))
@@ -163,20 +181,22 @@ class ForecastService:
                 raise RuntimeError("Forecast runtime is not ready")
             live_checksum = metadata.get("state_checksum")
             if live_checksum and live_checksum != job.get("state_checksum"):
-                if job.get("model_id"):
-                    await self.repository.update_model_checksum(
-                        session, model_id=int(job["model_id"]), checksum=str(live_checksum))
-                job["state_checksum"] = live_checksum
+                raise RuntimeError("Forecast model content checksum mismatch")
             run_id, _ = await self.repository.begin_run(
                 session, tenant_id=tenant_id, job=job)
-            scope = await self.repository.validate_sku_scope(
-                session, tenant_id=tenant_id, skus=job["skus"], sites=job["sites"])
+            routing = job.get("routing_snapshot") or {}
+            scope = routing.get("items")
+            if not scope:
+                raise RuntimeError("Legacy forecast lacks frozen SKU mapping; recreate the job")
+            scenario = dict(job["scenario_config"] or {})
+            if routing.get("reference_source_sku"):
+                scenario["reference_sku"] = routing["reference_source_sku"]
             await session.commit()
             output = await runtime.predict({
                 "skus": job["skus"], "sites": job["sites"],
                 "granularity": job["granularity"], "horizon": job["horizon"],
                 "start_date": job["start_date"].isoformat() if job["start_date"] else None,
-                "scenario_config": job["scenario_config"],
+                "scenario_config": scenario,
                 "engine_skus": {row["sku"]: (row.get("source_sku") or row["sku"]) for row in scope},
             })
             scenario = job["scenario_config"] or {}

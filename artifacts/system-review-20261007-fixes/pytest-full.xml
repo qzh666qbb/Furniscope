@@ -1,0 +1,1152 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="10" tests="207" time="103.605" timestamp="2026-10-07T12:12:51.027640+08:00" hostname="C212VV79N7"><testcase classname="tests.test_agent_graph.AgentGraphTest" name="test_complete_workflow_reaches_documented_terminal_state" time="0.054" /><testcase classname="tests.test_agent_graph.AgentGraphTest" name="test_confirmation_answer_is_outboxed_then_worker_resumes" time="0.026" /><testcase classname="tests.test_agent_graph.AgentGraphTest" name="test_scoped_workflow_stops_after_selected_canvas_node" time="0.021" /><testcase classname="tests.test_agent_postgres_integration.PostgresConfirmationTransactionTest" name="test_confirmation_transaction_outbox_and_rollback" time="0.312" /><testcase classname="tests.test_agent_postgres_integration.PostgresConfirmationTransactionTest" name="test_synthetic_case_completes_real_database_persistence" time="0.424" /><testcase classname="tests.test_api_infrastructure" name="test_openapi_and_success_envelope_and_request_id" time="0.858"><failure message="AssertionError: assert ['API-ADM-34'] == []&#10;  &#10;  Left contains one more item: 'API-ADM-34'&#10;  Use -v to get more diff">def test_openapi_and_success_envelope_and_request_id() -&gt; None:
+        app, database, _ = build_test_app(row=active_row())
+        request_id = str(uuid4())
+        with TestClient(app) as client:
+            openapi = client.get("/openapi.json")
+            live = client.get("/health/live", headers={"X-Request-ID": request_id})
+        assert openapi.status_code == 200
+        assert "/health/live" in openapi.json()["paths"]
+        ids = [
+            operation.get("operationId")
+            for methods in openapi.json()["paths"].values()
+            for operation in methods.values()
+            if isinstance(operation, dict) and operation.get("operationId")
+        ]
+        duplicates = sorted({item for item in ids if ids.count(item) &gt; 1})
+&gt;       assert duplicates == []
+E       AssertionError: assert ['API-ADM-34'] == []
+E         
+E         Left contains one more item: 'API-ADM-34'
+E         Use -v to get more diff
+
+tests/test_api_infrastructure.py:178: AssertionError</failure></testcase><testcase classname="tests.test_api_infrastructure" name="test_uniform_failure_envelope" time="0.213" /><testcase classname="tests.test_api_infrastructure" name="test_readiness_failure_is_enveloped" time="0.090" /><testcase classname="tests.test_api_infrastructure" name="test_missing_token_returns_401" time="0.223" /><testcase classname="tests.test_api_infrastructure" name="test_user_cannot_use_admin_dependency" time="0.408" /><testcase classname="tests.test_api_infrastructure" name="test_admin_cannot_use_enterprise_business_dependency" time="0.248" /><testcase classname="tests.test_api_infrastructure" name="test_admin_and_tenant_context_are_database_backed" time="0.233" /><testcase classname="tests.test_api_infrastructure" name="test_unknown_kid_and_disabled_user_are_rejected" time="0.299" /><testcase classname="tests.test_api_infrastructure" name="test_redaction_removes_tokens_keys_passwords_and_review_text" time="0.000" /><testcase classname="tests.test_api_infrastructure" name="test_analysis_task_openapi_contract_paths_and_operation_ids" time="0.861" /><testcase classname="tests.test_auth_postgres_api" name="test_login_access_claims_and_server_resolved_tenant" time="0.475" /><testcase classname="tests.test_auth_postgres_api" name="test_wrong_and_unknown_credentials_are_indistinguishable" time="0.073" /><testcase classname="tests.test_auth_postgres_api" name="test_enterprise_password_reset_updates_password_and_revokes_sessions" time="0.537" /><testcase classname="tests.test_auth_postgres_api" name="test_login_portals_reject_cross_role" time="0.249" /><testcase classname="tests.test_auth_postgres_api" name="test_disabled_user_and_suspended_tenant" time="0.072" /><testcase classname="tests.test_auth_postgres_api" name="test_refresh_rotation_replay_revokes_family_and_tokens_are_hash_only" time="0.408" /><testcase classname="tests.test_auth_postgres_api" name="test_expired_refresh_token_is_rejected_and_revoked" time="0.038" /><testcase classname="tests.test_auth_postgres_api" name="test_wrong_issuer_audience_and_expired_access_tokens" time="0.214" /><testcase classname="tests.test_auth_postgres_api" name="test_current_user_for_user_and_admin_and_no_tenant_override" time="0.385" /><testcase classname="tests.test_auth_postgres_api" name="test_openapi_contains_only_locked_auth_paths" time="0.642" /><testcase classname="tests.test_auth_postgres_api" name="test_prometheus_metrics_expose_api_and_business_health" time="0.059" /><testcase classname="tests.test_auth_postgres_api" name="test_login_refresh_do_not_write_api_idempotency" time="0.215" /><testcase classname="tests.test_auth_postgres_api" name="test_product_create_idempotent_replay_list_and_admin_inheritance" time="1.089" /><testcase classname="tests.test_auth_postgres_api" name="test_dataset_list_detail_and_cross_tenant_isolation" time="0.730" /><testcase classname="tests.test_auth_postgres_api" name="test_authorized_market_signals_and_policy_alerts" time="1.111" /><testcase classname="tests.test_auth_postgres_api" name="test_analysis_task_create_start_status_result_and_idempotency" time="18.886" /><testcase classname="tests.test_auth_postgres_api" name="test_analysis_task_scope_readiness_and_cross_tenant" time="0.190" /><testcase classname="tests.test_auth_postgres_api" name="test_tenant_admin_manages_sources_and_skus_without_cross_tenant_leak" time="0.706" /><testcase classname="tests.test_auth_postgres_api" name="test_internal_forecast_deployment_is_explicit_and_tenant_scoped" time="0.039"><skipped type="pytest.skip" message="Forecast artifact has not been downloaded: daily.pkl">/Users/bytedance/Furniscope/tests/test_auth_postgres_api.py:1414: Forecast artifact has not been downloaded: daily.pkl</skipped></testcase><testcase classname="tests.test_auth_postgres_api" name="test_admin_user_and_prompt_endpoints_enforce_role_and_audit" time="0.532" /><testcase classname="tests.test_auth_postgres_api" name="test_enterprise_rbac_and_append_only_audit_chain" time="0.605" /><testcase classname="tests.test_auth_postgres_api" name="test_admin_soft_deletes_enterprise_and_can_restore_it" time="0.680" /><testcase classname="tests.test_auth_postgres_api" name="test_registration_application_queue_reject_and_approve" time="1.584" /><testcase classname="tests.test_context_lifecycle" name="test_memory_change_extracts_structured_cost_candidate" time="0.001" /><testcase classname="tests.test_context_lifecycle" name="test_automatic_memory_extraction_is_disabled_by_default" time="0.003" /><testcase classname="tests.test_context_lifecycle" name="test_knowledge_chunks_keep_page_and_overlap" time="0.000" /><testcase classname="tests.test_context_lifecycle" name="test_cosine_similarity_is_bounded" time="0.000" /><testcase classname="tests.test_context_lifecycle" name="test_knowledge_search_rejects_below_relevance_threshold" time="0.003" /><testcase classname="tests.test_context_lifecycle" name="test_conversation_state_resolves_reference_and_market_switch" time="0.001" /><testcase classname="tests.test_context_lifecycle" name="test_conversation_state_tracks_comparison_correction_and_conflict" time="0.000" /><testcase classname="tests.test_context_lifecycle" name="test_postgres_memory_version_and_atomic_turn" time="5.999" /><testcase classname="tests.test_customer_memory" name="test_extracts_only_explicit_customer_constraints" time="0.001" /><testcase classname="tests.test_customer_memory" name="test_does_not_turn_normal_question_into_memory" time="0.001" /><testcase classname="tests.test_data_query" name="test_question_maps_to_closed_metric_plan_with_context_filters" time="0.002" /><testcase classname="tests.test_data_query" name="test_current_product_is_default_scope_but_all_skus_is_explicit" time="0.000" /><testcase classname="tests.test_data_query" name="test_future_forecast_never_falls_into_historical_query" time="0.000" /><testcase classname="tests.test_data_query" name="test_query_plan_rejects_cross_family_metrics_and_unknown_fields" time="0.000" /><testcase classname="tests.test_data_query" name="test_data_query_source_kind_is_a_stable_metric_family" time="0.000" /><testcase classname="tests.test_data_query" name="test_rendered_answer_discloses_version_checksum_and_limit" time="0.000" /><testcase classname="tests.test_data_query" name="test_projection_query_audit_and_cross_tenant_isolation" time="0.372" /><testcase classname="tests.test_dev_jwt_persistence" name="test_development_jwt_keys_are_reused_across_restarts" time="0.108" /><testcase classname="tests.test_dev_jwt_persistence" name="test_production_does_not_invent_jwt_keys" time="0.002" /><testcase classname="tests.test_document_and_internal_model" name="test_xlsx_document_parser_extracts_real_cells_and_rejects_spoofed_files" time="0.013" /><testcase classname="tests.test_document_and_internal_model" name="test_bailian_embedding_and_rerank_contracts" time="0.003" /><testcase classname="tests.test_document_and_internal_model" name="test_bailian_embedding_batches_more_than_ten_texts" time="0.005" /><testcase classname="tests.test_document_and_internal_model" name="test_market_workbook_parses_business_facing_sheets" time="0.021" /><testcase classname="tests.test_document_and_internal_model" name="test_market_csv_parses_price_range_and_reviewer_location" time="0.000" /><testcase classname="tests.test_document_and_internal_model" name="test_review_cleaning_filters_empty_garbled_spam_and_duplicates" time="0.000" /><testcase classname="tests.test_document_and_internal_model" name="test_review_sentiment_prefers_text_over_star_rating" time="0.000" /><testcase classname="tests.test_document_and_internal_model" name="test_competitor_snapshot_diff_detects_price_title_promo_and_bullets" time="0.000" /><testcase classname="tests.test_document_and_internal_model" name="test_internal_model_endpoints_require_service_token" time="0.133" /><testcase classname="tests.test_enterprise_http" name="test_http_confirm_train_predict_and_cross_tenant_denial" time="1.551"><failure message="AssertionError: {'training_uuid': 'e0d70a16-54d1-46bd-8d79-e35c7d622217', 'status': 'failed', 'update_kind': 'initial', 'metrics': {}, ...}&#10;assert 'failed' == 'succeeded'&#10;  &#10;  - succeeded&#10;  + failed">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_http_confirm_train_predic0')
+
+    @pytest.mark.skipif(not os.getenv("FURNISCOPE_TEST_DATABASE_URL"), reason="needs isolated PostgreSQL")
+    def test_http_confirm_train_predict_and_cross_tenant_denial(tmp_path):
+        settings = fixture_settings(os.environ["FURNISCOPE_TEST_DATABASE_URL"], tmp_path)
+        identities = asyncio.run(seed_enterprise(settings))
+        with TestClient(create_app(settings)) as client:
+            def auth(identity):
+                response = client.post("/api/v1/auth/login", json={key: identity[key] for key in ("email", "password")})
+                assert response.status_code == 200, response.text
+                return {"Authorization": f"Bearer {response.json()['data']['access_token']}"}
+            own, other = map(auth, identities)
+            def call(method, path, body=None, status=200):
+                response = client.request(method, f"/api/v1/{path}", headers=own, json=body)
+                assert response.status_code == status, response.text
+                return response.json().get("data")
+            mapping = call("GET", "forecast/sku-mappings")
+            saved_mapping = call("PUT", "forecast/sku-mappings", {
+                "expected_revision": mapping["revision"],
+                "items": [{"source_sku": "SOURCE-ALT", "product_sku": "SAME-SKU"}]})
+            assert len(saved_mapping["items"]) == 1
+            assert client.get("/api/v1/forecast/sku-mappings", headers=other).json()["data"]["items"] == []
+            call("PUT", "forecast/sku-mappings", {"expected_revision": mapping["revision"], "items": []}, status=409)
+            call("PUT", "forecast/sku-mappings", {"expected_revision": saved_mapping["revision"], "items": []})
+            overview = call("GET", f"market-intelligence/overview?dataset_id={identities[0]['dataset_id']}")
+            assert overview["smart_selection"]["items"][0]["opportunity_id"] == identities[0]["opportunity_id"]
+            assert len(call("GET", "market-intelligence/overview")["smart_selection"]["items"]) == 1
+            current = call("GET", "enterprise/opportunity-policy")["current"]
+            saved = call("PUT", "enterprise/opportunity-policy", {
+                **{key: current[key] for key in ("name", "objective", "weights", "fit_strength", "required_capabilities")},
+                "expected_version": current["version"]})
+            assert saved["version"] == 1
+            assert client.get("/api/v1/enterprise/opportunity-policy", headers=other).json()["data"]["current"]["version"] == 0
+            uploaded = client.post("/api/v1/forecast/data-imports", headers=own,
+                files={"file": ("sales.json", json.dumps(sales_records()).encode(), "application/json")})
+            assert uploaded.status_code == 200, uploaded.text
+            data = uploaded.json()["data"]; version = data["version_uuid"]
+            assert client.get(f"/api/v1/forecast/data-imports/{version}", headers=other).status_code == 404
+            preview = call("POST", f"forecast/data-imports/{version}/preflight", {"rules": data["rules"]})
+            call("POST", f"forecast/data-imports/{version}/confirm", {"preview_sha256": "0" * 64}, status=409)
+            confirmed = call("POST", f"forecast/data-imports/{version}/confirm", {"preview_sha256": preview["preview_sha256"]})
+            assert confirmed["status"] == "confirmed"
+            assert client.get(f"/api/v1/forecast/data-imports/{version}/audit", headers=other).status_code == 404
+            audit = client.get(f"/api/v1/forecast/data-imports/{version}/audit", headers=own).json()
+            assert audit["records"][0]["source_rows"] == [2]
+            body = {"data_version_uuid": version, "mode": "initial"}
+            assert call("POST", "forecast/training-preview", body)["merged_rows"] == 196
+            idem = {**own, "Idempotency-Key": uuid4().hex}
+            response = client.post("/api/v1/forecast/training-runs", headers=idem, json=body)
+            assert response.status_code == 202, response.text
+            run_id = response.json()["data"]["training_uuid"]
+            result = call("GET", f"forecast/training-runs/{run_id}")
+&gt;           assert result["status"] == "succeeded", result
+E           AssertionError: {'training_uuid': 'e0d70a16-54d1-46bd-8d79-e35c7d622217', 'status': 'failed', 'update_kind': 'initial', 'metrics': {}, ...}
+E           assert 'failed' == 'succeeded'
+E             
+E             - succeeded
+E             + failed
+
+tests/test_enterprise_http.py:140: AssertionError</failure></testcase><testcase classname="tests.test_enterprise_policy" name="test_explicit_capabilities_unknowns_completeness_and_frozen_dates" time="0.000" /><testcase classname="tests.test_enterprise_policy" name="test_constraints_require_confirmed_facts_same_units_and_supported_rule" time="0.000" /><testcase classname="tests.test_enterprise_policy" name="test_policy_validation_missing_factor_renormalization_and_no_zero_division" time="0.001" /><testcase classname="tests.test_enterprise_policy" name="test_policy_snapshot_scoring_feedback_and_tenant_boundaries" time="0.270" /><testcase classname="tests.test_enterprise_training" name="test_file_formats_preserve_sales_and_row_lineage[csv]" time="0.027" /><testcase classname="tests.test_enterprise_training" name="test_file_formats_preserve_sales_and_row_lineage[xlsx]" time="0.032" /><testcase classname="tests.test_enterprise_training" name="test_file_formats_preserve_sales_and_row_lineage[json]" time="0.002" /><testcase classname="tests.test_enterprise_training" name="test_ambiguous_dates_duplicates_net_sales_and_gaps_require_explicit_rules" time="0.003" /><testcase classname="tests.test_enterprise_training" name="test_independent_engine_gate_and_actual_inference" time="0.179" /><testcase classname="tests.test_enterprise_training" name="test_no_validation_labels_reach_fitting_and_failures_do_not_write_models" time="0.065" /><testcase classname="tests.test_enterprise_training" name="test_content_checksum_is_stable_when_copied_and_detects_changes" time="0.141" /><testcase classname="tests.test_enterprise_training" name="test_raw_duplicate_headers_and_overflow_are_quality_errors" time="0.013" /><testcase classname="tests.test_enterprise_training" name="test_mapping_assistant_only_sends_headers_and_never_applies_suggestions" time="0.004" /><testcase classname="tests.test_enterprise_training" name="test_restricted_training_gaps_tamper_cas_and_release_failure" time="0.175"><failure message="RuntimeError: 训练进程退出（1），请检查服务端训练日志">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_restricted_training_gaps_0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x11c490350&gt;
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("FURNISCOPE_TEST_DATABASE_URL"), reason="needs isolated PostgreSQL")
+    async def test_restricted_training_gaps_tamper_cas_and_release_failure(tmp_path, monkeypatch):
+        dsn = os.environ["FURNISCOPE_TEST_DATABASE_URL"].replace("postgresql://", "postgresql+asyncpg://")
+        cfg = ApiSettings(database_url=dsn, app_env="test", demo_storage_root=str(tmp_path / "raw"),
+                          forecast_artifact_root=str(tmp_path / "models"))
+        db = Database(cfg)
+        registry = TenantForecastRuntimeRegistry(cfg)
+        data, training = ForecastDataService(cfg), ForecastTrainingService(cfg, registry)
+        async with db.session_factory() as admin:
+            tenant = await admin.scalar(text("""
+                INSERT INTO tenants(tenant_code,name,status) VALUES(:code,'受限训练','active') RETURNING id
+            """), {"code": f"RT_{uuid4().hex[:16].upper()}"})
+            user = await admin.scalar(text("""
+                INSERT INTO users(tenant_id,email,password_hash,name,role_code,status)
+                VALUES(:t,:email,'not-a-login','测试','user','active') RETURNING id
+            """), {"t": tenant, "email": f"{uuid4().hex}@example.invalid"})
+            await admin.execute(text("""
+                INSERT INTO products(tenant_id,created_by,sku,name,category_code)
+                VALUES(:t,:u,'SAME-SKU','测试沙发','sofa')
+            """), {"t": tenant, "u": user})
+            await admin.commit()
+        try:
+            async with db.session_factory() as session:
+                await bind_tenant_session(session, tenant)
+    
+                async def intake(records):
+                    item = await data.upload(session, tenant_id=tenant, user_id=user, filename="data.csv",
+                                             content=pd.DataFrame(records).to_csv(index=False).encode())
+                    preview = await data.preflight(session, tenant_id=tenant,
+                                                   version_uuid=item["version_uuid"], rules=rules())
+                    return await data.confirm(session, tenant_id=tenant,
+                                              version_uuid=item["version_uuid"],
+                                              preview_sha256=preview["preview_sha256"])
+    
+                async def queue(item, mode="rebuild"):
+                    _, run = await training.create(session, tenant_id=tenant, user_id=user,
+                        version_uuid=item["version_uuid"], mode=mode, allow_history_overwrite=False,
+                        idempotency_key=uuid4().hex)
+                    await session.commit()
+                    return run["training_uuid"]
+    
+                item = await intake(sales_records())
+                run = await queue(item, "initial")
+&gt;               await training.execute(session, tenant_id=tenant, training_uuid=run)
+
+tests/test_enterprise_training.py:212: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/furniscope_api/services/forecast_training_service.py:261: in execute
+    await (work if work in done else pulse)
+backend/furniscope_api/services/forecast_training_service.py:314: in _execute_owned
+    evaluation = await self.lifecycle.train(list(merged.values()), stage, lineage)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;furniscope_api.services.training_lifecycle.TrainingLifecycle object at 0x11c493650&gt;
+records = [{'currency': None, 'date': '2025-01-06', 'discount': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-0...count': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-11', 'discount': None, 'sales': 10.0, ...}, ...]
+stage = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_restricted_training_gaps_0/models/18/.staging-efafc093-6103-42a4-823a-5b3b73652467-08c6475a-dc8c-4c48-bd6c-dda81bed7cb5')
+lineage = {'tenant_id': 18, 'training_uuid': 'efafc093-6103-42a4-823a-5b3b73652467', 'execution_token': '08c6475a-dc8c-4c48-bd6c...9374-304e-4c7c-9b35-872b2f6df333', 'sha256': '2ccd74b9efa09b6e8756a852cb649e157046c56d1d2c3f76d93dd85754edb982'}], ...}
+
+    async def train(self, records, stage, lineage):
+        (stage / "training-input.json").write_text(json.dumps(
+            {"records": records, "lineage": lineage}, ensure_ascii=False, allow_nan=False))
+        with (stage / "process.log").open("wb") as log:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "furniscope_forecast.training_process", str(stage),
+                stdout=log, stderr=log)
+            try:
+                code = await process.wait()
+                if code:
+&gt;                   raise RuntimeError(f"训练进程退出（{code}），请检查服务端训练日志")
+E                   RuntimeError: 训练进程退出（1），请检查服务端训练日志
+
+backend/furniscope_api/services/training_lifecycle.py:67: RuntimeError</failure></testcase><testcase classname="tests.test_enterprise_training" name="test_real_database_first_training_isolation_append_and_failed_release" time="0.180"><failure message="RuntimeError: 训练进程退出（1），请检查服务端训练日志">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_real_database_first_train0')
+
+    @pytest.mark.asyncio
+    @pytest.mark.skipif(not os.getenv("FURNISCOPE_TEST_DATABASE_URL"), reason="needs isolated PostgreSQL")
+    async def test_real_database_first_training_isolation_append_and_failed_release(tmp_path):
+        dsn = os.environ["FURNISCOPE_TEST_DATABASE_URL"].replace("postgresql://", "postgresql+asyncpg://")
+        cfg = ApiSettings(database_url=dsn, app_env="test", demo_storage_root=str(tmp_path / "raw"),
+                          forecast_artifact_root=str(tmp_path / "models"),
+                          forecast_state_dir=str(tmp_path / "untrusted-shared"))
+        database = Database(cfg)
+        registry = TenantForecastRuntimeRegistry(cfg)
+        data = ForecastDataService(cfg)
+        training = ForecastTrainingService(cfg, registry)
+        # A poisoned shared history must never be read by first/append training.
+        shared = Path(cfg.forecast_state_dir)
+        shared.mkdir()
+        (shared / "daily.pkl").write_bytes(b"SHOULD NEVER BE LOADED")
+    
+        async with database.session_factory() as session:
+            tenant_ids = []
+            users = []
+            for i in range(2):
+                tenant = (await session.execute(text("""
+                    INSERT INTO tenants(tenant_code,name,status) VALUES(:code,'训练测试','active') RETURNING id
+                """), {"code": f"ET_{uuid4().hex[:16].upper()}"})).scalar_one()
+                user = (await session.execute(text("""
+                    INSERT INTO users(tenant_id,email,password_hash,name,role_code,status)
+                    VALUES(:tenant,:email,'not-a-login','测试','user','active') RETURNING id
+                """), {"tenant": tenant, "email": f"{uuid4().hex}@example.invalid"})).scalar_one()
+                await session.execute(text("""
+                    INSERT INTO products(tenant_id,created_by,sku,name,category_code)
+                    VALUES(:tenant,:user,'SAME-SKU','测试沙发','sofa')
+                """), {"tenant": tenant, "user": user})
+                tenant_ids.append(tenant)
+                users.append(user)
+            await session.commit()
+    
+            async def intake(index, records):
+                item = await data.upload(session, tenant_id=tenant_ids[index], user_id=users[index],
+                                         filename="sales.csv", content=pd.DataFrame(records).to_csv(index=False).encode())
+                preview = await data.preflight(session, tenant_id=tenant_ids[index],
+                                               version_uuid=item["version_uuid"], rules=rules())
+                with pytest.raises(BusinessError, match="预检已变化"):
+                    await data.confirm(session, tenant_id=tenant_ids[index],
+                                       version_uuid=item["version_uuid"], preview_sha256="0" * 64)
+                confirmed = await data.confirm(session, tenant_id=tenant_ids[index],
+                                               version_uuid=item["version_uuid"],
+                                               preview_sha256=preview["preview_sha256"])
+                await session.commit()
+                return confirmed
+    
+            first = await intake(0, sales_records())
+            second = await intake(1, sales_records(quantity=40))
+            with pytest.raises(BusinessError, match="不可访问"):
+                await data.row(session, tenant_ids[1], first["version_uuid"])
+            for i, item in enumerate([first, second]):
+                status, run = await training.create(
+                    session, tenant_id=tenant_ids[i], user_id=users[i],
+                    version_uuid=item["version_uuid"], mode="initial", allow_history_overwrite=False,
+                    idempotency_key=f"initial-{i}")
+                assert status == 202
+                await session.commit()
+&gt;               await training.execute(session, tenant_id=tenant_ids[i], training_uuid=run["training_uuid"])
+
+tests/test_enterprise_training.py:323: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/furniscope_api/services/forecast_training_service.py:261: in execute
+    await (work if work in done else pulse)
+backend/furniscope_api/services/forecast_training_service.py:314: in _execute_owned
+    evaluation = await self.lifecycle.train(list(merged.values()), stage, lineage)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;furniscope_api.services.training_lifecycle.TrainingLifecycle object at 0x11c4933b0&gt;
+records = [{'currency': None, 'date': '2025-01-06', 'discount': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-0...count': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-11', 'discount': None, 'sales': 10.0, ...}, ...]
+stage = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_real_database_first_train0/models/19/.staging-6ed6fe00-16b3-45dd-bded-ede6e349cc06-66d9857e-9298-4c82-952e-b6a06f788602')
+lineage = {'tenant_id': 19, 'training_uuid': '6ed6fe00-16b3-45dd-bded-ede6e349cc06', 'execution_token': '66d9857e-9298-4c82-952e...301c-26d1-4f39-b444-5bd53f01f001', 'sha256': '2ccd74b9efa09b6e8756a852cb649e157046c56d1d2c3f76d93dd85754edb982'}], ...}
+
+    async def train(self, records, stage, lineage):
+        (stage / "training-input.json").write_text(json.dumps(
+            {"records": records, "lineage": lineage}, ensure_ascii=False, allow_nan=False))
+        with (stage / "process.log").open("wb") as log:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "furniscope_forecast.training_process", str(stage),
+                stdout=log, stderr=log)
+            try:
+                code = await process.wait()
+                if code:
+&gt;                   raise RuntimeError(f"训练进程退出（{code}），请检查服务端训练日志")
+E                   RuntimeError: 训练进程退出（1），请检查服务端训练日志
+
+backend/furniscope_api/services/training_lifecycle.py:67: RuntimeError</failure></testcase><testcase classname="tests.test_external_toolbox" name="test_external_toolbox_reads_authorized_records_and_never_labels_demo" time="0.001" /><testcase classname="tests.test_external_toolbox" name="test_external_toolbox_rejects_missing_authorization" time="0.001" /><testcase classname="tests.test_external_toolbox" name="test_competitor_rule_recall_never_reuses_failed_model_client" time="0.001" /><testcase classname="tests.test_external_toolbox" name="test_enterprise_fit_uses_confirmed_category_market_and_capability" time="0.000" /><testcase classname="tests.test_external_toolbox" name="test_enterprise_fit_hard_gates_explicitly_unavailable_capability" time="0.000" /><testcase classname="tests.test_external_toolbox" name="test_taxonomy_cluster_fallback_ranks_representatives_by_confidence" time="0.000" /><testcase classname="tests.test_external_toolbox" name="test_semantic_clusters_stay_inside_taxonomy_and_rank_central_evidence" time="0.000" /><testcase classname="tests.test_external_workflow_integration" name="test_authorized_external_workflow_persists_evidence_backed_report" time="0.690" /><testcase classname="tests.test_forecast_backtest" name="test_metric_row_reports_accuracy_bias_and_missing_prediction_coverage" time="0.004" /><testcase classname="tests.test_forecast_backtest" name="test_safe_features_uses_only_prior_rows_for_sku_statistics" time="0.009" /><testcase classname="tests.test_forecast_catalog" name="test_mapping_validation_error_names_problem_skus_and_next_action" time="0.000" /><testcase classname="tests.test_forecast_catalog" name="test_mapping_preflight_is_explicit_unambiguous_and_tenant_scoped" time="0.410" /><testcase classname="tests.test_forecast_catalog" name="test_queued_prediction_and_rollback_keep_their_original_mapping" time="0.222"><failure message="RuntimeError: 训练进程退出（1），请检查服务端训练日志">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_queued_prediction_and_rol0')
+
+    @needs_db
+    @pytest.mark.asyncio
+    async def test_queued_prediction_and_rollback_keep_their_original_mapping(tmp_path):
+        cfg, db, training, tenant, original_run = await setup_run(tmp_path)
+        service = ForecastCatalog()
+        forecasts = ForecastService(cfg, training.registry)
+        try:
+            async with db.session_factory() as session:
+                await bind_tenant_session(session, tenant)
+                run = (await session.execute(text("""
+                    SELECT created_by,source_snapshot FROM forecast_training_runs
+                     WHERE training_uuid=CAST(:u AS uuid)
+                """), {"u": original_run})).mappings().one()
+                user, version = run["created_by"], run["source_snapshot"]["data_versions"][0]
+                await session.execute(text("UPDATE forecast_training_runs SET status='cancelled' WHERE training_uuid=CAST(:u AS uuid)"), {"u": original_run})
+                product = await session.scalar(text("""
+                    INSERT INTO products(tenant_id,sku,name,category_code)
+                    VALUES(:t,'ALT','映射产品','sofa') RETURNING id
+                """), {"t": tenant})
+                await mapping(service, session, tenant, user, [{"source_sku": "SAME-SKU", "product_sku": "ALT"}])
+                _, initial = await training.create(session, tenant_id=tenant, user_id=user,
+                    version_uuid=version, mode="initial", allow_history_overwrite=False, idempotency_key=uuid4().hex)
+                await session.commit()
+                # Editing the mapping after queue must not change the first model's binding.
+                await mapping(service, session, tenant, user, [])
+                await session.commit()
+&gt;               await training.execute(session, tenant_id=tenant, training_uuid=initial["training_uuid"])
+
+tests/test_forecast_catalog.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/furniscope_api/services/forecast_training_service.py:261: in execute
+    await (work if work in done else pulse)
+backend/furniscope_api/services/forecast_training_service.py:314: in _execute_owned
+    evaluation = await self.lifecycle.train(list(merged.values()), stage, lineage)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;furniscope_api.services.training_lifecycle.TrainingLifecycle object at 0x11cbf6fc0&gt;
+records = [{'currency': None, 'date': '2025-01-06', 'discount': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-0...count': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-11', 'discount': None, 'sales': 10.0, ...}, ...]
+stage = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_queued_prediction_and_rol0/models/23/.staging-074168a2-3218-4b99-815d-69a427a6f6eb-eee1d533-ce80-4940-9dbd-85d7c44ead8e')
+lineage = {'tenant_id': 23, 'training_uuid': '074168a2-3218-4b99-815d-69a427a6f6eb', 'execution_token': 'eee1d533-ce80-4940-9dbd...3a47-64d6-4aac-9089-cddb378b9462', 'sha256': '2ccd74b9efa09b6e8756a852cb649e157046c56d1d2c3f76d93dd85754edb982'}], ...}
+
+    async def train(self, records, stage, lineage):
+        (stage / "training-input.json").write_text(json.dumps(
+            {"records": records, "lineage": lineage}, ensure_ascii=False, allow_nan=False))
+        with (stage / "process.log").open("wb") as log:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "furniscope_forecast.training_process", str(stage),
+                stdout=log, stderr=log)
+            try:
+                code = await process.wait()
+                if code:
+&gt;                   raise RuntimeError(f"训练进程退出（{code}），请检查服务端训练日志")
+E                   RuntimeError: 训练进程退出（1），请检查服务端训练日志
+
+backend/furniscope_api/services/training_lifecycle.py:67: RuntimeError</failure></testcase><testcase classname="tests.test_forecast_integration" name="test_coerce_training_date_accepts_iso_string" time="0.000" /><testcase classname="tests.test_forecast_integration" name="test_runtime_normalizes_existing_v4_engine" time="0.035" /><testcase classname="tests.test_forecast_integration" name="test_runtime_prefers_tenant_engine_and_retrains_it" time="0.022" /><testcase classname="tests.test_forecast_integration" name="test_model_replacement_rejects_invalid_parameter_document" time="0.006" /><testcase classname="tests.test_forecast_integration" name="test_forecast_contract_normalizes_and_bounds_scope" time="0.000" /><testcase classname="tests.test_forecast_integration" name="test_forecast_contract_accepts_complete_business_scenario" time="0.000" /><testcase classname="tests.test_forecast_integration" name="test_tenant_runtime_registry_rejects_cross_tenant_artifact" time="0.006" /><testcase classname="tests.test_forecast_integration" name="test_tenant_runtime_registry_allows_explicit_shared_deployment" time="0.010" /><testcase classname="tests.test_forecast_integration" name="test_repository_real_model_assets_load_and_predict" time="0.003"><skipped type="pytest.skip" message="forecast_assets/state is not present in CI">/Users/bytedance/Furniscope/tests/test_forecast_integration.py:181: forecast_assets/state is not present in CI</skipped></testcase><testcase classname="tests.test_forecast_strata" name="test_mature_sparse_new_and_zero_share_one_artifact_without_fabricated_accuracy" time="0.149" /><testcase classname="tests.test_forecast_strata" name="test_small_bad_sku_cannot_hide_under_a_large_good_sku" time="0.107" /><testcase classname="tests.test_forecast_strata" name="test_each_sku_uses_its_own_cutoff_and_only_earlier_labels" time="0.150" /><testcase classname="tests.test_forecast_strata" name="test_runtime_exposes_unvalidated_baselines_and_reference_transfers" time="0.154" /><testcase classname="tests.test_hf_demo_fixture" name="test_hf_market_pack_is_complete_authorized_data" time="0.006" /><testcase classname="tests.test_idempotency_postgres" name="test_same_request_replays_and_different_hash_conflicts" time="0.045" /><testcase classname="tests.test_idempotency_postgres" name="test_processing_and_concurrent_key_have_single_winner" time="0.041" /><testcase classname="tests.test_idempotency_postgres" name="test_hash_normalization_redacts_sensitive_values" time="0.000" /><testcase classname="tests.test_idempotency_postgres" name="test_authentication_routes_are_explicitly_excluded" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_quantity_reconciliation_and_line_facts" time="0.002" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch0-\u5185\u5bb9\u51b2\u7a81]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch1-\u5185\u5bb9\u51b2\u7a81]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch2-\u8ba2\u5355\u72b6\u6001]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch3-\u4ed3\u5e93\u672a\u6620\u5c04]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch4-\u9000\u8d27\u4ef6\u6570]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch5-\u6298\u6263]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch6-\u8ba2\u5355\u53f7/\u884c\u53f7]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_ambiguities_fail_closed[patch7-\u5355\u4ef7]" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_order_semantics_and_currency_are_not_guessed" time="0.002" /><testcase classname="tests.test_import_contract_v2" name="test_reconciliation_exact_join_and_no_inventory_backfill" time="0.001" /><testcase classname="tests.test_import_contract_v2" name="test_http_template_revisions_reconciliation_and_tenant_boundaries" time="1.449"><failure message="AssertionError: {'training_uuid': '87c61223-e8b5-4491-8327-7eb5dc25d21d', 'status': 'failed', 'update_kind': 'initial', 'metrics': {}, ...}&#10;assert 'failed' == 'succeeded'&#10;  &#10;  - succeeded&#10;  + failed">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_http_template_revisions_r0')
+
+    @pytest.mark.skipif(not os.getenv("FURNISCOPE_TEST_DATABASE_URL"), reason="needs isolated PostgreSQL")
+    def test_http_template_revisions_reconciliation_and_tenant_boundaries(tmp_path):
+        settings = fixture_settings(os.environ["FURNISCOPE_TEST_DATABASE_URL"], tmp_path)
+        identities = asyncio.run(seed_enterprise(settings))
+        with TestClient(create_app(settings)) as client:
+            headers = []
+            for identity in identities:
+                login = client.post("/api/v1/auth/login", json={k: identity[k] for k in ("email", "password")})
+                headers.append({"Authorization": f"Bearer {login.json()['data']['access_token']}"})
+            own, other = headers
+    
+            def call(method, path, body=None, status=200, auth=own):
+                response = client.request(method, "/api/v1/forecast/" + path, json=body, headers=auth)
+                assert response.status_code == status, response.text
+                return response.json().get("data")
+    
+            def upload(name, records, auth=own):
+                response = client.post("/api/v1/forecast/data-imports", headers=auth,
+                    files={"file": (name, json.dumps(records).encode(), "application/json")})
+                assert response.status_code == 200, response.text
+                return response.json()["data"]["version_uuid"]
+    
+            def preflight(version, import_rules, auxiliary=None):
+                return call("POST", f"data-imports/{version}/preflight",
+                            {"rules": import_rules.model_dump(), "auxiliary_versions": auxiliary or {}})
+    
+            def confirm(version, preview):
+                return call("POST", f"data-imports/{version}/confirm", {"preview_sha256": preview["preview_sha256"]})
+    
+            order = upload("orders.json", orders())
+            preview = preflight(order, order_rules())
+            confirm(order, preview)
+            template_body = {"name": "ERP整日订单", "data_version_uuid": order, "expected_revision": 0}
+            saved = call("POST", "import-templates", template_body)
+            call("POST", "import-templates", template_body, 409)
+            revised = call("POST", "import-templates", {**template_body, "expected_revision": 1})
+            assert revised["revision"] == 2
+            assert call("GET", "import-templates")["items"][0]["revision"] == 2
+            assert call("GET", "import-templates", auth=other)["items"] == []
+            call("POST", "import-templates", template_body, 404, other)
+            new_order = upload("next.json", [{**row, "date": "2025-01-07"} for row in orders()])
+            call("POST", f"data-imports/{new_order}/apply-template", {"template_uuid": saved["template_uuid"]}, 404, other)
+            applied = call("POST", f"data-imports/{new_order}/apply-template", {"template_uuid": saved["template_uuid"]})
+            assert applied["template_snapshot"]["revision"] == 1
+            assert applied["preview_sha256"] is None
+            check = preflight(new_order, ImportRules(**applied["rules"]))
+            confirm(new_order, check)
+            call("POST", f"data-imports/{new_order}/apply-template", {"template_uuid": revised["template_uuid"]}, 409)
+            mismatch = upload("other-columns.json", sales_records(1))
+            call("POST", f"data-imports/{mismatch}/apply-template", {"template_uuid": saved["template_uuid"]}, 422)
+    
+            control = upload("control.json", [{**sales_records(1)[0], "sales": 13}])
+            confirm(control, preflight(control, rules(sales_basis="net_units")))
+            inventory = upload("inventory.json", [{"date": "2025-01-06", "sku": "SAME-SKU", "site": "US", "inventory": 40}])
+            inv_rules = ImportRules(kind="inventory", mapping={k: k for k in ["date", "sku", "site", "inventory"]})
+            confirm(inventory, preflight(inventory, inv_rules))
+            revision = call("POST", f"data-imports/{order}/revisions")["version_uuid"]
+            call("POST", f"data-imports/{revision}/preflight",
+                 {"rules": order_rules().model_dump(), "auxiliary_versions": {"control": order}}, 422)
+            checked = preflight(revision, order_rules(), {"control": control, "inventory": inventory})
+            assert checked["quality"]["reconciliation"]["control"]["reconciled"]
+            assert checked["sample"][0]["inventory"] == 40
+            confirm(revision, checked)
+            audit = client.get(f"/api/v1/forecast/data-imports/{revision}/audit", headers=own).json()
+            assert audit["auxiliary_sources"]["control"]["sha256"]
+            assert audit["reconciliation"]["control"]["difference_count"] == 0
+            call("POST", f"data-imports/{revision}/preflight", {"rules": order_rules().model_dump()}, 409)
+            bad_control = upload("bad-control.json", [{**sales_records(1)[0], "sales": 12}])
+            confirm(bad_control, preflight(bad_control, rules(sales_basis="net_units")))
+            revision = call("POST", f"data-imports/{order}/revisions")["version_uuid"]
+            failed = preflight(revision, order_rules(), {"control": bad_control})
+            assert failed["quality"]["reconciliation"]["control"]["difference_count"] == 1
+            call("POST", f"data-imports/{revision}/confirm", {"preview_sha256": failed["preview_sha256"]}, 422)
+            call("POST", f"data-imports/{revision}/preflight", {"rules": order_rules().model_dump(), "auxiliary_versions": {"inventory": control}}, 422)
+            foreign = upload("foreign.json", sales_records(2), auth=other)
+            call("POST", f"data-imports/{revision}/preflight", {"rules": order_rules().model_dump(), "auxiliary_versions": {"control": foreign}}, 404)
+    
+            history = [{**orders()[0], "date": row["date"], "order_id": f"DAY-{index}"}
+                       for index, row in enumerate(sales_records())]
+            version = upload("order-history.json", history)
+            confirm(version, preflight(version, order_rules()))
+            response = client.post("/api/v1/forecast/training-runs",
+                headers={**own, "Idempotency-Key": "order-history"},
+                json={"data_version_uuid": version, "mode": "initial"})
+            assert response.status_code == 202, response.text
+            run = call("GET", "training-runs/" + response.json()["data"]["training_uuid"])
+&gt;           assert run["status"] == "succeeded", run
+E           AssertionError: {'training_uuid': '87c61223-e8b5-4491-8327-7eb5dc25d21d', 'status': 'failed', 'update_kind': 'initial', 'metrics': {}, ...}
+E           assert 'failed' == 'succeeded'
+E             
+E             - succeeded
+E             + failed
+
+tests/test_import_contract_v2.py:194: AssertionError</failure></testcase><testcase classname="tests.test_job_queue" name="test_queue_deduplicates_and_acknowledges_success" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:43: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_tenant_queue_quota_is_atomic_and_released_after_terminal_success" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:73: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_tenant_slot_defers_busy_tenant_and_runs_next_tenant" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:103: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_worker_consumes_admin_safe_stop_event" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:151: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_queue_retries_then_dead_letters_without_losing_message" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:256: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_queue_quarantines_malformed_messages" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:285: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_live_queue_heartbeat_prevents_reclaim_and_lost_owner_never_acks" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:305: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_job_queue" name="test_queue_timeout_waits_for_handler_cleanup_before_retry" time="0.000"><skipped type="pytest.skip" message="FURNISCOPE_TEST_REDIS_URL is not configured">/Users/bytedance/Furniscope/tests/test_job_queue.py:345: FURNISCOPE_TEST_REDIS_URL is not configured</skipped></testcase><testcase classname="tests.test_market_intelligence" name="test_pricing_recommendation_applies_cost_and_margin_floor" time="0.000" /><testcase classname="tests.test_market_intelligence" name="test_pricing_recommendation_never_claims_profit_without_cost" time="0.000" /><testcase classname="tests.test_market_intelligence" name="test_pricing_recommendation_rejects_empty_market_sample" time="0.000" /><testcase classname="tests.test_market_intelligence" name="test_pricing_recommendation_blocks_unknown_or_mixed_currency" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_ndcg_hand_calculation_and_whole_task_split" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_late_training_labels_and_missing_validation_labels_exclude_whole_groups" time="0.001" /><testcase classname="tests.test_offline_acceptance" name="test_late_features_and_equal_boundary_are_not_training_samples" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[duplicate_task]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[duplicate_candidate]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[pagination]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[naive_time]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[future_label]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[early_label]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[other_tenant]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[nan_score]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_malformed_or_leaking_export_rejected[wrong_task]" time="0.000" /><testcase classname="tests.test_offline_acceptance" name="test_offline_forecast_preserves_unknown_dates_and_short_history" time="0.048" /><testcase classname="tests.test_opportunity_outcomes" name="test_outcome_dates_financials_and_unimplemented_are_not_success_or_failure" time="0.000" /><testcase classname="tests.test_opportunity_outcomes" name="test_outcome_implementation_date_uses_utc_boundary" time="0.000" /><testcase classname="tests.test_opportunity_outcomes" name="test_outcome_http_provenance_revision_cutoff_and_rls" time="1.596" /><testcase classname="tests.test_product_facts" name="test_aliases_do_not_infer_certification_from_negation_or_generic_material" time="0.006" /><testcase classname="tests.test_product_facts" name="test_legacy_model_auto_confirmation_is_not_human_review" time="0.000" /><testcase classname="tests.test_product_facts" name="test_http_fact_review_parse_conflict_history_and_gate" time="1.325" /><testcase classname="tests.test_product_imports" name="test_dynamic_template_has_versioned_five_sheet_contract" time="0.058" /><testcase classname="tests.test_product_imports" name="test_mapping_and_normalization_are_strict_and_deterministic" time="0.001" /><testcase classname="tests.test_product_imports" name="test_case_insensitive_cross_row_duplicates_block_every_collision" time="0.000" /><testcase classname="tests.test_product_imports" name="test_error_report_preserves_source_row_error_code_and_repair_advice" time="0.022" /><testcase classname="tests.test_product_imports" name="test_ten_thousand_row_preflight_core_performance" time="1.537" /><testcase classname="tests.test_product_imports" name="test_product_catalog_and_transactional_import_http_lifecycle" time="0.913"><failure message="sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) &lt;class 'asyncpg.exceptions.InsufficientPrivilegeError'&gt;: permission denied for table sales_facts_daily&#10;[SQL: &#10;            UPDATE sales_facts_daily SET sku=$1&#10;             WHERE tenant_id=$2 AND upper(btrim(sku))=upper(btrim($3))&#10;        ]&#10;[parameters: ('EDITED-CEEF928457', 30, 'EDIT-CEEF928457')]&#10;(Background on this error at: https://sqlalche.me/e/20/f405)">self = &lt;sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x11d4a0520&gt;
+operation = '\n            UPDATE sales_facts_daily SET sku=$1\n             WHERE tenant_id=$2 AND upper(btrim(sku))=upper(btrim($3))\n        '
+parameters = ('EDITED-CEEF928457', 30, 'EDIT-CEEF928457')
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+&gt;                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:550: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:177: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:268: in __bind_execute
+    data, status, _ = await self.__do_execute(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py:257: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   asyncpg.exceptions.InsufficientPrivilegeError: permission denied for table sales_facts_daily
+
+asyncpg/protocol/protocol.pyx:205: InsufficientPrivilegeError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;sqlalchemy.engine.base.Connection object at 0x126a24f50&gt;
+dialect = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x11d00a8d0&gt;
+context = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x126a25370&gt;
+statement = &lt;sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x126a25400&gt;
+parameters = [('EDITED-CEEF928457', 30, 'EDIT-CEEF928457')]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -&gt; CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+&gt;                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1969: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x1269e54f0&gt;&gt;
+error = InsufficientPrivilegeError('permission denied for table sales_facts_daily')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: &lt;class 'asyncpg.exceptions.InsufficientPrivilegeError'&gt;: permission denied for table sales_facts_daily
+
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_product_catalog_and_trans0')
+
+    @pytest.mark.skipif(not TEST_DSN, reason="needs isolated PostgreSQL")
+    def test_product_catalog_and_transactional_import_http_lifecycle(tmp_path) -&gt; None:
+        import asyncpg
+        from fastapi.testclient import TestClient
+    
+        from furniscope_api.app import create_app
+        from test_enterprise_http import fixture_settings, seed_enterprise
+    
+        settings = fixture_settings(TEST_DSN, tmp_path)
+        identities = asyncio.run(seed_enterprise(settings))
+        own_identity, other_identity = identities
+        suffix = uuid4().hex[:10].upper()
+    
+        with TestClient(create_app(settings)) as client:
+            def login(identity):
+                response = client.post("/api/v1/auth/login", json={
+                    "email": identity["email"], "password": identity["password"],
+                })
+                assert response.status_code == 200, response.text
+                return {"Authorization": f"Bearer {response.json()['data']['access_token']}"}
+    
+            own = login(own_identity)
+            other = login(other_identity)
+            create = client.post(
+                "/api/v1/products",
+                headers={**own, "Idempotency-Key": f"product-{suffix}"},
+                json={
+                    "sku": f"EDIT-{suffix}",
+                    "name": "可编辑产品",
+                    "category_code": "table",
+                    "description": "待清空",
+                },
+            )
+            assert create.status_code == 201, create.text
+            product_id = create.json()["data"]["product_id"]
+            asyncio.run(_seed_inventory(settings, own_identity, f"EDIT-{suffix}"))
+            detail = client.get(f"/api/v1/products/{product_id}", headers=own)
+            updated_sku = f"EDITED-{suffix}"
+&gt;           updated = client.patch(
+                f"/api/v1/products/{product_id}",
+                headers={**own, "If-Match": detail.headers["etag"]},
+                json={
+                    "sku": updated_sku,
+                    "category_code": "chair",
+                    "description": None,
+                },
+            )
+
+tests/test_product_imports.py:327: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/testclient.py:618: in patch
+    return super().patch(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:1278: in patch
+    return self.request(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/testclient.py:455: in request
+    return super().request(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/applications.py:1163: in __call__
+    await super().__call__(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+backend/furniscope_api/middleware.py:68: in __call__
+    await self.app(scope, receive, send_wrapper)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py:18: in __call__
+    await self.app(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/routing.py:670: in __call__
+    await self.middleware_stack(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:2734: in app
+    await route.handle(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:1780: in handle
+    await self.original_router.handle(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:2789: in handle
+    await included_router._handle_selected(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:1800: in _handle_selected
+    await original_route.handle(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:1279: in handle
+    await app(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:158: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:144: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:706: in app
+    raw_response = await run_endpoint_function(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/fastapi/routing.py:352: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/furniscope_api/routes/products.py:83: in update_product
+    data = await ProductService().update(session, tenant_id=principal.tenant_id,
+backend/furniscope_api/services/product_service.py:149: in update
+    await self.repository.update_sku_references(
+backend/furniscope_api/repositories/product_repository.py:173: in update_sku_references
+    await session.execute(text("""
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:448: in execute
+    result = await greenlet_spawn(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2373: in execute
+    return self._execute_internal(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2280: in _execute_internal
+    result = conn.execute(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1421: in execute
+    return meth(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py:526: in _execute_on_connection
+    return connection._execute_clauseelement(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1643: in _execute_clauseelement
+    ret = self._execute_context(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1848: in _execute_context
+    return self._exec_single_context(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1988: in _exec_single_context
+    self._handle_dbapi_exception(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:2365: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py:1969: in _exec_single_context
+    self.dialect.do_execute(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py:952: in do_execute
+    cursor.execute(statement, parameters)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:585: in execute
+    self._adapt_connection.await_(
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:563: in _prepare_and_execute
+    self._handle_exception(error)
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:513: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;AdaptedConnection &lt;asyncpg.connection.Connection object at 0x1269e54f0&gt;&gt;
+error = InsufficientPrivilegeError('permission denied for table sales_facts_daily')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+&gt;                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) &lt;class 'asyncpg.exceptions.InsufficientPrivilegeError'&gt;: permission denied for table sales_facts_daily
+E                   [SQL: 
+E                               UPDATE sales_facts_daily SET sku=$1
+E                                WHERE tenant_id=$2 AND upper(btrim(sku))=upper(btrim($3))
+E                           ]
+E                   [parameters: ('EDITED-CEEF928457', 30, 'EDIT-CEEF928457')]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+/private/tmp/furniscope-enterprise-venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:797: ProgrammingError</failure></testcase><testcase classname="tests.test_r01_r04_guards" name="test_model_parse_rejects_empty_key_before_job" time="0.002" /><testcase classname="tests.test_r01_r04_guards" name="test_model_parse_allows_configured_key" time="0.002" /><testcase classname="tests.test_r01_r04_guards" name="test_model_parse_allows_deepseek_fallback_key" time="0.002" /><testcase classname="tests.test_r01_r04_guards" name="test_demo_parse_skips_model_key_guard" time="0.002" /><testcase classname="tests.test_r01_r04_guards" name="test_parse_error_code_maps_missing_key_runtime_error" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_workspace_message_kind_context_is_accepted" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_workspace_message_kind_rejects_unknown" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_own_listing_requires_exact_sku_or_asin" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_zero_result_collect_is_not_succeeded" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_empty_asin_payload_is_not_succeeded" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_collect_with_written_listing_stays_succeeded" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_failed_collect_status_is_preserved" time="0.000" /><testcase classname="tests.test_r01_r04_guards" name="test_authorized_pack_url_reads_hefeng_file" time="0.003" /><testcase classname="tests.test_r01_r04_guards" name="test_authorized_pack_url_rejects_unknown_and_escape" time="0.002" /><testcase classname="tests.test_r01_r04_guards" name="test_official_policy_json_accepts_federal_register_results" time="0.002" /><testcase classname="tests.test_tenant_boundaries" name="test_role_read_write_compound_fk_and_pool_reset" time="0.122" /><testcase classname="tests.test_tenant_boundaries" name="test_private_model_visibility_and_deployment_owner_guard" time="0.087" /><testcase classname="tests.test_tenant_boundaries" name="test_asyncpg_reacquisition_restricts_each_tenant" time="0.112" /><testcase classname="tests.test_tenant_boundaries" name="test_force_rls_roles_and_policy_manifest_are_valid" time="0.068" /><testcase classname="tests.test_tenant_boundaries" name="test_cell_mismatch_freeze_and_write_fence_fail_closed" time="0.235" /><testcase classname="tests.test_tenant_security" name="test_policy_expression_canonicalization_accepts_schema_qualified_rls" time="0.001" /><testcase classname="tests.test_tenant_security" name="test_policy_expression_rejects_a_different_or_constant_tenant" time="0.001" /><testcase classname="tests.test_tenant_security" name="test_production_forbids_runtime_ddl" time="0.004" /><testcase classname="tests.test_tenant_security" name="test_production_requires_runtime_role_separation" time="0.003" /><testcase classname="tests.test_token_plan_model_router" name="test_token_plan_openai_compatible_request_and_trace" time="0.001" /><testcase classname="tests.test_token_plan_model_router" name="test_token_plan_demo_requires_secret" time="0.003" /><testcase classname="tests.test_token_plan_model_router" name="test_empty_model_router_secret_is_treated_as_missing" time="0.002" /><testcase classname="tests.test_token_plan_model_router" name="test_deepseek_key_alone_counts_as_configured" time="0.002" /><testcase classname="tests.test_token_plan_model_router" name="test_aliyun_quota_exhausted_falls_back_to_deepseek" time="0.003" /><testcase classname="tests.test_token_plan_model_router" name="test_event_gateway_is_the_default_without_embedding_claims" time="0.002" /><testcase classname="tests.test_training_recovery" name="test_cancellation_terminates_the_actual_training_process" time="10.009"><failure message="RuntimeError: 训练进程退出（1），请检查服务端训练日志">async def started():
+        while not (stage / "child.pid").exists():
+&gt;           await asyncio.sleep(0.02)
+
+tests/test_training_recovery.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+delay = 0.02, result = None
+
+    async def sleep(delay, result=None):
+        """Coroutine that completes after a given time (in seconds)."""
+        if delay &lt;= 0:
+            await __sleep0()
+            return result
+    
+        loop = events.get_running_loop()
+        future = loop.create_future()
+        h = loop.call_later(delay,
+                            futures._set_result_unless_cancelled,
+                            future, result)
+        try:
+&gt;           return await future
+                   ^^^^^^^^^^^^
+E           asyncio.exceptions.CancelledError
+
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/tasks.py:665: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_cancellation_terminates_t0')
+
+    @pytest.mark.asyncio
+    async def test_cancellation_terminates_the_actual_training_process(tmp_path):
+        cfg = ApiSettings(app_env="test")
+        stage = tmp_path / ".staging-process"
+        stage.mkdir()
+        # A deterministic long-running child exposes its PID before doing any work.
+        (stage / "forecast.py").write_text("""
+    import os, time
+    def train_artifacts(records, stage, lineage):
+        (stage / 'child.pid').write_text(str(os.getpid()))
+        time.sleep(30)
+        (stage / 'late-write').write_text('should never happen')
+        return {'passed': False}
+    """)
+        work = asyncio.create_task(TrainingLifecycle(cfg).train([], stage, {}))
+        async def started():
+            while not (stage / "child.pid").exists():
+                await asyncio.sleep(0.02)
+        try:
+&gt;           await asyncio.wait_for(started(), timeout=10)
+
+tests/test_training_recovery.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Timeout [expired]&gt;
+exc_type = &lt;class 'asyncio.exceptions.CancelledError'&gt;
+exc_val = CancelledError(), exc_tb = &lt;traceback object at 0x11c579e40&gt;
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -&gt; Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() &lt;= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+&gt;               raise TimeoutError from exc_val
+E               TimeoutError
+
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/timeouts.py:115: TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_cancellation_terminates_t0')
+
+    @pytest.mark.asyncio
+    async def test_cancellation_terminates_the_actual_training_process(tmp_path):
+        cfg = ApiSettings(app_env="test")
+        stage = tmp_path / ".staging-process"
+        stage.mkdir()
+        # A deterministic long-running child exposes its PID before doing any work.
+        (stage / "forecast.py").write_text("""
+    import os, time
+    def train_artifacts(records, stage, lineage):
+        (stage / 'child.pid').write_text(str(os.getpid()))
+        time.sleep(30)
+        (stage / 'late-write').write_text('should never happen')
+        return {'passed': False}
+    """)
+        work = asyncio.create_task(TrainingLifecycle(cfg).train([], stage, {}))
+        async def started():
+            while not (stage / "child.pid").exists():
+                await asyncio.sleep(0.02)
+        try:
+            await asyncio.wait_for(started(), timeout=10)
+            pid = int((stage / "child.pid").read_text())
+        finally:
+            work.cancel()
+            with pytest.raises(asyncio.CancelledError):
+&gt;               await work
+
+tests/test_training_recovery.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;furniscope_api.services.training_lifecycle.TrainingLifecycle object at 0x11b8667b0&gt;
+records = []
+stage = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_cancellation_terminates_t0/.staging-process')
+lineage = {}
+
+    async def train(self, records, stage, lineage):
+        (stage / "training-input.json").write_text(json.dumps(
+            {"records": records, "lineage": lineage}, ensure_ascii=False, allow_nan=False))
+        with (stage / "process.log").open("wb") as log:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "furniscope_forecast.training_process", str(stage),
+                stdout=log, stderr=log)
+            try:
+                code = await process.wait()
+                if code:
+&gt;                   raise RuntimeError(f"训练进程退出（{code}），请检查服务端训练日志")
+E                   RuntimeError: 训练进程退出（1），请检查服务端训练日志
+
+backend/furniscope_api/services/training_lifecycle.py:67: RuntimeError</failure></testcase><testcase classname="tests.test_training_recovery" name="test_expired_execution_cannot_publish_after_a_successful_recovery" time="30.153"><failure message="TimeoutError">fut = &lt;coroutine object Event.wait at 0x11d21f220&gt;, timeout = 30
+
+    async def wait_for(fut, timeout):
+        """Wait for the single Future or coroutine to complete, with timeout.
+    
+        Coroutine will be wrapped in Task.
+    
+        Returns result of the Future or coroutine.  When a timeout occurs,
+        it cancels the task and raises TimeoutError.  To avoid the task
+        cancellation, wrap it in shield().
+    
+        If the wait is cancelled, the task is also cancelled.
+    
+        If the task suppresses the cancellation and returns a value instead,
+        that value is returned.
+    
+        This function is a coroutine.
+        """
+        # The special case for timeout &lt;= 0 is for the following case:
+        #
+        # async def test_waitfor():
+        #     func_started = False
+        #
+        #     async def func():
+        #         nonlocal func_started
+        #         func_started = True
+        #
+        #     try:
+        #         await asyncio.wait_for(func(), 0)
+        #     except asyncio.TimeoutError:
+        #         assert not func_started
+        #     else:
+        #         assert False
+        #
+        # asyncio.run(test_waitfor())
+    
+    
+        if timeout is not None and timeout &lt;= 0:
+            fut = ensure_future(fut)
+    
+            if fut.done():
+                return fut.result()
+    
+            await _cancel_and_wait(fut)
+            try:
+                return fut.result()
+            except exceptions.CancelledError as exc:
+                raise TimeoutError from exc
+    
+        async with timeouts.timeout(timeout):
+&gt;           return await fut
+                   ^^^^^^^^^
+
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/tasks.py:520: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;asyncio.locks.Event object at 0x11d5d9f10 [unset]&gt;
+
+    async def wait(self):
+        """Block until the internal flag is true.
+    
+        If the internal flag is true on entry, return True
+        immediately.  Otherwise, block until another coroutine calls
+        set() to set the flag to true, then return True.
+        """
+        if self._value:
+            return True
+    
+        fut = self._get_loop().create_future()
+        self._waiters.append(fut)
+        try:
+&gt;           await fut
+E           asyncio.exceptions.CancelledError
+
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/locks.py:212: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_expired_execution_cannot_0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x11d5d9130&gt;
+
+    @needs_db
+    @pytest.mark.asyncio
+    async def test_expired_execution_cannot_publish_after_a_successful_recovery(tmp_path, monkeypatch):
+        cfg, db, service, tenant, run = await setup_run(tmp_path)
+        old_ready, release_old = asyncio.Event(), asyncio.Event()
+        actual_train = service.lifecycle.train
+        calls = 0
+    
+        async def paused_train(*args):
+            nonlocal calls
+            calls += 1
+            number = calls
+            result = await actual_train(*args)
+            if number == 1:
+                old_ready.set()
+                await release_old.wait()
+            return result
+    
+        async def frozen_heartbeat(*_args, **_kwargs):
+            await asyncio.Future()  # Simulate a worker suspended past its DB lease.
+    
+        monkeypatch.setattr(service.lifecycle, "train", paused_train)
+        monkeypatch.setattr(service.lifecycle, "heartbeat", frozen_heartbeat)
+        old = None
+        try:
+            async with db.session_factory() as first, db.session_factory() as recovery:
+                await bind_tenant_session(first, tenant)
+                old = asyncio.create_task(service.execute(first, tenant_id=tenant, training_uuid=run))
+&gt;               await asyncio.wait_for(old_ready.wait(), timeout=30)
+
+tests/test_training_recovery.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/tasks.py:519: in wait_for
+    async with timeouts.timeout(timeout):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Timeout [expired]&gt;
+exc_type = &lt;class 'asyncio.exceptions.CancelledError'&gt;
+exc_val = CancelledError(), exc_tb = &lt;traceback object at 0x11cea90c0&gt;
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -&gt; Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() &lt;= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+&gt;               raise TimeoutError from exc_val
+E               TimeoutError
+
+/opt/homebrew/Cellar/python@3.12/3.12.13_4/Frameworks/Python.framework/Versions/3.12/lib/python3.12/asyncio/timeouts.py:115: TimeoutError</failure></testcase><testcase classname="tests.test_training_recovery" name="test_timeout_and_restart_attempt_limit_release_tenant_slot" time="1.164" /><testcase classname="tests.test_training_recovery" name="test_reconciler_retains_live_children_and_referenced_artifacts" time="0.167"><failure message="RuntimeError: 训练进程退出（1），请检查服务端训练日志">tmp_path = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_reconciler_retains_live_c0')
+
+    @needs_db
+    @pytest.mark.asyncio
+    async def test_reconciler_retains_live_children_and_referenced_artifacts(tmp_path):
+        cfg, db, service, tenant, run = await setup_run(tmp_path)
+        try:
+            async with db.session_factory() as session:
+&gt;               await service.execute(session, tenant_id=tenant, training_uuid=run)
+
+tests/test_training_recovery.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/furniscope_api/services/forecast_training_service.py:261: in execute
+    await (work if work in done else pulse)
+backend/furniscope_api/services/forecast_training_service.py:314: in _execute_owned
+    evaluation = await self.lifecycle.train(list(merged.values()), stage, lineage)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;furniscope_api.services.training_lifecycle.TrainingLifecycle object at 0x11d56bbc0&gt;
+records = [{'currency': None, 'date': '2025-01-06', 'discount': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-0...count': None, 'sales': 10.0, ...}, {'currency': None, 'date': '2025-01-11', 'discount': None, 'sales': 10.0, ...}, ...]
+stage = PosixPath('/private/var/folders/fg/d5pkck2n337f1th9drq2qcmc0000gn/T/pytest-of-bytedance/pytest-116/test_reconciler_retains_live_c0/models/42/.staging-27c964ca-10bd-44fe-8641-f9626da318d6-7d411a4b-8c97-4c28-86fe-086704534cea')
+lineage = {'tenant_id': 42, 'training_uuid': '27c964ca-10bd-44fe-8641-f9626da318d6', 'execution_token': '7d411a4b-8c97-4c28-86fe...cb1c-d09d-4514-b947-c72f383ab9d2', 'sha256': '2ccd74b9efa09b6e8756a852cb649e157046c56d1d2c3f76d93dd85754edb982'}], ...}
+
+    async def train(self, records, stage, lineage):
+        (stage / "training-input.json").write_text(json.dumps(
+            {"records": records, "lineage": lineage}, ensure_ascii=False, allow_nan=False))
+        with (stage / "process.log").open("wb") as log:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "furniscope_forecast.training_process", str(stage),
+                stdout=log, stderr=log)
+            try:
+                code = await process.wait()
+                if code:
+&gt;                   raise RuntimeError(f"训练进程退出（{code}），请检查服务端训练日志")
+E                   RuntimeError: 训练进程退出（1），请检查服务端训练日志
+
+backend/furniscope_api/services/training_lifecycle.py:67: RuntimeError</failure></testcase><testcase classname="tests.test_training_recovery" name="test_database_heartbeat_and_shutdown_are_recoverable" time="1.023" /><testcase classname="tests.test_web_signal_parser" name="test_product_and_nested_reviews_are_parsed_from_json_ld" time="0.001" /><testcase classname="tests.test_web_signal_parser" name="test_amazon_dom_fallback_parses_listing_and_review_page" time="0.001" /><testcase classname="tests.test_web_signal_parser" name="test_generic_external_review_page_accepts_standalone_review_json_ld" time="0.001" /><testcase classname="tests.test_workbench_chat" name="test_question_label_is_not_the_whole_sentence" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_missing_us_market_prompts_insights" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_ready_us_market_lists_skus" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_fetch_followup_goes_to_insights" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_thinking_mentions_catalog_and_missing_us_market" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_parse_model_chat_text_extracts_json_answer" time="0.000" /><testcase classname="tests.test_workbench_chat" name="test_stream_events_emit_progress_without_private_reasoning" time="0.013" /></testsuite></testsuites>

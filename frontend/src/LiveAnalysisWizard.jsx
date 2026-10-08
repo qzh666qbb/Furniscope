@@ -740,8 +740,8 @@ export function LiveAnalysisWizard({ Sidebar, Topbar }) {
                         <strong>逐项验证分析结果</strong>
                         <div>
                           {[
-                            ["competitor-tracking?tab=prices", "竞品监测"],
-                            ["competitor-tracking?tab=stream", "舆情监测"],
+                            ["market-decisions?capability=competitors&view=prices", "竞品监测"],
+                            ["market-decisions?capability=reviews&view=stream", "舆情监测"],
                             [`report-detail?id=${result.report_uuid}&from=workbench`, "机会评分"],
                           ].map(([hash, label]) => (
                             <button key={label} onClick={() => {

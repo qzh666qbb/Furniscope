@@ -1,0 +1,21 @@
+{
+  "mapping": {
+    "date": "date",
+    "sku": "sku",
+    "site": "site",
+    "sales": "sales"
+  },
+  "kind": "sales",
+  "grain": "daily",
+  "sales_basis": "gross_units",
+  "date_format": "%Y-%m-%d",
+  "default_site": null,
+  "missing_dates": "unknown",
+  "complete_export_confirmed": false,
+  "warehouse_sites": {},
+  "order_statuses": {},
+  "order_semantics_confirmed": false,
+  "duplicate_orders": "error",
+  "default_currency": null,
+  "price_semantics_confirmed": false
+}

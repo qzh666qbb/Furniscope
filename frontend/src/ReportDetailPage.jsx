@@ -44,7 +44,12 @@ function Radar({ values }) {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / n;
     return [cx + Math.cos(angle) * radius * ratio, cy + Math.sin(angle) * radius * ratio];
   };
-  const polygon = values.map((value, index) => point(index, Math.min(1, Math.max(0, value / 100))).join(",")).join(" ");
+  const polygon = values
+    .map((value, index) => point(
+      index,
+      value == null ? 0 : Math.min(1, Math.max(0, value / 100)),
+    ).join(","))
+    .join(" ");
   const rings = [0.25, 0.5, 0.75, 1];
   return (
     <svg className="rdp-radar" viewBox={`0 0 ${size} ${size}`} role="img" aria-label="五维机会评分雷达图">
@@ -100,6 +105,9 @@ function ReportBody({ dossier, prefix, setDrawer }) {
   const quotesFor = (filters) => dossierQuotes(dossier, filters);
   const top = topOpportunity(dossier);
   const radarValues = DIMS.map(([key]) => dimScore(top, key));
+  const missingDimensions = DIMS
+    .filter((_, index) => radarValues[index] == null)
+    .map(([, label]) => label);
   const personas = derivePersonas(dossier);
   const scenes = deriveScenes(dossier);
   const priceBand = derivePrice(dossier);
@@ -196,22 +204,27 @@ function ReportBody({ dossier, prefix, setDrawer }) {
               {DIMS.map(([key, label], index) => (
                 <Traceable
                   key={key}
-                  className="rdp-dim-trace"
+                  className={`rdp-dim-trace ${radarValues[index] == null ? "is-missing" : ""}`}
                   onOpen={() => openQuotes(label, top.title, quotesFor({ claimType: "opportunity", claimId: top.opportunity_id }), "opportunities")}
                 >
                   <span>{label}</span>
-                  <i><b style={{ width: `${radarValues[index]}%` }} /></i>
-                  <strong>{scoreOf(radarValues[index])}</strong>
+                  <i><b style={{ width: `${radarValues[index] ?? 0}%` }} /></i>
+                  <strong>{radarValues[index] == null ? "未评分" : scoreOf(radarValues[index])}</strong>
                 </Traceable>
               ))}
-              <p>雷达图取最高分机会「{top.title}」的五维市场得分。点击分项可查看依据证据。</p>
+              <p>
+                雷达图取报告冻结主机会「{top.title}」的五维市场得分。
+                {missingDimensions.length
+                  ? ` ${missingDimensions.join("、")}缺少有效依据，保持未评分。`
+                  : " 点击分项可查看依据证据。"}
+              </p>
             </div>
           </div>
         ) : <p>当前报告尚未形成可评分的机会项。</p>}
       </section>
 
       <section id={`${prefix}m3`} className="report-section">
-        <h2>3. 目标用户画像与推荐价格带</h2>
+        <h2>3. 目标用户画像与冻结价格结论</h2>
         <div className="rdp-two">
           <article>
             <header><Users /><h3>核心消费人群</h3></header>
@@ -236,17 +249,20 @@ function ReportBody({ dossier, prefix, setDrawer }) {
             )) : <p>场景信号不足。</p>}
           </article>
           <article>
-            <header><ChartPie /><h3>建议零售价区间</h3></header>
+            <header><ChartPie /><h3>价格证据快照</h3></header>
             <Traceable
               className="rdp-price rdp-trace-block"
-              onOpen={() => openQuotes("价格带依据", "竞品售价与工厂成本约束", listingQuotes(competitors), "competitors")}
+              onOpen={() => openQuotes("价格证据", "报告生成时冻结的竞品售价样本", listingQuotes(competitors), "competitors")}
             >
               <span>竞品样本 <b>{priceBand.sample}</b></span>
-              <span>市场观测 <b>{priceBand.min && priceBand.max ? `${priceBand.currency} ${Math.round(priceBand.min)}–${Math.round(priceBand.max)}` : "—"}</b></span>
-              <span>建议零售 <b>{priceBand.suggest ? `${priceBand.currency} ${priceBand.suggest.low}–${priceBand.suggest.high}` : "待补充成本后测算"}</b></span>
-              {priceBand.costMid ? <span>工厂成本中枢 <b>{priceBand.currency} {Math.round(priceBand.costMid)}</b></span> : null}
+              <span>市场观测 <b>{priceBand.min != null && priceBand.max != null ? `${priceBand.currency} ${Number(priceBand.min).toFixed(2)}–${Number(priceBand.max).toFixed(2)}` : "待核算"}</b></span>
+              <span>建议零售 <b>{priceBand.suggest ? `${priceBand.currency} ${Number(priceBand.suggest.low).toFixed(2)}–${Number(priceBand.suggest.high).toFixed(2)}` : "待核算"}</b></span>
             </Traceable>
-            <p>定价取竞品中位价，并以产品出厂价的 2.1–2.9 倍作为毛利地板与天花板；落地前需用工厂实际 BOM 复核。</p>
+            <p>{priceBand.status === "currency_conflict"
+              ? "冻结样本存在币种冲突，系统已阻止合并计算。"
+              : priceBand.calculationVersion
+                ? `仅展示服务端冻结结果（${priceBand.calculationVersion}）；缺少确认成本或毛利输入时不生成建议金额。`
+                : "该历史报告没有完整的计算版本、输入快照和证据来源，价格结论统一标记为待核算。"}</p>
           </article>
         </div>
       </section>
@@ -308,7 +324,7 @@ function ReportBody({ dossier, prefix, setDrawer }) {
             </table>
           </div>
         ) : <p>当前任务未写入竞品集合。</p>}
-        <button className="rdp-link no-print" type="button" onClick={() => { location.hash = "competitor-tracking?tab=prices"; }}>打开市场洞察竞品监测 →</button>
+        <button className="rdp-link no-print" type="button" onClick={() => { location.hash = "market-decisions?capability=competitors&view=prices"; }}>打开市场洞察竞品监测 →</button>
       </section>
 
       <section id={`${prefix}m6`} className="report-section">
@@ -324,7 +340,7 @@ function ReportBody({ dossier, prefix, setDrawer }) {
                 <p>{row.problem_statement}</p>
                 <footer>
                   <span>依据痛点 · 样本 {recSampleSize(row, clusters)} 条</span>
-                  <span>预估成本 {recCost(row, dossier)}</span>
+                  <span>成本影响 {recCost(row)}</span>
                   <span>置信度 {pct(row.confidence)}</span>
                   <span>风险 {PRIORITY[row.risk_level] || row.risk_level}</span>
                   <button className="no-print" type="button" onClick={() => openQuotes(
@@ -424,7 +440,12 @@ export function ReportDetailPage({ Sidebar, Topbar }) {
         const rows = results.filter((item) => item.ok).map((item) => item.row);
         const failed = results.filter((item) => !item.ok);
         setDossiers(rows);
-        setError(failed.length ? `${failed.length} 份报告加载失败${rows.length ? "，其余已展开可打印" : ""}` : "");
+        const failureDetail = failed
+          .map((item) => `报告 ${item.id}：${item.message || "未知错误"}`)
+          .join("；");
+        setError(failed.length
+          ? `${failed.length} 份报告加载失败${rows.length ? "，其余已展开可打印" : ""}。${failureDetail}`
+          : "");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

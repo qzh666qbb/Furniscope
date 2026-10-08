@@ -1,0 +1,407 @@
+{
+  "protocol": "enterprise-forecast-audit-v1",
+  "rules": {
+    "mapping": {
+      "date": "date",
+      "sku": "sku",
+      "site": "site",
+      "sales": "sales"
+    },
+    "kind": "sales",
+    "grain": "daily",
+    "sales_basis": "gross_units",
+    "date_format": "%Y-%m-%d",
+    "default_site": null,
+    "missing_dates": "unknown",
+    "complete_export_confirmed": false,
+    "warehouse_sites": {},
+    "order_statuses": {},
+    "order_semantics_confirmed": false,
+    "duplicate_orders": "error",
+    "default_currency": null,
+    "price_semantics_confirmed": false
+  },
+  "quality": {
+    "rule_version": "sales-contract-v2",
+    "source_rows": 196,
+    "parsed_rows": 196,
+    "canonical_rows": 196,
+    "error_count": 0,
+    "errors": [],
+    "warnings": [],
+    "missing_dates": 0,
+    "filled_rows": 0,
+    "negative_rows": 0,
+    "censored_rows": 0,
+    "input_quantity_total": 1960.0,
+    "output_quantity_total": 1960.0,
+    "adjustments": {
+      "duplicate_units": 0.0,
+      "cancelled_units": 0.0,
+      "refunded_units": 0.0
+    },
+    "expected_quantity_total": 1960.0,
+    "quantity_reconciled": true,
+    "price_fact_rows": 0,
+    "pair_count": 1,
+    "sku_count": 1,
+    "date_from": "2025-01-06",
+    "date_to": "2025-07-20",
+    "can_confirm": true,
+    "trainable": true,
+    "training_blockers": []
+  },
+  "evaluation": {
+    "engine": "tenant-xgb-v2",
+    "gate": {
+      "version": "sku-rolling-v2",
+      "max_wape": 0.6,
+      "max_abs_bias": 0.35,
+      "baseline_tolerance": 1.05,
+      "absolute_wape_tolerance": 0.005,
+      "min_daily_history": 140,
+      "min_weekly_history": 20,
+      "day_horizon": 28,
+      "week_horizon": 4,
+      "folds": 3,
+      "sparse_zero_share": 0.5,
+      "sparse_validation_scope": "window_total"
+    },
+    "day": {
+      "samples": 84,
+      "mae": 0.0,
+      "wape": 0.0,
+      "bias": 0.0,
+      "actual_total": 840.0,
+      "predicted_total": 840.0,
+      "baselines": {
+        "last_value": {
+          "samples": 84,
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "actual_total": 840.0,
+          "predicted_total": 840.0
+        },
+        "moving_average": {
+          "samples": 84,
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "actual_total": 840.0,
+          "predicted_total": 840.0
+        }
+      },
+      "coverage": 1.0,
+      "series_count": 1,
+      "evaluated_series": 1,
+      "unvalidated_series": 0,
+      "macro_wape": 0.0,
+      "worst_sku_wape": 0.0,
+      "series": [
+        {
+          "sku": "SAME-SKU",
+          "site": "US",
+          "history_periods": 196,
+          "minimum_periods": 140,
+          "segment": "mature",
+          "method": "xgboost",
+          "validation_status": "validated",
+          "validation_scope": "period_values",
+          "passed": true,
+          "folds": [
+            {
+              "samples": 28,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 1,
+              "baselines": {
+                "last_value": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-04-27",
+              "validation_from": "2025-04-28",
+              "validation_through": "2025-05-25",
+              "passed": true,
+              "reasons": []
+            },
+            {
+              "samples": 28,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 2,
+              "baselines": {
+                "last_value": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-05-25",
+              "validation_from": "2025-05-26",
+              "validation_through": "2025-06-22",
+              "passed": true,
+              "reasons": []
+            },
+            {
+              "samples": 28,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 3,
+              "baselines": {
+                "last_value": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 28,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-06-22",
+              "validation_from": "2025-06-23",
+              "validation_through": "2025-07-20",
+              "passed": true,
+              "reasons": []
+            }
+          ],
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "reasons": [],
+          "samples": 84,
+          "actual_total": 840.0,
+          "predicted_total": 840.0,
+          "volume_mae": 0.0
+        }
+      ],
+      "horizon": 28,
+      "passed": true,
+      "reasons": []
+    },
+    "week": {
+      "samples": 12,
+      "mae": 0.0,
+      "wape": 0.0,
+      "bias": 0.0,
+      "actual_total": 840.0,
+      "predicted_total": 840.0,
+      "baselines": {
+        "last_value": {
+          "samples": 12,
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "actual_total": 840.0,
+          "predicted_total": 840.0
+        },
+        "moving_average": {
+          "samples": 12,
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "actual_total": 840.0,
+          "predicted_total": 840.0
+        }
+      },
+      "coverage": 1.0,
+      "series_count": 1,
+      "evaluated_series": 1,
+      "unvalidated_series": 0,
+      "macro_wape": 0.0,
+      "worst_sku_wape": 0.0,
+      "series": [
+        {
+          "sku": "SAME-SKU",
+          "site": "US",
+          "history_periods": 28,
+          "minimum_periods": 20,
+          "segment": "mature",
+          "method": "xgboost",
+          "validation_status": "validated",
+          "validation_scope": "period_values",
+          "passed": true,
+          "folds": [
+            {
+              "samples": 4,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 1,
+              "baselines": {
+                "last_value": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-04-21",
+              "validation_from": "2025-04-28",
+              "validation_through": "2025-05-19",
+              "passed": true,
+              "reasons": []
+            },
+            {
+              "samples": 4,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 2,
+              "baselines": {
+                "last_value": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-05-19",
+              "validation_from": "2025-05-26",
+              "validation_through": "2025-06-16",
+              "passed": true,
+              "reasons": []
+            },
+            {
+              "samples": 4,
+              "mae": 0.0,
+              "wape": 0.0,
+              "bias": 0.0,
+              "actual_total": 280.0,
+              "predicted_total": 280.0,
+              "fold": 3,
+              "baselines": {
+                "last_value": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                },
+                "moving_average": {
+                  "samples": 4,
+                  "mae": 0.0,
+                  "wape": 0.0,
+                  "bias": 0.0,
+                  "actual_total": 280.0,
+                  "predicted_total": 280.0
+                }
+              },
+              "train_through": "2025-06-16",
+              "validation_from": "2025-06-23",
+              "validation_through": "2025-07-14",
+              "passed": true,
+              "reasons": []
+            }
+          ],
+          "mae": 0.0,
+          "wape": 0.0,
+          "bias": 0.0,
+          "reasons": [],
+          "samples": 12,
+          "actual_total": 840.0,
+          "predicted_total": 840.0,
+          "volume_mae": 0.0
+        }
+      ],
+      "horizon": 4,
+      "passed": true,
+      "reasons": []
+    },
+    "passed": true
+  },
+  "provenance": {
+    "input_sha256": "b934e433ec32f5ac93096aec7227fae8e19209300b0ebc3e2382ec52885a2999",
+    "rules_sha256": "5aefc29eb76eec041b946b55b48bdf8018eeb53089d1fcc15b63add19d3233ca",
+    "canonical_records_sha256": "255050acd2defbfac34a027fd3a2e96bd636bdd43b8da3dbef99958b2c2888b7",
+    "code_sha256": {
+      "sales_data_cleaner.py": "08245b57094a7557a8dc66a16504e14d0123646bc4031c9fb62111904081cd5b",
+      "tenant_engine.py": "3f36a430acc4191bd8a1fa9a70f0a2075a1a1ad57901c7737b7063025d51e6c1"
+    },
+    "runner_sha256": "736bdc0da7eb587089bcb511a84751f718faa87f66ffb1765e1d39b841ca5dd8",
+    "schema_sha256": "86dbc820aca6c021236526b1ed713bdf550f9c6332518268a1cc64b5735fe1f9",
+    "python": "3.12.13",
+    "packages": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "xgboost": "3.4.1",
+      "scikit-learn": "1.9.0",
+      "pydantic": "2.13.4"
+    }
+  },
+  "limits": [
+    "仅本地质量与滚动评测，未建立企业产品映射、未验证上传人身份，未写数据库或发布模型。",
+    "规则须由企业明确核验；如需独立销量/库存多表对账，先在训练页面完成确认。",
+    "标准记录摘要针对records数组，不等同于API带元数据的标准文件SHA。",
+    "使用与上线相同的逐SKU三窗口评测；门槛通过不保证未来精度。",
+    "无真实企业数据时，合成样本只能验证工程行为；短历史和全零仍未验证。"
+  ],
+  "readiness": "OFFLINE_GATE_PASSED"
+}
