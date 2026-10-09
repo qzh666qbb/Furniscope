@@ -1,0 +1,448 @@
+{
+  "started": 1791487374529,
+  "clips": [
+    {
+      "id": "01-home-login",
+      "title": "首页与企业登录",
+      "start": 13.005,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workspace",
+      "end": 30.385
+    },
+    {
+      "id": "03-create-workspace",
+      "title": "AI 工作台：新建与选择分析对象",
+      "start": 30.386,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?new=1&workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E5%AE%8C%E6%95%B4%E6%BC%94%E7%A4%BA%20%C2%B7%20%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%E7%BE%8E%E5%9B%BD%E5%B8%82%E5%9C%BA%E5%88%86%E6%9E%90",
+      "end": 37.876
+    },
+    {
+      "id": "03-bind-context",
+      "title": "产品、市场数据与知识库绑定",
+      "start": 48.131,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?new=1&workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E5%AE%8C%E6%95%B4%E6%BC%94%E7%A4%BA%20%C2%B7%20%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%E7%BE%8E%E5%9B%BD%E5%B8%82%E5%9C%BA%E5%88%86%E6%9E%90",
+      "end": 63.406
+    },
+    {
+      "id": "04-citations",
+      "title": "AI 回复与产品引用来源",
+      "start": 71.448,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?new=1&workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E5%AE%8C%E6%95%B4%E6%BC%94%E7%A4%BA%20%C2%B7%20%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%E7%BE%8E%E5%9B%BD%E5%B8%82%E5%9C%BA%E5%88%86%E6%9E%90",
+      "end": 79.898
+    },
+    {
+      "id": "05-launch-full",
+      "title": "配置运行终点并启动完整工作流",
+      "start": 86.316,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?new=1&workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f",
+      "end": 98.552
+    },
+    {
+      "id": "02-product-create",
+      "title": "产品中心：搜索、预览、新建产品档案",
+      "start": 106.596,
+      "status": "failed",
+      "error": "TimeoutError: locator.fill: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('搜索产品')\u001b[22m\n",
+      "end": 135.996
+    },
+    {
+      "id": "02-product-edit-confirm",
+      "title": "产品档案：编辑、人工核验与版本",
+      "start": 148.407,
+      "status": "failed",
+      "error": "TimeoutError: locator.selectOption: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('所属品类')\u001b[22m\n\u001b[2m    - locator resolved to <select>…</select>\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m      - did not find some options\u001b[22m\n\u001b[2m    - retrying select option action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    24 × waiting for element to be visible and enabled\u001b[22m\n\u001b[2m       - did not find some options\u001b[22m\n\u001b[2m     - retrying select option action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n",
+      "end": 161.831
+    },
+    {
+      "id": "02-product-edit-confirm-v2",
+      "title": "产品档案：编辑、人工核验与版本",
+      "start": 237.383,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#products?q=HF-A0769&product=349",
+      "end": 260.727
+    },
+    {
+      "id": "02-product-import",
+      "title": "Excel 预检、确认事务写入与导入结果",
+      "start": 281.466,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#products?q=HF-A0769&product=349",
+      "end": 293.083
+    },
+    {
+      "id": "07-forecast-day",
+      "title": "销量预测：SKU、站点和天预测执行",
+      "start": 293.083,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 305.161
+    },
+    {
+      "id": "07-forecast-day-result",
+      "title": "已有历史 SKU：天预测结果与导出",
+      "start": 340.986,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 355.933
+    },
+    {
+      "id": "07-forecast-week-business",
+      "title": "周预测、新品参数与历史结果",
+      "start": 372.261,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 400.677
+    },
+    {
+      "id": "08-standard-data",
+      "title": "标准建模：上传、字段映射、质量预检",
+      "start": 413.621,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 427.461
+    },
+    {
+      "id": "08-standard-confirm",
+      "title": "确认标准数据、训练范围与评测记录",
+      "start": 447.774,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 473.897
+    },
+    {
+      "id": "08-quick-append",
+      "title": "快速追加：上传两表与校验",
+      "start": 473.898,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#forecast",
+      "end": 481.962
+    },
+    {
+      "id": "09-selection-overview",
+      "title": "市场洞察与机会详情",
+      "start": 491.837,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=selection&view=detail&page=1&page_size=10&opportunity_id=131",
+      "end": 513.468
+    },
+    {
+      "id": "09-decision-feedback",
+      "title": "机会处理：原因、历史与实施表单",
+      "start": 528.113,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=selection&view=detail&page=1&page_size=10&opportunity_id=131",
+      "end": 541.321
+    },
+    {
+      "id": "09-outcome-save",
+      "title": "经营回流：计划记录保存与历史",
+      "start": 556.82,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=selection&view=detail&page=1&page_size=10&opportunity_id=131",
+      "end": 567.914
+    },
+    {
+      "id": "10-business-config",
+      "title": "经营配置：策略、事实、准入与导出",
+      "start": 567.914,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=selection&view=workbench&page=1&page_size=10",
+      "end": 597.629
+    },
+    {
+      "id": "11-competitor-alert",
+      "title": "竞品动态：告警详情与监控库",
+      "start": 608.56,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=competitors&view=prices",
+      "end": 627.125
+    },
+    {
+      "id": "11-competitor-tabs",
+      "title": "竞品：价格趋势、版本对比与促销节奏",
+      "start": 641.46,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=competitors&view=rhythm",
+      "end": 669.222
+    },
+    {
+      "id": "12-review-evidence",
+      "title": "评论主题与原文证据",
+      "start": 669.222,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=reviews&view=stream",
+      "end": 687.31
+    },
+    {
+      "id": "12-review-filter",
+      "title": "舆情工作台：来源、情感和关键词筛选",
+      "start": 702.623,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=reviews&view=stream",
+      "end": 714.778
+    },
+    {
+      "id": "13-pricing",
+      "title": "定价：成本、毛利护栏与场景计算",
+      "start": 714.779,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=pricing&view=overview",
+      "end": 728.729
+    },
+    {
+      "id": "13-compliance",
+      "title": "合规：官方来源、风险过滤与详情",
+      "start": 728.729,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-decisions?capability=compliance&view=overview",
+      "end": 743.306
+    },
+    {
+      "id": "14-data-import",
+      "title": "数据资产：创建样本数据集并清洗",
+      "start": 752.799,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-data",
+      "end": 765.254
+    },
+    {
+      "id": "14-data-detail",
+      "title": "数据集内部：商品详情、评论原文与检索",
+      "start": 780.027,
+      "status": "failed",
+      "error": "TimeoutError: locator.scrollIntoViewIfNeeded: Timeout 12000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('tbody tr').first()\u001b[22m\n",
+      "end": 805.477
+    },
+    {
+      "id": "14-review-detail",
+      "title": "数据资产：评论记录原文与元数据",
+      "start": 847.949,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#dataset-detail?id=88",
+      "end": 857.005
+    },
+    {
+      "id": "15-automation-form",
+      "title": "自动化投递：新增和编辑渠道表单",
+      "start": 857.005,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-automation",
+      "end": 879.065
+    },
+    {
+      "id": "15-delivery-detail",
+      "title": "投递失败原因与重试入口",
+      "start": 891.641,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#market-automation",
+      "end": 898.342
+    },
+    {
+      "id": "17-knowledge-create",
+      "title": "知识库：创建、上传与索引",
+      "start": 898.342,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#knowledge",
+      "end": 908.538
+    },
+    {
+      "id": "17-knowledge-search",
+      "title": "知识库：检索验真与原文预览",
+      "start": 918.676,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#knowledge-document?base=30f7be04-fc3e-48d7-b248-cc08d05e20d4&document=d69b9f27-dba6-4634-91f3-4da5f02fe4c4&scroll=0",
+      "end": 936.952
+    },
+    {
+      "id": "17-document-versions",
+      "title": "知识文档：工作表、版本上传与回看",
+      "start": 945.954,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#knowledge?base=30f7be04-fc3e-48d7-b248-cc08d05e20d4&document=d69b9f27-dba6-4634-91f3-4da5f02fe4c4&scroll=0",
+      "end": 968.122
+    },
+    {
+      "id": "06-diary-reopen",
+      "title": "工作日记：搜索并重新打开已完成任务",
+      "start": 982.614,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 995.044
+    },
+    {
+      "id": "05-results-nodes",
+      "title": "AI 分析完成：全部节点结果与五维评分",
+      "start": 995.045,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1041.576
+    },
+    {
+      "id": "04-controlled-query",
+      "title": "AI 受控问数：按 SKU 汇总销量",
+      "start": 1110.198,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1117.106
+    },
+    {
+      "id": "04-query-evidence",
+      "title": "问数结果：数据版本、SHA 与来源",
+      "start": 1128.236,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1136.522
+    },
+    {
+      "id": "04-query-with-data",
+      "title": "AI 问数：查询已导入日期并查看结果",
+      "start": 1145.502,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1155.99
+    },
+    {
+      "id": "04-knowledge-answer",
+      "title": "绑定新知识库并追问文档事实",
+      "start": 1163.173,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1173.004
+    },
+    {
+      "id": "04-memory-context",
+      "title": "AI 记忆：上下文预览与版本历史",
+      "start": 1180.684,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#workflow?workspace=b15647e4-ef9d-41e0-9a03-c6729e4bfe2f&name=%E7%94%B5%E5%8A%A8%E8%BA%BA%E6%A4%85%20HF-A0769%20%E5%87%BA%E6%B5%B7%E6%9C%BA%E4%BC%9A%E5%88%86%E6%9E%90",
+      "end": 1191.518
+    },
+    {
+      "id": "06-rename-report-link",
+      "title": "工作台重命名与完整报告联动",
+      "start": 1207.338,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report-detail?id=4e6f555a-0f61-4d8e-a8e6-77459af51254&from=workbench",
+      "end": 1215.86
+    },
+    {
+      "id": "16-report-sections",
+      "title": "完整报告：八个章节与目录导航",
+      "start": 1228.766,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report-detail?id=4e6f555a-0f61-4d8e-a8e6-77459af51254&from=workbench",
+      "end": 1262.173
+    },
+    {
+      "id": "16-report-original-evidence",
+      "title": "报告证据：展开痛点与引用原文",
+      "start": 1276.645,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report-detail?id=4e6f555a-0f61-4d8e-a8e6-77459af51254&from=workbench",
+      "end": 1294.656
+    },
+    {
+      "id": "16-report-list",
+      "title": "决策报告：列表筛选与详情入口",
+      "start": 1294.657,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report",
+      "end": 1299.85
+    },
+    {
+      "id": "16-report-filter-batch",
+      "title": "报告检索与批量导出",
+      "start": 1306.068,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report",
+      "end": 1313.25
+    },
+    {
+      "id": "16-report-batch-export",
+      "title": "执行报告批量 PDF 导出",
+      "start": 1326.736,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#report-detail?id=4e6f555a-0f61-4d8e-a8e6-77459af51254&print=1&from=report",
+      "end": 1332.671
+    },
+    {
+      "id": "06-employee-entry",
+      "title": "AI 员工：目标委派入口",
+      "start": 1332.671,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#employee",
+      "end": 1337.175
+    },
+    {
+      "id": "06-employee-plan",
+      "title": "AI 员工：填写目标、选择技能并生成计划",
+      "start": 1348.142,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#employee",
+      "end": 1357.315
+    },
+    {
+      "id": "06-employee-start",
+      "title": "AI 员工：确认执行与运行详情",
+      "start": 1376.876,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#employee",
+      "end": 1383.562
+    },
+    {
+      "id": "06-employee-existing-result",
+      "title": "AI 员工：执行开放状态与既有交付记录",
+      "start": 1393.212,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#employee?goal=1164a5a5-b696-4590-82d5-c84c452fe138",
+      "end": 1402.149
+    },
+    {
+      "id": "06-employee-deliverables",
+      "title": "AI 员工历史：交付物、校验与技能",
+      "start": 1414.891,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#employee?view=capabilities",
+      "end": 1427.368
+    },
+    {
+      "id": "18-admin-login",
+      "title": "平台管理：独立账号密码登录",
+      "start": 1427.368,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#admin",
+      "end": 1437.298
+    },
+    {
+      "id": "18-admin-enterprise",
+      "title": "管理企业：搜索、授权状态与开通表单",
+      "start": 1444.625,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#admin",
+      "end": 1463.649
+    },
+    {
+      "id": "18-admin-model-history",
+      "title": "HeFeng 模型：版本、训练记录与更新规则",
+      "start": 1472.01,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#admin",
+      "end": 1488.667
+    },
+    {
+      "id": "19-end",
+      "title": "退出管理端并返回系统首页",
+      "start": 1508.2,
+      "status": "recorded",
+      "url": "http://127.0.0.1:4173/#landing",
+      "end": 1517.111
+    }
+  ],
+  "errors": [],
+  "raw": "/Users/bytedance/Furniscope/artifacts/demo-video/full-workflow/raw/page@da260e182041bbbd0149ac556f84cba2.webm",
+  "resolution": "1920x1080"
+}

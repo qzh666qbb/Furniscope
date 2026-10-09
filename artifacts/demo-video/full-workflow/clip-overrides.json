@@ -1,0 +1,38 @@
+{
+  "02-product-create": {
+    "status": "recorded",
+    "end": 123.6,
+    "title": "产品中心：新建演示产品档案",
+    "edit_note": "保留成功新建的前段；移除之后脚本误找搜索框的等待。"
+  },
+  "02-product-edit-confirm": {
+    "omit": true,
+    "edit_note": "脚本误选不存在的品类选项；使用后续 v2 成功片段。"
+  },
+  "06-employee-entry": {
+    "omit": true,
+    "edit_note": "按用户要求，成片不包含切换和操作 AI 员工页的演示。"
+  },
+  "06-employee-plan": {
+    "omit": true,
+    "edit_note": "按用户要求移除 AI 员工目标委派与计划。"
+  },
+  "06-employee-start": {
+    "omit": true,
+    "edit_note": "按用户要求移除 AI 员工启动操作。"
+  },
+  "06-employee-existing-result": {
+    "omit": true,
+    "edit_note": "按用户要求移除 AI 员工既有交付记录。"
+  },
+  "06-employee-deliverables": {
+    "omit": true,
+    "edit_note": "按用户要求移除 AI 员工交付物、校验与能力页。"
+  },
+  "14-data-detail": {
+    "status": "recorded",
+    "end": 793.2,
+    "title": "数据集内部：商品详情与评论检索",
+    "edit_note": "保留商品详情与搜索；移除脚本误找表格行的等待。评论原文在后续片段补齐。"
+  }
+}

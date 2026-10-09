@@ -1,0 +1,365 @@
+{
+  "video": "FurniScope-全功能操作演示.mp4",
+  "sha256_verified": true,
+  "duration_seconds": 749.24,
+  "resolution": "1920x1080",
+  "sample_count": 49,
+  "samples": [
+    {
+      "index": 0,
+      "id": "01-home-login",
+      "title": "首页与企业登录",
+      "at_seconds": 15.76,
+      "file": "verification/frame-000.png"
+    },
+    {
+      "index": 1,
+      "id": "02-product-create",
+      "title": "产品中心：新建演示产品档案",
+      "at_seconds": 32.8,
+      "file": "verification/frame-001.png"
+    },
+    {
+      "index": 2,
+      "id": "02-product-edit-confirm-v2",
+      "title": "产品档案：编辑、人工核验与版本",
+      "at_seconds": 56.16,
+      "file": "verification/frame-002.png"
+    },
+    {
+      "index": 3,
+      "id": "02-product-import",
+      "title": "Excel 预检、确认事务写入与导入结果",
+      "at_seconds": 67.8,
+      "file": "verification/frame-003.png"
+    },
+    {
+      "index": 4,
+      "id": "03-create-workspace",
+      "title": "AI 工作台：新建与选择分析对象",
+      "at_seconds": 75.32000000000001,
+      "file": "verification/frame-004.png"
+    },
+    {
+      "index": 5,
+      "id": "03-bind-context",
+      "title": "产品、市场数据与知识库绑定",
+      "at_seconds": 90.56,
+      "file": "verification/frame-005.png"
+    },
+    {
+      "index": 6,
+      "id": "04-citations",
+      "title": "AI 回复与产品引用来源",
+      "at_seconds": 99.0,
+      "file": "verification/frame-006.png"
+    },
+    {
+      "index": 7,
+      "id": "04-controlled-query",
+      "title": "AI 受控问数：按 SKU 汇总销量",
+      "at_seconds": 105.91999999999999,
+      "file": "verification/frame-007.png"
+    },
+    {
+      "index": 8,
+      "id": "04-query-evidence",
+      "title": "问数结果：数据版本、SHA 与来源",
+      "at_seconds": 114.24,
+      "file": "verification/frame-008.png"
+    },
+    {
+      "index": 9,
+      "id": "04-query-with-data",
+      "title": "AI 问数：查询已导入日期并查看结果",
+      "at_seconds": 124.76,
+      "file": "verification/frame-009.png"
+    },
+    {
+      "index": 10,
+      "id": "04-knowledge-answer",
+      "title": "绑定新知识库并追问文档事实",
+      "at_seconds": 134.56,
+      "file": "verification/frame-010.png"
+    },
+    {
+      "index": 11,
+      "id": "04-memory-context",
+      "title": "AI 记忆：上下文预览与版本历史",
+      "at_seconds": 145.35999999999999,
+      "file": "verification/frame-011.png"
+    },
+    {
+      "index": 12,
+      "id": "05-launch-full",
+      "title": "配置运行终点并启动完整工作流",
+      "at_seconds": 157.60000000000002,
+      "file": "verification/frame-012.png"
+    },
+    {
+      "index": 13,
+      "id": "05-results-nodes",
+      "title": "AI 分析完成：全部节点结果与五维评分",
+      "at_seconds": 204.12,
+      "file": "verification/frame-013.png"
+    },
+    {
+      "index": 14,
+      "id": "06-diary-reopen",
+      "title": "工作日记：搜索并重新打开已完成任务",
+      "at_seconds": 216.52000000000004,
+      "file": "verification/frame-014.png"
+    },
+    {
+      "index": 15,
+      "id": "06-rename-report-link",
+      "title": "工作台重命名与完整报告联动",
+      "at_seconds": 225.04000000000002,
+      "file": "verification/frame-015.png"
+    },
+    {
+      "index": 16,
+      "id": "07-forecast-day",
+      "title": "销量预测：SKU、站点和天预测执行",
+      "at_seconds": 237.08000000000004,
+      "file": "verification/frame-016.png"
+    },
+    {
+      "index": 17,
+      "id": "07-forecast-day-result",
+      "title": "已有历史 SKU：天预测结果与导出",
+      "at_seconds": 252.04000000000005,
+      "file": "verification/frame-017.png"
+    },
+    {
+      "index": 18,
+      "id": "07-forecast-week-business",
+      "title": "周预测、新品参数与历史结果",
+      "at_seconds": 280.48,
+      "file": "verification/frame-018.png"
+    },
+    {
+      "index": 19,
+      "id": "08-standard-data",
+      "title": "标准建模：上传、字段映射、质量预检",
+      "at_seconds": 294.32000000000005,
+      "file": "verification/frame-019.png"
+    },
+    {
+      "index": 20,
+      "id": "08-standard-confirm",
+      "title": "确认标准数据、训练范围与评测记录",
+      "at_seconds": 320.44,
+      "file": "verification/frame-020.png"
+    },
+    {
+      "index": 21,
+      "id": "08-quick-append",
+      "title": "快速追加：上传两表与校验",
+      "at_seconds": 328.48,
+      "file": "verification/frame-021.png"
+    },
+    {
+      "index": 22,
+      "id": "09-selection-overview",
+      "title": "市场洞察与机会详情",
+      "at_seconds": 350.12000000000006,
+      "file": "verification/frame-022.png"
+    },
+    {
+      "index": 23,
+      "id": "09-decision-feedback",
+      "title": "机会处理：原因、历史与实施表单",
+      "at_seconds": 363.36,
+      "file": "verification/frame-023.png"
+    },
+    {
+      "index": 24,
+      "id": "09-outcome-save",
+      "title": "经营回流：计划记录保存与历史",
+      "at_seconds": 374.44000000000005,
+      "file": "verification/frame-024.png"
+    },
+    {
+      "index": 25,
+      "id": "10-business-config",
+      "title": "经营配置：策略、事实、准入与导出",
+      "at_seconds": 404.16,
+      "file": "verification/frame-025.png"
+    },
+    {
+      "index": 26,
+      "id": "11-competitor-alert",
+      "title": "竞品动态：告警详情与监控库",
+      "at_seconds": 422.76,
+      "file": "verification/frame-026.png"
+    },
+    {
+      "index": 27,
+      "id": "11-competitor-tabs",
+      "title": "竞品：价格趋势、版本对比与促销节奏",
+      "at_seconds": 450.52000000000004,
+      "file": "verification/frame-027.png"
+    },
+    {
+      "index": 28,
+      "id": "12-review-evidence",
+      "title": "评论主题与原文证据",
+      "at_seconds": 468.64,
+      "file": "verification/frame-028.png"
+    },
+    {
+      "index": 29,
+      "id": "12-review-filter",
+      "title": "舆情工作台：来源、情感和关键词筛选",
+      "at_seconds": 480.8,
+      "file": "verification/frame-029.png"
+    },
+    {
+      "index": 30,
+      "id": "13-pricing",
+      "title": "定价：成本、毛利护栏与场景计算",
+      "at_seconds": 494.72,
+      "file": "verification/frame-030.png"
+    },
+    {
+      "index": 31,
+      "id": "13-compliance",
+      "title": "合规：官方来源、风险过滤与详情",
+      "at_seconds": 509.28000000000003,
+      "file": "verification/frame-031.png"
+    },
+    {
+      "index": 32,
+      "id": "14-data-import",
+      "title": "数据资产：创建样本数据集并清洗",
+      "at_seconds": 521.7600000000001,
+      "file": "verification/frame-032.png"
+    },
+    {
+      "index": 33,
+      "id": "14-data-detail",
+      "title": "数据集内部：商品详情与评论检索",
+      "at_seconds": 534.96,
+      "file": "verification/frame-033.png"
+    },
+    {
+      "index": 34,
+      "id": "14-review-detail",
+      "title": "数据资产：评论记录原文与元数据",
+      "at_seconds": 544.0400000000001,
+      "file": "verification/frame-034.png"
+    },
+    {
+      "index": 35,
+      "id": "15-automation-form",
+      "title": "自动化投递：新增和编辑渠道表单",
+      "at_seconds": 566.0800000000002,
+      "file": "verification/frame-035.png"
+    },
+    {
+      "index": 36,
+      "id": "15-delivery-detail",
+      "title": "投递失败原因与重试入口",
+      "at_seconds": 572.7600000000001,
+      "file": "verification/frame-036.png"
+    },
+    {
+      "index": 37,
+      "id": "16-report-sections",
+      "title": "完整报告：八个章节与目录导航",
+      "at_seconds": 606.16,
+      "file": "verification/frame-037.png"
+    },
+    {
+      "index": 38,
+      "id": "16-report-original-evidence",
+      "title": "报告证据：展开痛点与引用原文",
+      "at_seconds": 624.16,
+      "file": "verification/frame-038.png"
+    },
+    {
+      "index": 39,
+      "id": "16-report-list",
+      "title": "决策报告：列表筛选与详情入口",
+      "at_seconds": 629.3199999999999,
+      "file": "verification/frame-039.png"
+    },
+    {
+      "index": 40,
+      "id": "16-report-filter-batch",
+      "title": "报告检索与批量导出",
+      "at_seconds": 636.52,
+      "file": "verification/frame-040.png"
+    },
+    {
+      "index": 41,
+      "id": "16-report-batch-export",
+      "title": "执行报告批量 PDF 导出",
+      "at_seconds": 642.44,
+      "file": "verification/frame-041.png"
+    },
+    {
+      "index": 42,
+      "id": "17-knowledge-create",
+      "title": "知识库：创建、上传与索引",
+      "at_seconds": 652.64,
+      "file": "verification/frame-042.png"
+    },
+    {
+      "index": 43,
+      "id": "17-knowledge-search",
+      "title": "知识库：检索验真与原文预览",
+      "at_seconds": 670.92,
+      "file": "verification/frame-043.png"
+    },
+    {
+      "index": 44,
+      "id": "17-document-versions",
+      "title": "知识文档：工作表、版本上传与回看",
+      "at_seconds": 693.12,
+      "file": "verification/frame-044.png"
+    },
+    {
+      "index": 45,
+      "id": "18-admin-login",
+      "title": "平台管理：独立账号密码登录",
+      "at_seconds": 703.0400000000001,
+      "file": "verification/frame-045.png"
+    },
+    {
+      "index": 46,
+      "id": "18-admin-enterprise",
+      "title": "管理企业：搜索、授权状态与开通表单",
+      "at_seconds": 722.0799999999999,
+      "file": "verification/frame-046.png"
+    },
+    {
+      "index": 47,
+      "id": "18-admin-model-history",
+      "title": "HeFeng 模型：版本、训练记录与更新规则",
+      "at_seconds": 738.7199999999999,
+      "file": "verification/frame-047.png"
+    },
+    {
+      "index": 48,
+      "id": "19-end",
+      "title": "退出管理端并返回系统首页",
+      "at_seconds": 747.64,
+      "file": "verification/frame-048.png"
+    }
+  ],
+  "pdfs": [
+    {
+      "file": "downloads/批量选择-决策报告.pdf",
+      "pages": 6,
+      "sha256": "baaba92512d6f6a8f04df573fb015a17fe066e4d22bf6fc254e4aa09fbcf15c5"
+    },
+    {
+      "file": "downloads/电动躺椅-HF-A0769-完整决策报告.pdf",
+      "pages": 6,
+      "sha256": "179b2b150cabdad498096ce06f961bf95a7e8f003b46ad2f55189872f914b257"
+    }
+  ],
+  "browser_page_errors": []
+}

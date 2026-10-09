@@ -1,0 +1,92 @@
+{
+  "generated_at": "2026-10-08T19:11:21.899Z",
+  "base_url": "http://127.0.0.1:4173",
+  "duration_seconds": 295.9,
+  "resolution": "1920x1080",
+  "raw_video": "/Users/bytedance/Furniscope/artifacts/demo-video/20261008T190601/FurniScope-完整项目演示-20261008T190601.webm",
+  "mp4_video": "/Users/bytedance/Furniscope/artifacts/demo-video/20261008T190601/FurniScope-完整项目演示-20261008T190601.mp4",
+  "chapters": [
+    {
+      "at_seconds": 2.2,
+      "title": "FurniScope 完整项目演示",
+      "subtitle": "从企业产品资产出发，贯通 AI 分析、销量预测、市场决策、经营回流与平台治理"
+    },
+    {
+      "at_seconds": 8.5,
+      "title": "01 企业经营总览",
+      "subtitle": "76 个产品资产、分析任务与决策报告统一汇总"
+    },
+    {
+      "at_seconds": 20.8,
+      "title": "02 产品中心",
+      "subtitle": "Excel 批量导入、AI 识别、主档一致性校验与人工确认"
+    },
+    {
+      "at_seconds": 46,
+      "title": "03 AI 分析工作台",
+      "subtitle": "产品、授权市场数据与企业知识库共同约束分析范围"
+    },
+    {
+      "at_seconds": 64.3,
+      "title": "04 企业销量预测",
+      "subtitle": "按 SKU 与站点输出区间、安全库存、生产建议和可复核依据"
+    },
+    {
+      "at_seconds": 99.7,
+      "title": "05 市场洞察",
+      "subtitle": "五项市场决策能力共享同一授权数据范围与证据口径"
+    },
+    {
+      "at_seconds": 111.8,
+      "title": "05.1 AI 智能选品",
+      "subtitle": "需求主题、市场原分与企业适配共同形成可解释机会排序"
+    },
+    {
+      "at_seconds": 149.2,
+      "title": "05.2 竞品与评论证据",
+      "subtitle": "监测 Listing、价格变化与评论需求主题，并保留原文证据"
+    },
+    {
+      "at_seconds": 171,
+      "title": "05.3 定价与跨境合规",
+      "subtitle": "市场价格带、企业成本和毛利护栏共同约束建议动作"
+    },
+    {
+      "at_seconds": 187.6,
+      "title": "06 数据资产",
+      "subtitle": "授权数据集、清洗质量、版本与原始 Listing/评论统一管理"
+    },
+    {
+      "at_seconds": 204,
+      "title": "07 自动化投递",
+      "subtitle": "把竞品变化和政策预警投递到企业现有协作渠道"
+    },
+    {
+      "at_seconds": 221.2,
+      "title": "08 决策报告与经营闭环",
+      "subtitle": "结论、反证、模型版本、数据范围和原始证据冻结归档"
+    },
+    {
+      "at_seconds": 246.5,
+      "title": "09 企业知识库",
+      "subtitle": "私有资料版本化、索引验真、无证据拒答与 Citation 溯源"
+    },
+    {
+      "at_seconds": 268.6,
+      "title": "10 平台管理端",
+      "subtitle": "企业租户、账号状态与企业私有预测模型隔离管理"
+    },
+    {
+      "at_seconds": 277.9,
+      "title": "10.1 企业私有模型",
+      "subtitle": "训练、评测、发布、历史版本与回滚均按租户隔离"
+    },
+    {
+      "at_seconds": 290.1,
+      "title": "从证据到经营结果的持续闭环",
+      "subtitle": "分析 → 决策 → 执行 → 经营观察 → 企业知识沉淀 → 再分析"
+    }
+  ],
+  "skipped_steps": [],
+  "browser_errors": []
+}

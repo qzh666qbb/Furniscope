@@ -1,0 +1,142 @@
+[
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-14",
+    "bucket_end": "2026-09-14",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-15",
+    "bucket_end": "2026-09-15",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-16",
+    "bucket_end": "2026-09-16",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-17",
+    "bucket_end": "2026-09-17",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-18",
+    "bucket_end": "2026-09-18",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-19",
+    "bucket_end": "2026-09-19",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-20",
+    "bucket_end": "2026-09-20",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-21",
+    "bucket_end": "2026-09-21",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-22",
+    "bucket_end": "2026-09-22",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-23",
+    "bucket_end": "2026-09-23",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-24",
+    "bucket_end": "2026-09-24",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-25",
+    "bucket_end": "2026-09-25",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-26",
+    "bucket_end": "2026-09-26",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  },
+  {
+    "sku": "HF-A0049-1",
+    "site": "US",
+    "bucket_start": "2026-09-27",
+    "bucket_end": "2026-09-27",
+    "predicted_sales": 0.6429,
+    "lower": null,
+    "upper": null,
+    "reliability": "C"
+  }
+]

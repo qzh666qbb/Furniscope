@@ -1,0 +1,2943 @@
+{
+  "auxiliary_sources": {},
+  "errors": [],
+  "quality": {
+    "adjustments": {
+      "cancelled_units": 0,
+      "duplicate_units": 0,
+      "refunded_units": 0
+    },
+    "can_confirm": true,
+    "canonical_rows": 120,
+    "censored_rows": 0,
+    "date_from": "2026-06-01",
+    "date_to": "2026-09-28",
+    "error_count": 0,
+    "errors": [],
+    "expected_quantity_total": 1557,
+    "filled_rows": 0,
+    "input_quantity_total": 1557,
+    "missing_dates": 0,
+    "negative_rows": 0,
+    "output_quantity_total": 1557,
+    "pair_count": 1,
+    "parsed_rows": 120,
+    "price_fact_rows": 0,
+    "quantity_reconciled": true,
+    "reconciliation": {},
+    "rule_version": "sales-contract-v2",
+    "sku_count": 1,
+    "source_rows": 120,
+    "trainable": true,
+    "training_blockers": [],
+    "warnings": []
+  },
+  "raw_sha256": "3338a1d7e02e0a3783cc42f1e03f790e405494eb7c9052712341003979a07879",
+  "reconciliation": {},
+  "records": [
+    {
+      "currency": null,
+      "date": "2026-06-01",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        2
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-02",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        3
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-03",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        4
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-04",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        5
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-05",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        6
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-06",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        7
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-07",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        8
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-08",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        9
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-09",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        10
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-10",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        11
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-11",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        12
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-12",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        13
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-13",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        14
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-14",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        15
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-15",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        16
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-16",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        17
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-17",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        18
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-18",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        19
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-19",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        20
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-20",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        21
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-21",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        22
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-22",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        23
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-23",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        24
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-24",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        25
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-25",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        26
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-26",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        27
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-27",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        28
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-28",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        29
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-29",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        30
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-06-30",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        31
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-01",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        32
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-02",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        33
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-03",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        34
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-04",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        35
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-05",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        36
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-06",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        37
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-07",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        38
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-08",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        39
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-09",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        40
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-10",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        41
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-11",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        42
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-12",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        43
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-13",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        44
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-14",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        45
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-15",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        46
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-16",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        47
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-17",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        48
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-18",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        49
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-19",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        50
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-20",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        51
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-21",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        52
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-22",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        53
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-23",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        54
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-24",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        55
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-25",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        56
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-26",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        57
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-27",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        58
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-28",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        59
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-29",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        60
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-30",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        61
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-07-31",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        62
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-01",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        63
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-02",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        64
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-03",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        65
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-04",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        66
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-05",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        67
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-06",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        68
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-07",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        69
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-08",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        70
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-09",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        71
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-10",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        72
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-11",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        73
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-12",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        74
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-13",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        75
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-14",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        76
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-15",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        77
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-16",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        78
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-17",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        79
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-18",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        80
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-19",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        81
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-20",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        82
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-21",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        83
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-22",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        84
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-23",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        85
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-24",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        86
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-25",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        87
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-26",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        88
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-27",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        89
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-28",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        90
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-29",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        91
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-30",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        92
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-08-31",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        93
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-01",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        94
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-02",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        95
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-03",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        96
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-04",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        97
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-05",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        98
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-06",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        99
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-07",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        100
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-08",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        101
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-09",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        102
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-10",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        103
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-11",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        104
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-12",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        105
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-13",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        106
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-14",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        107
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-15",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        108
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-16",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        109
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-17",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        110
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-18",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        111
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-19",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        112
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-20",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        113
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-21",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        114
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-22",
+      "discount": null,
+      "sales": 11,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        115
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-23",
+      "discount": null,
+      "sales": 12,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        116
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-24",
+      "discount": null,
+      "sales": 13,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        117
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-25",
+      "discount": null,
+      "sales": 14,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        118
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-26",
+      "discount": null,
+      "sales": 15,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        119
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-27",
+      "discount": null,
+      "sales": 16,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        120
+      ],
+      "status": "active",
+      "unit_price": null
+    },
+    {
+      "currency": null,
+      "date": "2026-09-28",
+      "discount": null,
+      "sales": 10,
+      "site": "US",
+      "sku": "DEMO-20261009-CHAIR",
+      "source_rows": [
+        121
+      ],
+      "status": "active",
+      "unit_price": null
+    }
+  ],
+  "row_audit": [
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 2,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 3,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 4,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 5,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 6,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 7,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 8,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 9,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 10,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 11,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 12,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 13,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 14,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 15,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 16,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 17,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 18,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 19,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 20,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 21,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 22,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 23,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 24,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 25,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 26,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 27,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 28,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 29,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 30,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 31,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 32,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 33,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 34,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 35,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 36,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 37,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 38,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 39,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 40,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 41,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 42,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 43,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 44,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 45,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 46,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 47,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 48,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 49,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 50,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 51,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 52,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 53,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 54,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 55,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 56,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 57,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 58,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 59,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 60,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 61,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 62,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 63,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 64,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 65,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 66,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 67,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 68,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 69,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 70,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 71,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 72,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 73,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 74,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 75,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 76,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 77,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 78,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 79,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 80,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 81,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 82,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 83,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 84,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 85,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 86,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 87,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 88,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 89,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 90,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 91,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 92,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 93,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 94,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 95,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 96,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 97,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 98,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 99,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 100,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 101,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 102,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 103,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 104,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 105,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 106,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 107,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 108,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 109,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 110,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 111,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 112,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 113,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 114,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 11,
+      "order_key": null,
+      "output_units": 11,
+      "refunded_units": 0,
+      "row": 115,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 12,
+      "order_key": null,
+      "output_units": 12,
+      "refunded_units": 0,
+      "row": 116,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 13,
+      "order_key": null,
+      "output_units": 13,
+      "refunded_units": 0,
+      "row": 117,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 14,
+      "order_key": null,
+      "output_units": 14,
+      "refunded_units": 0,
+      "row": 118,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 15,
+      "order_key": null,
+      "output_units": 15,
+      "refunded_units": 0,
+      "row": 119,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 16,
+      "order_key": null,
+      "output_units": 16,
+      "refunded_units": 0,
+      "row": 120,
+      "site": "US",
+      "warehouse": null
+    },
+    {
+      "action": "included",
+      "facts": {},
+      "input_units": 10,
+      "order_key": null,
+      "output_units": 10,
+      "refunded_units": 0,
+      "row": 121,
+      "site": "US",
+      "warehouse": null
+    }
+  ],
+  "rules": {
+    "complete_export_confirmed": false,
+    "date_format": "%Y-%m-%d",
+    "default_currency": null,
+    "default_site": null,
+    "duplicate_orders": "error",
+    "grain": "daily",
+    "kind": "sales",
+    "mapping": {
+      "date": "date",
+      "sales": "sales",
+      "site": "site",
+      "sku": "sku"
+    },
+    "missing_dates": "unknown",
+    "order_semantics_confirmed": false,
+    "order_statuses": {},
+    "price_semantics_confirmed": false,
+    "sales_basis": "gross_units",
+    "warehouse_sites": {}
+  },
+  "template_snapshot": null
+}
